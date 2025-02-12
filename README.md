@@ -8,3 +8,12 @@ Then I ran 'npm init' to create an empty package.json file and ran 'npm install 
 
 Now that I have initialized our project with React and Express, the package.json files can be used with the 'npm install' command in both the frontend and backend folders during initial installation of a new project.
 
+An .env file will need to be created with the following format:
+
+PORT=5000
+DB_HOST=localhost
+DB_USER=root
+DB_PASS=
+DB_NAME=hotel-booking
+
+Once 'npm install' has been run in both folders, 'npm run dev' can be used in both folders to start the backend and frontend folders
