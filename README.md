@@ -31,6 +31,4 @@ React - JavaScript frontend framework: https://react.dev/learn
 Express - Node.js (JavaScript) backend framework: https://www.linkedin.com/learning-login/share?account=76216298&forceAccount=false&redirect=https%3A%2F%2Fwww.linkedin.com%2Flearning%2Fexpress-essentials-build-powerful-web-apps-with-node-js%3Ftrk%3Dshare_ent_url%26shareId%3DkC0KM9j1RwGbhobPLwd%252F7A%253D%253D
 
 Sequelize - Node.js tool that will allow us to interact with the MySQL database using JavaScript instead of raw SQL: https://sequelize.org/docs/v6/getting-started/
-=======
-Once 'npm install' has been run in both folders, 'npm run dev' can be used in both folders to start the backend and frontend folders
 
