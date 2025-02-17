@@ -61,6 +61,20 @@ const User = sequelize.define('User', {
     allowNull: false,
     field: 'phoneNumber'
   }
+}, {
+  // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
+  tableName: 'User',
+  timestamps: false
 });
+
+User.associate = (models) => {
+  // One-to-one relationship with Booking
+  // One user can have 0 or multiple bookings
+  User.hasMany(models.Booking, {
+    foreignKey: 'idUser',
+    as: 'booking',
+    onDelete: 'CASCADE' // If user is deleted, delete all associated bookings
+  });
+};
 
 export default User;
