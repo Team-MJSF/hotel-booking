@@ -2,7 +2,6 @@
 
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import User from './User.js';
 import Booking from './Booking.js'; // Assuming there's a Booking model
 
 // Define the Payment model with its attributes and configuration
@@ -32,7 +31,7 @@ const Payment = sequelize.define('Payment', {
 
   // Payment method (e.g., Credit Card, PayPal, Bank Transfer, Cash)
   paymentMethod: {
-    type: DataTypes.ENUM('Credit Card', 'PayPal', 'Bank Transfer', 'Cash'),
+    type: DataTypes.ENUM('Credit Card', 'Debit Card', 'PayPal', 'Cash'),
     allowNull: false,
   },
 
@@ -43,18 +42,6 @@ const Payment = sequelize.define('Payment', {
     defaultValue: 'Pending',
   },
 
-  // Foreign key linking payment to a user
-  userId: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: User,
-      key: 'idUser',
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-  },
-
   // Foreign key linking payment to a booking
   idBooking: {
     type: DataTypes.INTEGER,
@@ -62,18 +49,23 @@ const Payment = sequelize.define('Payment', {
     references: {
       model: Booking,
       key: 'idBooking',
-    },
-    onUpdate: 'CASCADE',
-    onDelete: 'CASCADE',
-  },
-
+    }
+  }
+}, {
+  // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
+  tableName: 'Payment',
+  timestamps: false
 });
 
 // Establish associations
-User.hasMany(Payment, { foreignKey: 'userId' });
-Payment.belongsTo(User, { foreignKey: 'userId' });
-
-Booking.hasMany(Payment, { foreignKey: 'idBooking' });
-Payment.belongsTo(Booking, { foreignKey: 'idBooking' });
+Payment.associate = (models) => {
+  // One-to-one relationship with Booking
+  // One payment belongs to exactly one booking
+  Payment.belongsTo(models.Booking, {
+    foreignkey: 'idBooking',
+    as: 'booking',
+    onDelete: 'CASCADE' // If booking is deleted, delete associated payment
+  });
+};
 
 export default Payment;
