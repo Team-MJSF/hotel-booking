@@ -58,10 +58,10 @@ const Payments = sequelize.define('Payments', {
 });
 
 // Establish associations
-Payment.associate = (models) => {
+Payments.associate = (models) => {
   // One-to-one relationship with Booking
   // One payment belongs to exactly one booking
-  Payment.belongsTo(models.Bookings, {
+  Payments.belongsTo(models.Bookings, {
     foreignkey: 'idBooking',
     as: 'booking',
     onDelete: 'CASCADE' // If booking is deleted, delete associated payment
