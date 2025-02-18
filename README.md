@@ -40,19 +40,19 @@ Detailed documentation for each part can be found in their respective directorie
 
 1. Clone the repository
 
-2. Install Frontend Dependencies:
+2. Install frontend dependencies:
 ```bash
 cd frontend
 npm install
 ```
 
-3. Install Backend Dependencies:
+3. Install backend dependencies:
 ```bash
 cd backend
 npm install
 ```
 
-4. Configure Backend Environment:
+4. Configure backend environment:
 Create a `.env` file in the backend directory with:
 ```env
 PORT=5000
@@ -64,13 +64,13 @@ DB_NAME=hotel-booking
 
 ### Development
 
-1. Start the Backend Server:
+1. Start the backend server:
 ```bash
 cd backend
 npm run dev
 ```
 
-2. Start the Frontend Development Server:
+2. Start the frontend development server:
 ```bash
 cd frontend
 npm run dev
@@ -78,9 +78,13 @@ npm run dev
 
 ## Development Resources
 
-- React Documentation: https://react.dev/learn
-- Express.js Learning Resources: https://expressjs.com/
-- Sequelize Documentation: https://sequelize.org/docs/v6/getting-started/
+- React documentation: https://react.dev/learn
+- Express.js documentation: https://expressjs.com/
+- Sequelize documentation: https://sequelize.org/docs/v6/getting-started/
+- MySQL documentation: https://dev.mysql.com/doc/mysql-getting-started/en/
+- Jest documentation: https://jestjs.io/docs/getting-started
+- Express Validator documentation: https://express-validator.github.io/docs/guides/getting-started
+- bcryptjs documentation: https://www.npmjs.com/package/bcrypt
 
 ## License
 
