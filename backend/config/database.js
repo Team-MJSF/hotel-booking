@@ -13,14 +13,23 @@ export const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER,
   logging: console.log,  // Logs SQL queries to console for debugging
 });
 
-// Test the database connection
+// Test the database connection and sync the database
 // This makes sure the application can connect to the database before proceeding
-sequelize.authenticate()
-  .then(() => {
+export const initializeDatabase = async () => {
+  try {
+    console.log('Testing database connection...');
+    await sequelize.authenticate();
     console.log('Database connection has been established successfully.');
-  })
-  .catch(err => {
-    console.error('Unable to connect to the database:', err);
-  });
+    
+    console.log('Synchronizing database with models...');
+    await sequelize.sync();
+    console.log('Database synchronized successfully.');
+    
+    return true;
+  } catch (err) {
+    console.error('Unable to connect to the database or failed synchronization:', err);
+    return false;
+  }
+};
 
 export default sequelize;
