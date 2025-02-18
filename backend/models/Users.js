@@ -1,11 +1,11 @@
 // This module defines the User model schema and behavior using Sequelize
-
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
+import bcrypt from 'bcryptjs';
 
 // Define the User model with its attributes and configuration
 // This model represents the 'Users' table in the database and handles all user-related operations
-const User = sequelize.define('User', {
+const Users = sequelize.define('Users', {
 
   // Primary key for user identification
   // Auto-incrementing integer that uniquely identifies each user
@@ -64,17 +64,29 @@ const User = sequelize.define('User', {
 }, {
   // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
   tableName: 'User',
-  timestamps: false
+  timestamps: false,
+  hooks: {
+    beforeCreate: async (user) => {
+      if (user.password) {
+        user.password = await bcrypt.hash(user.password, 10);
+      }
+    },
+    beforeUpdate: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 10);
+      }
+    }
+  }
 });
 
-User.associate = (models) => {
+Users.associate = (models) => {
   // One-to-one relationship with Booking
   // One user can have 0 or multiple bookings
-  User.hasMany(models.Booking, {
+  Users.hasMany(models.Bookings, {
     foreignKey: 'idUser',
     as: 'booking',
     onDelete: 'CASCADE' // If user is deleted, delete all associated bookings
   });
 };
 
-export default User;
+export default Users;
