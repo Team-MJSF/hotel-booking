@@ -1,11 +1,10 @@
 // This module defines the User model schema and behavior using Sequelize
-
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
 
 // Define the User model with its attributes and configuration
 // This model represents the 'Users' table in the database and handles all user-related operations
-const User = sequelize.define('User', {
+const Users = sequelize.define('Users', {
 
   // Primary key for user identification
   // Auto-incrementing integer that uniquely identifies each user
@@ -70,11 +69,11 @@ const User = sequelize.define('User', {
 User.associate = (models) => {
   // One-to-one relationship with Booking
   // One user can have 0 or multiple bookings
-  User.hasMany(models.Booking, {
+  User.hasMany(models.Bookings, {
     foreignKey: 'idUser',
     as: 'booking',
     onDelete: 'CASCADE' // If user is deleted, delete all associated bookings
   });
 };
 
-export default User;
+export default Users;

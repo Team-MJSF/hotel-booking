@@ -2,10 +2,10 @@
 
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import Booking from './Booking.js'; // Assuming there's a Booking model
+import Bookings from './Booking.js'; // Assuming there's a Booking model
 
 // Define the Payment model with its attributes and configuration
-const Payment = sequelize.define('Payment', {
+const Payments = sequelize.define('Payments', {
   
   // Primary key for payment identification
   idPayment: {
@@ -47,7 +47,7 @@ const Payment = sequelize.define('Payment', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Booking,
+      model: Bookings,
       key: 'idBooking',
     }
   }
@@ -61,11 +61,11 @@ const Payment = sequelize.define('Payment', {
 Payment.associate = (models) => {
   // One-to-one relationship with Booking
   // One payment belongs to exactly one booking
-  Payment.belongsTo(models.Booking, {
+  Payment.belongsTo(models.Bookings, {
     foreignkey: 'idBooking',
     as: 'booking',
     onDelete: 'CASCADE' // If booking is deleted, delete associated payment
   });
 };
 
-export default Payment;
+export default Payments;
