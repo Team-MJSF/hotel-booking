@@ -63,7 +63,7 @@ const Users = sequelize.define('Users', {
   }
 }, {
   // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
-  tableName: 'User',
+  tableName: 'Users',
   timestamps: false,
   hooks: {
     beforeCreate: async (user) => {
