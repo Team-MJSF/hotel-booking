@@ -3,6 +3,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
+import userRoutes from './routes/users.routes.js';
 
 // Load environment variables from .env file into process.env
 // This allows secure configuration without hardcoding sensitive data. Passwords and tokens will be stored there and used here.
@@ -17,6 +18,12 @@ console.log("App initialized...");
 app.use(cors());
 // Specifying that we want our Express request to be JSON
 app.use(express.json());
+
+// Configure routes
+app.use('/api/users', userRoutes);
+
+// Export the app for testing
+export default app;
 
 console.log("We are about to start the server...")
 // Start the server after database initialization
@@ -40,6 +47,8 @@ const startServer = async () => {
   }
 };
 
-// Start the server
-startServer();
+// Only start the server if not being run for tests
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
 
