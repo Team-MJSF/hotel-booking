@@ -27,7 +27,12 @@ export const up = async (queryInterface, Sequelize) => {
     },
     idBooking: {
       type: Sequelize.INTEGER,
-      allowNull: false
+      allowNull: false,
+      references: {
+        model: 'Bookings',
+        key: 'idBooking'
+      },
+      onDelete: 'CASCADE'
     }
   });
 };
