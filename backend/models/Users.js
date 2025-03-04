@@ -9,22 +9,19 @@ const Users = sequelize.define('Users', {
 
   // Primary key for user identification
   // Auto-incrementing integer that uniquely identifies each user
-  idUser: {
+  userId: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
     allowNull: false,
-    field: 'idUser',
+    field: 'userId'
   },
 
-  // User's full name
-  // Required field that stores the complete name of the user
   fullName: {
     type: DataTypes.STRING(255),
     allowNull: false,
     field: 'fullName'
   },
-
   // User's email address
   // Unique identifier used for authentication and communication
   // Includes email format validation
@@ -83,9 +80,9 @@ Users.associate = (models) => {
   // One-to-one relationship with Booking
   // One user can have 0 or multiple bookings
   Users.hasMany(models.Bookings, {
-    foreignKey: 'idUser',
-    as: 'booking',
-    onDelete: 'CASCADE' // If user is deleted, delete all associated bookings
+    foreignKey: 'userId',
+    as: 'bookings',
+    onDelete: 'CASCADE'
   });
 };
 

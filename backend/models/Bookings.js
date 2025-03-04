@@ -10,34 +10,36 @@ const Bookings = sequelize.define('Bookings', {
 
   // Primary key for booking identification
   // Auto-incrementing integer that uniquely identifies each booking
-  idBooking: {
+  bookingId: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
     allowNull: false,
-    field: 'idBooking',
+    field: 'bookingId'
   },
-
-  // The user ID who made the booking
-  // Foreign key reference to the 'Users' table
   userId: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: Users, // Refers to the 'User' model
-      key: 'idUser', // Refers to the primary key in the 'Users' table
+      model: Users,
+      key: 'userId'
     },
     field: 'userId'
   },
-
-  // The date and time of the booking
-  // Date and time when the booking is made or scheduled
+  roomId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: 'Rooms',
+      key: 'roomId'
+    },
+    field: 'roomId'
+  },
   bookingDate: {
     type: DataTypes.DATE,
     allowNull: false,
-    field: 'bookingDate',
+    field: 'bookingDate'
   },
-
   // Status of the booking
   // It can be 'Pending', 'Confirmed', or 'Cancelled'
   status: {
@@ -48,8 +50,9 @@ const Bookings = sequelize.define('Bookings', {
   }
 });
 
-// Set up associations with the User model (foreign key)
+// Set up associations with the User and Room models
 Bookings.belongsTo(Users, { foreignKey: 'userId' });
+Bookings.belongsTo(Rooms, { foreignKey: 'roomId' });
 
 // Export the Booking model for use in other parts of the application
 export default Bookings;

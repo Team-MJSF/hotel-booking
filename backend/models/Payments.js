@@ -2,54 +2,61 @@
 
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import Bookings from './Booking.js'; // Assuming there's a Booking model
+import Bookings from './Bookings.js'; // Importing the Bookings model
 
 // Define the Payment model with its attributes and configuration
 const Payments = sequelize.define('Payments', {
   
   // Primary key for payment identification
-  idPayment: {
+  paymentId: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
     allowNull: false,
-    field: 'idPayment',
+    field: 'paymentId'
   },
-
-  // Amount paid
+  bookingId: {
+    type: DataTypes.INTEGER,
+    allowNull: false,
+    references: {
+      model: Bookings,
+      key: 'bookingId'
+    },
+    field: 'bookingId'
+  },
+  
   amount: {
     type: DataTypes.DECIMAL(10, 2),
-    allowNull: false,
+    allowNull: false
   },
-
-  // Date and time when the payment was made
+  
   paymentDate: {
     type: DataTypes.DATE,
     allowNull: false,
     defaultValue: DataTypes.NOW,
+    field: 'paymentDate'
   },
-
-  // Payment method (e.g., Credit Card, PayPal, Bank Transfer, Cash)
+  
   paymentMethod: {
     type: DataTypes.ENUM('Credit Card', 'Debit Card', 'PayPal', 'Cash'),
     allowNull: false,
+    field: 'paymentMethod'
   },
-
-  // Payment status (Pending, Completed, Failed)
+  
   status: {
     type: DataTypes.ENUM('Pending', 'Completed', 'Failed'),
     allowNull: false,
-    defaultValue: 'Pending',
+    defaultValue: 'Pending'
   },
-
-  // Foreign key linking payment to a booking
+  
   idBooking: {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
       model: Bookings,
-      key: 'idBooking',
-    }
+      key: 'bookingId'
+    },
+    field: 'bookingId'
   }
 }, {
   // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
@@ -62,9 +69,9 @@ Payments.associate = (models) => {
   // One-to-one relationship with Booking
   // One payment belongs to exactly one booking
   Payments.belongsTo(models.Bookings, {
-    foreignkey: 'idBooking',
+    foreignKey: 'bookingId',
     as: 'booking',
-    onDelete: 'CASCADE' // If booking is deleted, delete associated payment
+    onDelete: 'CASCADE'
   });
 };
 
