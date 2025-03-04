@@ -2,11 +2,11 @@
 
 import { DataTypes } from 'sequelize';
 import { sequelize } from '../config/database.js';
-import User from './User.js'; // Importing the User model to set up the association
+import Users from './Users.js'; // Importing the User model to set up the association
 
 // Define the Booking model with its attributes and configuration
 // This model represents the 'Bookings' table in the database and handles all booking-related operations
-const Booking = sequelize.define('Booking', {
+const Bookings = sequelize.define('Bookings', {
 
   // Primary key for booking identification
   // Auto-incrementing integer that uniquely identifies each booking
@@ -24,7 +24,7 @@ const Booking = sequelize.define('Booking', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: User, // Refers to the 'User' model
+      model: Users, // Refers to the 'User' model
       key: 'idUser', // Refers to the primary key in the 'Users' table
     },
     field: 'userId'
@@ -49,7 +49,7 @@ const Booking = sequelize.define('Booking', {
 });
 
 // Set up associations with the User model (foreign key)
-Booking.belongsTo(User, { foreignKey: 'userId' });
+Bookings.belongsTo(Users, { foreignKey: 'userId' });
 
 // Export the Booking model for use in other parts of the application
-export default Booking;
+export default Bookings;

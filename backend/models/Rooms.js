@@ -5,7 +5,7 @@ import { sequelize } from '../config/database.js';
 
 // Define the Room model with its attributes and configuration
 // This model represents the 'Rooms' table in the database and handles all room-related operations
-const Room = sequelize.define('Room', {
+const Room = sequelize.define('Rooms', {
 
   // Primary key for room identification
   // Auto-incrementing integer that uniquely identifies each room
@@ -72,4 +72,4 @@ const Room = sequelize.define('Room', {
   }
 });
 
-export default Room;
+export default Rooms;
