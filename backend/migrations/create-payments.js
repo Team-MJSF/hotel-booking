@@ -1,6 +1,6 @@
 export const up = async (queryInterface, Sequelize) => {
   await queryInterface.createTable('Payments', {
-    idPayment: {
+    paymentId: {
       type: Sequelize.INTEGER,
       primaryKey: true,
       autoIncrement: true,
@@ -25,7 +25,7 @@ export const up = async (queryInterface, Sequelize) => {
       allowNull: false,
       defaultValue: 'Pending'
     },
-    idBooking: {
+    bookingId: {
       type: Sequelize.INTEGER,
       allowNull: false,
       references: {
