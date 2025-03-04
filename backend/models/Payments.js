@@ -53,7 +53,7 @@ const Payments = sequelize.define('Payments', {
   }
 }, {
   // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
-  tableName: 'Payment',
+  tableName: 'Payments',
   timestamps: false
 });
 
