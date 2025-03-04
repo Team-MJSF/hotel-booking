@@ -5,7 +5,7 @@ export const up = async (queryInterface, Sequelize) => {
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
-      field: 'idUser'
+      field: 'userId'
     },
     fullName: {
       type: Sequelize.STRING(255),
