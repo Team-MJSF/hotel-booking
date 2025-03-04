@@ -41,8 +41,6 @@ DB_HOST=localhost
 DB_USER=root
 DB_PASS=your_password
 DB_NAME=hotel-booking
-DB_NAME_TEST=hotel-booking-test  # For test environment
-NODE_ENV=development  # Options: development, test, production
 ```
 
 3. Set up the database:
@@ -65,9 +63,11 @@ npm run dev
 
 The application supports three environments:
 
-- `development` - Used during development, enables automatic model syncing
-- `test` - Used for running tests, uses a separate test database (DB_NAME_TEST)
-- `production` - Production environment, requires manual migrations
+- `development` - Used during development environment
+- `test` - Used for running tests
+- `production` - Production environment
+
+All environments use database migrations for schema management. This ensures consistent database structure across different environments.
 
 Environment-specific database configurations are managed through environment variables.
 
@@ -91,7 +91,7 @@ The project uses Jest for testing. Run the test suite with:
 npm test
 ```
 
-Tests use a separate database configuration defined by DB_NAME_TEST environment variable.
+Tests automatically use a separate test database named 'hotel_booking_test' when running in the test environment.
 
 ## Development Guidelines
 
@@ -127,11 +127,3 @@ The application uses the following main tables:
 - Payments - Payment transaction records
 
 Refer to the models directory for detailed schema definitions.
-
-## Development Guidelines
-
-1. Always use migrations for database schema changes
-2. Write tests for new features
-3. Follow the existing code structure and naming conventions
-4. Use environment variables for configuration
-5. Document API changes in the docs directory```
