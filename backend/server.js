@@ -2,29 +2,53 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { sequelize } from './config/database.js';
+import { initializeDatabase } from './config/database.js';
+import userRoutes from './routes/users.routes.js';
 
-// Load environment variables
+// Load environment variables from .env file into process.env
+// This allows secure configuration without hardcoding sensitive data. Passwords and tokens will be stored there and used here.
 dotenv.config();
-
 // Initialize express app
 const app = express();
+console.log("App initialized...");
 
-// Middleware
+// Middleware:
+// Helps manage HTTP requests from different origins (if frontend + backend domains are different)
+// Best security practice to define which origins can access API
 app.use(cors());
+// Specifying that we want our Express request to be JSON
 app.use(express.json());
 
-// Sync database
-sequelize.sync()
-  .then(() => {
-    console.log('Database synchronized');
-  })
-  .catch((err) => {
-    console.error('Error syncing database:', err);
-  });
+// Configure routes
+app.use('/api/users', userRoutes);
 
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+// Export the app for testing
+export default app;
+
+console.log("We are about to start the server...")
+// Start the server after database initialization
+const startServer = async () => {
+  try {
+    // Initialize database connection and sync models with imported function from database.js
+    const dbInitialized = await initializeDatabase();
+    if (!dbInitialized) {
+      console.error('Failed to initialize database. Exiting...');
+      process.exit(1);
+    }
+
+    // Start Express server using environment variable 'PORT' via dotenv object
+    const PORT = process.env.PORT || 5000;
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error('Error starting server:', error);
+    process.exit(1);
+  }
+};
+
+// Only start the server if not being run for tests
+if (process.env.NODE_ENV !== 'test') {
+  startServer();
+}
+

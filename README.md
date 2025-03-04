@@ -1,34 +1,88 @@
-# hotel-booking
+# Hotel Booking System
 
-Okay, I ran 'npm create vite@latest' and then selected React as our framework and JavaScript as our variant. Vite is a build tool that makes it easy to install and run the React framework files
+A full-stack web application for hotel booking management, built with React and Express.js.
 
-Then I ran 'npm init' in the backend folder to create an empty package.json file and ran 'npm install express sequelize cors dotenv mysql2 bcryptjs jsonwebtoken express-validator' to install our dependencies (packages/tools we will be using with Express/Node).
+## Project Overview
 
-Now that I have initialized our project with React and Express, the package.json files can be used with the 'npm install' command in both the frontend and backend folders during initial installation of a new project.
+This project is a modern hotel booking system that allows users to manage room reservations, user accounts, and payments. It consists of a React-based frontend for the user interface and an Express.js backend for API services.
 
+## Tech Stack
 
-An .env file will need to be created with the following format:
+### Frontend
+- React (with Vite as build tool)
+- JavaScript
 
+### Backend
+- Node.js with Express.js
+- Sequelize ORM
+- MySQL Database
+
+## Project Structure
+
+```
+hotel-booking/
+├── frontend/       # React frontend application
+├── backend/        # Express.js backend API
+└── README.md       # This file
+```
+
+Detailed documentation for each part can be found in their respective directories.
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v14 or higher)
+- MySQL server
+- npm
+
+### Installation
+
+1. Clone the repository
+
+2. Install Frontend Dependencies:
+```bash
+cd frontend
+npm install
+```
+
+3. Install Backend Dependencies:
+```bash
+cd backend
+npm install
+```
+
+4. Configure Backend Environment:
+Create a `.env` file in the backend directory with:
+```env
 PORT=5000
-
 DB_HOST=localhost
-
 DB_USER=root
-
-DB_PASS=
-
+DB_PASS=your_password
 DB_NAME=hotel-booking
+```
 
+### Development
 
+1. Start the Backend Server:
+```bash
+cd backend
+npm run dev
+```
 
-Once 'npm install' has been run in both folders, 'npm run dev' can be used in both folders to start the backend and frontend folders
+2. Start the Frontend Development Server:
+```bash
+cd frontend
+npm run dev
+```
 
+## Development Resources
 
-Here are some resources for our frontend and backend that may be helpful to work through when we are not working on the project itself:
+- React Documentation: https://react.dev/learn
+- Express.js Learning Resources: https://expressjs.com/
+- Sequelize Documentation: https://sequelize.org/docs/v6/getting-started/
 
-React - JavaScript frontend framework: https://react.dev/learn
+## License
 
-Express - Node.js (JavaScript) backend framework: https://www.linkedin.com/learning-login/share?account=76216298&forceAccount=false&redirect=https%3A%2F%2Fwww.linkedin.com%2Flearning%2Fexpress-essentials-build-powerful-web-apps-with-node-js%3Ftrk%3Dshare_ent_url%26shareId%3DkC0KM9j1RwGbhobPLwd%252F7A%253D%253D
-
-Sequelize - Node.js tool that will allow us to interact with the MySQL database using JavaScript instead of raw SQL: https://sequelize.org/docs/v6/getting-started/
+This project is licensed under the MIT License - see the LICENSE.md file for details.
 
