@@ -1,11 +1,11 @@
 export const up = async (queryInterface, Sequelize) => {
   await queryInterface.createTable('Payments', {
-    idPayment: {
+    paymentId: {
       type: Sequelize.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
-      field: 'idPayment'
+      field: 'paymentId'
     },
     amount: {
       type: Sequelize.DECIMAL(10, 2),
@@ -25,12 +25,12 @@ export const up = async (queryInterface, Sequelize) => {
       allowNull: false,
       defaultValue: 'Pending'
     },
-    idBooking: {
+    bookingId: {
       type: Sequelize.INTEGER,
       allowNull: false,
       references: {
         model: 'Bookings',
-        key: 'idBooking'
+        key: 'bookingId'
       },
       onDelete: 'CASCADE'
     }
