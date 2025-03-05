@@ -5,27 +5,24 @@ import { sequelize } from '../config/database.js';
 
 // Define the Room model with its attributes and configuration
 // This model represents the 'Rooms' table in the database and handles all room-related operations
-const Room = sequelize.define('Rooms', {
+const Rooms = sequelize.define('Rooms', {
 
   // Primary key for room identification
   // Auto-incrementing integer that uniquely identifies each room
-  idRoom: {
+  roomId: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
     allowNull: false,
-    field: 'idRoom',
+    field: 'roomId'
   },
 
-  // Unique room number
-  // Identifies the room within the hotel system
   roomNumber: {
     type: DataTypes.STRING(10),
     allowNull: false,
     unique: true,
     field: 'roomNumber'
   },
-
   // Type of room (e.g., Single, Double, Suite)
   roomType: {
     type: DataTypes.ENUM('Single', 'Double', 'Suite'),
@@ -71,5 +68,15 @@ const Room = sequelize.define('Rooms', {
     allowNull: true
   }
 });
+
+Rooms.associate = (models) => {
+  // One-to-many relationship with Booking
+  // One room can have multiple bookings over time
+  Rooms.hasMany(models.Bookings, {
+    foreignKey: 'roomId',
+    as: 'bookings',
+    onDelete: 'CASCADE'
+  });
+};
 
 export default Rooms;

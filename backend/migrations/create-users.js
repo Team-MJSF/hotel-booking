@@ -1,11 +1,11 @@
 export const up = async (queryInterface, Sequelize) => {
   await queryInterface.createTable('Users', {
-    idUser: {
+    userId: {
       type: Sequelize.INTEGER,
       primaryKey: true,
       autoIncrement: true,
       allowNull: false,
-      field: 'idUser'
+      field: 'userId'
     },
     fullName: {
       type: Sequelize.STRING(255),
