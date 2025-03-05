@@ -51,8 +51,10 @@ const Bookings = sequelize.define('Bookings', {
 });
 
 // Set up associations with the User and Room models
-Bookings.belongsTo(Users, { foreignKey: 'userId' });
-Bookings.belongsTo(Rooms, { foreignKey: 'roomId' });
+Bookings.associate = (models) => {
+  Bookings.belongsTo(models.Users, { foreignKey: 'userId' });
+  Bookings.belongsTo(models.Rooms, { foreignKey: 'roomId' });
+};
 
 // Export the Booking model for use in other parts of the application
 export default Bookings;
