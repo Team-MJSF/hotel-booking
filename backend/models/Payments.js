@@ -17,6 +17,7 @@ const Payments = sequelize.define('Payments', {
   },
   bookingId: {
     type: DataTypes.INTEGER,
+    primaryKey: false,
     allowNull: false,
     references: {
       model: Bookings,
@@ -49,15 +50,7 @@ const Payments = sequelize.define('Payments', {
     defaultValue: 'Pending'
   },
   
-  idBooking: {
-    type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: Bookings,
-      key: 'bookingId'
-    },
-    field: 'bookingId'
-  }
+
 }, {
   // Configure table to disable Sequelize's automatic timestamp fields (createdAt, updatedAt)
   tableName: 'Payments',
