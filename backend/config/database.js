@@ -1,61 +1,90 @@
 // This module handles the setup and configuration of the MySQL database connection using Sequelize
 import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
 // Load environment variables from .env file into process.env
 dotenv.config();
 
-// Initialize Sequelize with database configuration from environment variables
-const env = process.env.NODE_ENV || 'development';
+// Import database configuration
+import config from './config.js';
 
-// Determine database name based on environment
-const getDatabaseName = () => {
-  switch(env) {
-    case 'test':
-      return 'hotel_booking_test';
-    case 'production':
-      return 'hotel_booking';
-    default:
-      return 'hotel_booking_dev';
-  }
-};
+// Initialize Sequelize with database configuration
+const env = process.env.NODE_ENV || 'development';
+const dbConfig = config[env];
 
 export const sequelize = new Sequelize(
-  getDatabaseName(),
-  process.env.DB_USER,
-  process.env.DB_PASS,
+  dbConfig.database,
+  dbConfig.username,
+  dbConfig.password,
   {
-    host: process.env.DB_HOST || '127.0.0.1',
+    host: dbConfig.host,
     dialect: 'mysql',  // Specifies the database type we're connecting to
-    logging: console.log,  // Logs SQL queries to console for debugging
+    logging: env === 'test' ? false : console.log,  // Only log in non-test environments
   }
 );
 
-// Test the database connection and sync models
+// Convert exec to promise-based
+const execPromise = promisify(exec);
+
+// Run migrations
+const runMigrations = async () => {
+  try {
+    console.log('Running database migrations...');
+    await execPromise('npx sequelize-cli db:migrate');
+    console.log('Migrations completed successfully.');
+    return true;
+  } catch (error) {
+    console.error('Migration failed:', error);
+    return false;
+  }
+};
+
+// Create database if it doesn't exist
+const createDatabaseIfNotExists = async () => {
+  const tempSequelize = new Sequelize('', dbConfig.username, dbConfig.password, {
+    host: dbConfig.host,
+    dialect: 'mysql'
+  });
+
+  try {
+    await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    console.log('Database created or already exists');
+  } catch (error) {
+    console.error('Error creating database:', error);
+    throw error;
+  } finally {
+    await tempSequelize.close();
+  }
+};
+
+// Test the database connection and run migrations
 export const initializeDatabase = async () => {
   try {
+    console.log('Ensuring database exists...');
+    await createDatabaseIfNotExists();
+    
     console.log('Testing database connection...');
     await sequelize.authenticate();
-    console.log('Database connection has been established successfully.');
+    console.log('Database connection established successfully.');
 
-    // Log database configuration for debugging
-    console.log('Database Configuration:', {
-      database: getDatabaseName(),
-      host: process.env.DB_HOST || '127.0.0.1',
-      dialect: 'mysql'
-    });
-
-    // In development mode, we use migrations instead of sync
-    // Migrations should be run manually using npm run migrate
+    if (env === 'test') {
+      // For test environment, we still need to sync to create clean state
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 0');
+      await sequelize.sync({ force: true });
+      await sequelize.query('SET FOREIGN_KEY_CHECKS = 1');
+    } else {
+      // For non-test environments, run migrations
+      const migrationsSuccessful = await runMigrations();
+      if (!migrationsSuccessful) {
+        throw new Error('Failed to run migrations');
+      }
+    }
 
     return true;
-  } catch (err) {
-    console.error('Database Error:', {
-      message: err.message,
-      name: err.name,
-      code: err.parent?.code,
-      sqlState: err.parent?.sqlState
-    });
+  } catch (error) {
+    console.error('Unable to connect to the database:', error);
     return false;
   }
 };
