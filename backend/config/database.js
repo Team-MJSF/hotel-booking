@@ -41,9 +41,30 @@ const runMigrations = async () => {
   }
 };
 
+// Create database if it doesn't exist
+const createDatabaseIfNotExists = async () => {
+  const tempSequelize = new Sequelize('', dbConfig.username, dbConfig.password, {
+    host: dbConfig.host,
+    dialect: 'mysql'
+  });
+
+  try {
+    await tempSequelize.query(`CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`);
+    console.log('Database created or already exists');
+  } catch (error) {
+    console.error('Error creating database:', error);
+    throw error;
+  } finally {
+    await tempSequelize.close();
+  }
+};
+
 // Test the database connection and run migrations
 export const initializeDatabase = async () => {
   try {
+    console.log('Ensuring database exists...');
+    await createDatabaseIfNotExists();
+    
     console.log('Testing database connection...');
     await sequelize.authenticate();
     console.log('Database connection established successfully.');
