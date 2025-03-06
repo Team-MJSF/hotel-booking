@@ -98,7 +98,7 @@ export const deleteUser = async (request, response) => {
     }
 
     await user.destroy();
-    response.json({ message: 'User deleted successfully' });
+    response.status(204).json({ message: 'User deleted successfully'}).end();
   } catch (error) {
     response.status(500).json({ message: 'Error deleting user', error: error.message });
   }
