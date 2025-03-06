@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import { body, param } from 'express-validator';
-import { getAllBookings, getBookingById, createBooking, updateBooking, deleteBooking } from '../controllers/booking.controller.js';
+import { getAllBookings, getBookingById, createBooking, updateBooking, deleteBooking } from '../controllers/bookings.controller.js';
 
 // Create a new Express router instance for Booking routes
 const router = express.Router();
@@ -15,10 +15,12 @@ const router = express.Router();
 const validateBooking = [
   // Checks if the userId is provided and is a valid number 
   body('userId').isInt().withMessage('User ID must be a valid number'),
+  // Checks if the roomId is provided and is a valid number
+  body('roomId').isInt().withMessage('Room ID must be a valid number'),
   // Checks if the bookingDate is provided and is a valid date string
   body('bookingDate').isISO8601().withMessage('Booking date must be a valid date'),
   // Checks if the status is provided and is one of the valid statuses
-  body('status').optional().isIn(['Pending', 'Confirmed', 'Cancelled']).withMessage('Invalid status'),
+  body('status').optional().isIn(['Pending', 'Confirmed', 'Cancelled']).withMessage('Invalid status')
 ];
 
 /**
