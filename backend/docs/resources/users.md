@@ -1,6 +1,12 @@
 # User Management API
 
-This document details the endpoints for managing users in the Hotel Booking system.
+This document outlines the available endpoints for managing users in the Hotel Booking system.
+
+## Base URL
+
+```
+http://localhost:5000/api/users
+```
 
 ## Endpoints
 
