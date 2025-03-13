@@ -5,6 +5,8 @@ import dotenv from 'dotenv';
 import { initializeDatabase } from './config/database.js';
 import userRoutes from './routes/users.routes.js';
 import bookingRoutes from './routes/bookings.routes.js';
+import roomRoutes from './routes/rooms.routes.js';
+import paymentRoutes from './routes/payments.routes.js';
 
 // Load environment variables from .env file into process.env
 // This allows secure configuration without hardcoding sensitive data. Passwords and tokens will be stored there and used here.
@@ -23,6 +25,8 @@ app.use(express.json());
 // Configure routes
 app.use('/api/users', userRoutes);
 app.use('/api/bookings', bookingRoutes);
+app.use('/api/rooms', roomRoutes);
+app.use('/api/payments', paymentRoutes);
 
 // Export the app for testing
 export default app;
