@@ -1,14 +1,16 @@
 # Hotel Booking Backend
 
-This is the backend service for the Hotel Booking application, built with Express.js and Sequelize ORM.
+This is the backend service for the Hotel Booking application, providing a robust RESTful API for managing hotel bookings, users, rooms, and payments.
 
 ## Features
 
-- RESTful API endpoints for user management
-- MySQL database integration with Sequelize ORM
-- Input validation and error handling
-- Comprehensive test coverage
-- Database migrations support
+- User Management (authentication, roles, and permissions)
+- Room Management (availability, types, pricing)
+- Booking Management (create, update, cancel bookings)
+- Payment Processing (multiple payment methods)
+- Input Validation and Error Handling
+- Database Migrations
+- Comprehensive Test Coverage
 
 ## Tech Stack
 
@@ -29,101 +31,105 @@ This is the backend service for the Hotel Booking application, built with Expres
 
 ### Installation
 
-1. Install dependencies:
+1. Clone the repository and navigate to the backend directory
+
+2. Install dependencies:
 ```bash
 npm install
 ```
 
-2. Create a `.env` file in the root directory with the following variables:
+3. Create a `.env` file in the root directory with the following variables:
 ```env
 PORT=5000
 DB_HOST=localhost
 DB_USER=root
 DB_PASS=your_password
-DB_NAME=hotel-booking
+DB_NAME=hotel_booking
 ```
 
-3. Set up the database:
+4. Set up the database:
 ```bash
 # Run migrations to create database tables
 npm run migrate
-
-# If you need to undo migrations
-npm run migrate:undo
-# Or undo all migrations
-npm run migrate:undo:all
 ```
 
-4. Start the development server:
+5. Start the development server:
 ```bash
 npm run dev
 ```
 
-## Environment Configuration
-
-The application supports three environments:
-
-- `development` - Used during development environment
-- `test` - Used for running tests
-- `production` - Production environment
-
-All environments use database migrations for schema management. This ensures consistent database structure across different environments.
-
-Environment-specific database configurations are managed through environment variables.
-
 ## API Documentation
 
-### User Management
+### Base URL
+```
+http://localhost:5000/api
+```
 
-- `GET /api/users` - Get all users
-- `GET /api/users/:id` - Get user by ID
-- `POST /api/users` - Create new user
-- `PUT /api/users/:id` - Update user
-- `DELETE /api/users/:id` - Delete user
+### Available Endpoints
 
-Detailed API documentation can be found in the `/docs` directory.
+#### Users
+- GET /api/users - Get all users
+- GET /api/users/:id - Get user by ID
+- POST /api/users - Create new user
+- PUT /api/users/:id - Update user
+- DELETE /api/users/:id - Delete user
 
-## Testing
+#### Rooms
+- GET /api/rooms - Get all rooms
+- GET /api/rooms/:id - Get room by ID
+- POST /api/rooms - Create new room
+- PUT /api/rooms/:id - Update room
+- DELETE /api/rooms/:id - Delete room
 
-The project uses Jest for testing. Run the test suite with:
+#### Bookings
+- GET /api/bookings - Get all bookings
+- GET /api/bookings/:id - Get booking by ID
+- POST /api/bookings - Create new booking
+- PUT /api/bookings/:id - Update booking
+- DELETE /api/bookings/:id - Delete booking
 
+#### Payments
+- GET /api/payments - Get all payments
+- GET /api/payments/:id - Get payment by ID
+- POST /api/payments - Create new payment
+- PUT /api/payments/:id - Update payment
+- DELETE /api/payments/:id - Delete payment
+
+## Response Format
+
+Successful Response:
+```json
+{
+  "success": true,
+  "data": {},
+  "message": "Operation successful"
+}
+```
+
+Error Response:
+```json
+{
+  "success": false,
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Error description"
+  }
+}
+```
+
+## Development
+
+### Running Tests
 ```bash
 npm test
 ```
 
-Tests automatically use a separate test database named 'hotel_booking_test' when running in the test environment.
-
-## Development Guidelines
-
-1. Always use migrations for database schema changes
-2. Write tests for new features and maintain existing ones
-3. Follow the existing code structure and naming conventions
-4. Use environment variables for configuration
-5. Document API changes in the docs directory
-6. Validate all input data using express-validator
-7. Handle errors consistently using the standard error response format
-
-## Project Structure
-
-```
-backend/
-├── config/         # Configuration files
-├── controllers/    # Request handlers
-├── docs/           # API documentation
-├── migrations/     # Database migrations
-├── models/         # Sequelize models
-├── routes/         # API routes
-├── tests/          # Test files
-└── server.js       # Application entry point
+### Code Style
+This project uses ESLint for code style enforcement. Run linting with:
+```bash
+npm run lint
 ```
 
-## Database Schema
+## License
 
-The application uses the following main tables:
-
-- Users - User account management
-- Bookings - Reservation records
-- Rooms - Hotel room information
-- Payments - Payment transaction records
-
-Refer to the models directory for detailed schema definitions.
+This project is licensed under the MIT License - see the LICENSE file for details

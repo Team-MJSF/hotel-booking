@@ -48,7 +48,7 @@ export const createUser = async (request, response) => {
       role: request.body.role || 'Guest'
     });
 
-    const { password, ...userWithoutPassword } = newUser.toJSON();
+    const { ...userWithoutPassword } = newUser.toJSON();
     response.status(201).json(userWithoutPassword);
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
@@ -74,13 +74,11 @@ export const updateUser = async (request, response) => {
     await user.update({
       fullName: request.body.fullName,
       email: request.body.email,
-      password: request.body.password,
       phoneNumber: request.body.phoneNumber,
       role: request.body.role || user.role
     });
 
-    const { password, ...userWithoutPassword } = user.toJSON();
-    response.json(userWithoutPassword);
+    response.json(user.toJSON());
   } catch (error) {
     if (error.name === 'SequelizeUniqueConstraintError') {
       return response.status(400).json({ message: 'Email already exists' });
