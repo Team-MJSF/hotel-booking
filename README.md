@@ -59,9 +59,10 @@ Create a `.env` file in the backend directory with:
 PORT=5000
 
 // DB
+DB_PORT=3306
 DB_HOST=localhost
 DB_USER=root
-DB_PASS=password
+DB_PASS=your_password
 ```
 
 5. Set up the Database:
