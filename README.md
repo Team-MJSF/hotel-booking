@@ -55,11 +55,22 @@ npm install
 4. Configure Backend Environment:
 Create a `.env` file in the backend directory with:
 ```env
+// APP
 PORT=5000
+NODE_ENV=development
+
+// DB
+DB_PORT=3306
 DB_HOST=localhost
 DB_USER=root
 DB_PASS=your_password
-DB_NAME=hotel-booking
+```
+
+5. Set up the Database:
+```bash
+cd backend
+# Create and set up all databases (development, test, production)
+npm run setup:db:all
 ```
 
 ### Development
