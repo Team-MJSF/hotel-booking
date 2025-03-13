@@ -15,7 +15,7 @@
     "db:create": "sequelize-cli db:create",
     "db:migrate": "sequelize-cli db:migrate",
     "setup:db": "npm run db:create && npm run db:migrate",
-    "setup:db:all": "NODE_ENV=development npm run db:create && NODE_ENV=test npm run db:create && NODE_ENV=production npm run db:create && npm run db:migrate"
+    "setup:db:all": "cross-env NODE_ENV=development npm run db:create && cross-env NODE_ENV=test npm run db:create && cross-env NODE_ENV=production npm run db:create && npm run db:migrate"
   },
   "jest": {
     "testEnvironment": "node",
@@ -36,6 +36,7 @@
     "sequelize": "^6.37.5"
   },
   "devDependencies": {
+    "cross-env": "^7.0.3",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
     "nodemon": "^3.0.1",
