@@ -11,7 +11,7 @@ import bookingRoutes from './routes/bookings.routes.js';
 dotenv.config();
 // Initialize express app
 const app = express();
-console.log("App initialized...");
+console.log('App initialized...');
 
 // Middleware:
 // Helps manage HTTP requests from different origins (if frontend + backend domains are different)
@@ -27,7 +27,7 @@ app.use('/api/bookings', bookingRoutes);
 // Export the app for testing
 export default app;
 
-console.log("We are about to start the server...")
+console.log('We are about to start the server...');
 // Start the server after database initialization
 const startServer = async () => {
   try {

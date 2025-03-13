@@ -4,6 +4,7 @@
  */
 import { validationResult } from 'express-validator';
 import Payments from '../models/Payments.js';
+import Bookings from '../models/Bookings.js';
 
 // Get all payments
 export const getAllPayments = async (request, response) => {
