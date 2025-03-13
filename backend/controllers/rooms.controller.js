@@ -3,12 +3,47 @@
  * Handles all business logic for Room operations
  */
 import { validationResult } from 'express-validator';
+import { Op } from 'sequelize';
 import Rooms from '../models/Rooms.js';
 
-// Get all rooms
+// Get all rooms with optional filtering
 export const getAllRooms = async (request, response) => {
   try {
-    const rooms = await Rooms.findAll();
+    const { roomType, minPrice, maxPrice, maxGuests, availabilityStatus } = request.query;
+    
+    // Build filter object for Sequelize query
+    const filter = {};
+    
+    // Add filters based on query parameters
+    if (roomType) {
+      filter.roomType = roomType;
+    }
+    
+    if (minPrice || maxPrice) {
+      filter.pricePerNight = {};
+      if (minPrice) {
+        filter.pricePerNight[Op.gte] = parseFloat(minPrice);
+      }
+      if (maxPrice) {
+        filter.pricePerNight[Op.lte] = parseFloat(maxPrice);
+      }
+    }
+    
+    if (maxGuests) {
+      filter.maxGuests = {
+        [Op.gte]: parseInt(maxGuests, 10)
+      };
+    }
+    
+    if (availabilityStatus) {
+      filter.availabilityStatus = availabilityStatus;
+    }
+    
+    // Apply filters to query
+    const rooms = await Rooms.findAll({
+      where: filter
+    });
+    
     response.json(rooms);
   } catch (error) {
     response.status(500).json({ message: 'Error fetching rooms', error: error.message });
