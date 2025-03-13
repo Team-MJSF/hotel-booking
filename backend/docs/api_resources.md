@@ -1,6 +1,6 @@
 # Hotel Booking API Resources
 
-Welcome to the Hotel Booking API documentation. This API provides endpoints for managing hotel bookings, users, and related resources.
+Welcome to the Hotel Booking API documentation. This API provides endpoints for managing hotel bookings, users, rooms, and payments.
 
 ## Available Resources
 
@@ -9,6 +9,24 @@ Welcome to the Hotel Booking API documentation. This API provides endpoints for 
   - Create, read, update, and delete users
   - Manage user roles and permissions
   - User authentication
+
+### Room Management
+- [Room API Documentation](./resources/rooms.md)
+  - Manage room inventory
+  - Room types and pricing
+  - Room availability status
+
+### Booking Management
+- [Booking API Documentation](./resources/bookings.md)
+  - Create and manage bookings
+  - Check-in and check-out dates
+  - Special requests handling
+
+### Payment Management
+- [Payment API Documentation](./resources/payments.md)
+  - Process payments
+  - Multiple payment methods
+  - Transaction tracking
 
 ## Base URL
 
