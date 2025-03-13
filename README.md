@@ -55,10 +55,13 @@ npm install
 4. Configure Backend Environment:
 Create a `.env` file in the backend directory with:
 ```env
-PORT=3306
+// APP
+PORT=5000
+
+// DB
 DB_HOST=localhost
 DB_USER=root
-DB_PASS=your_password
+DB_PASS=password
 ```
 
 5. Set up the Database:

@@ -40,10 +40,13 @@ npm install
 
 3. Create a `.env` file in the root directory with the following variables:
 ```env
-PORT=3306
+// APP
+PORT=5000
+
+// DB
 DB_HOST=localhost
 DB_USER=root
-DB_PASS=your_password
+DB_PASS=password
 ```
 
 4. Set up the database:
