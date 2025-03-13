@@ -42,6 +42,7 @@ npm install
 ```env
 // APP
 PORT=5000
+NODE_ENV=development
 
 // DB
 DB_PORT=3306

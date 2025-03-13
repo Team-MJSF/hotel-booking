@@ -57,6 +57,7 @@ Create a `.env` file in the backend directory with:
 ```env
 // APP
 PORT=5000
+NODE_ENV=development
 
 // DB
 DB_PORT=3306
