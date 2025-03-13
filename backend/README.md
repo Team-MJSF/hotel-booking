@@ -40,7 +40,7 @@ npm install
 
 3. Create a `.env` file in the root directory with the following variables:
 ```env
-PORT=5000
+PORT=3306
 DB_HOST=localhost
 DB_USER=root
 DB_PASS=your_password
@@ -48,8 +48,8 @@ DB_PASS=your_password
 
 4. Set up the database:
 ```bash
-# Run migrations to create database tables
-npm run migrate
+# Create and set up all databases (development, test, production)
+npm run setup:db:all
 ```
 
 5. Start the development server:
