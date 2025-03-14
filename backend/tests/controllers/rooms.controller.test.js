@@ -4,7 +4,7 @@
  */
 
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
-import { getAllRooms, checkRoomAvailability } from '../../controllers/rooms.controller.js';
+import { getAllRooms, checkRoomAvailability, getRoomsByAmenities } from '../../controllers/rooms.controller.js';
 import Rooms from '../../models/Rooms.js';
 import Bookings from '../../models/Bookings.js';
 
@@ -510,6 +510,159 @@ describe('Rooms Controller - checkRoomAvailability', () => {
     expect(res.status).toHaveBeenCalledWith(500);
     expect(res.json).toHaveBeenCalledWith({
       message: 'Error checking room availability',
+      error: errorMessage
+    });
+  });
+});
+
+describe('Rooms Controller - getRoomsByAmenities', () => {
+  // Reset mocks before each test
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test('should return rooms with specified amenities (array format)', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 2, roomType: 'Double', amenities: ['wifi', 'tv'] },
+      { roomId: 3, roomType: 'Suite', amenities: ['wifi', 'tv', 'minibar', 'jacuzzi'] }
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi,minibar' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getRoomsByAmenities(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({ where: {} });
+    expect(res.json).toHaveBeenCalledWith({
+      rooms: [
+        mockRoomsData[0], // Room 1 has both wifi and minibar
+        mockRoomsData[2]  // Room 3 has both wifi and minibar
+      ],
+      totalRooms: 2,
+      requestedAmenities: ['wifi,minibar']
+    });
+  });
+
+  test('should return rooms with specified amenities (object format)', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', amenities: { wifi: true, tv: true, minibar: true } },
+      { roomId: 2, roomType: 'Double', amenities: { wifi: true, tv: true, minibar: false } },
+      { roomId: 3, roomType: 'Suite', amenities: { wifi: true, tv: true, minibar: true, jacuzzi: true } }
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi,minibar' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getRoomsByAmenities(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({ where: {} });
+    expect(res.json).toHaveBeenCalledWith({
+      rooms: [
+        mockRoomsData[0], // Room 1 has both wifi and minibar
+        mockRoomsData[2]  // Room 3 has both wifi and minibar
+      ],
+      totalRooms: 2,
+      requestedAmenities: ['wifi,minibar']
+    });
+  });
+
+  test('should filter by both roomType and amenities', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 2, roomType: 'Double', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 3, roomType: 'Suite', amenities: ['wifi', 'tv', 'minibar', 'jacuzzi'] }
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi,minibar', roomType: 'Double' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getRoomsByAmenities(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({
+      where: { roomType: 'Double' }
+    });
+    expect(res.json).toHaveBeenCalledWith({
+      rooms: [
+        mockRoomsData[1] // Only Room 2 is Double with both wifi and minibar
+      ],
+      totalRooms: 1,
+      requestedAmenities: ['wifi,minibar']
+    });
+  });
+
+  test('should handle rooms with no amenities', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 2, roomType: 'Double', amenities: null },
+      { roomId: 3, roomType: 'Suite' } // No amenities property
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getRoomsByAmenities(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({ where: {} });
+    expect(res.json).toHaveBeenCalledWith({
+      rooms: [
+        mockRoomsData[0] // Only Room 1 has wifi
+      ],
+      totalRooms: 1,
+      requestedAmenities: ['wifi']
+    });
+  });
+
+  test('should return 400 if amenities parameter is missing', async () => {
+    // SETUP
+    const req = { query: {} }; // No amenities parameter
+    const res = mockResponse();
+    
+    // CALL
+    await getRoomsByAmenities(req, res);
+    
+    // ASSERTION
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Amenities parameter is required'
+    });
+  });
+
+  test('should handle errors and return 500 status', async () => {
+    // SETUP
+    const errorMessage = 'Database error';
+    Rooms.findAll.mockRejectedValue(new Error(errorMessage));
+    
+    const req = { query: { amenities: 'wifi' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getRoomsByAmenities(req, res);
+    
+    // ASSERTION
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error fetching rooms by amenities',
       error: errorMessage
     });
   });
