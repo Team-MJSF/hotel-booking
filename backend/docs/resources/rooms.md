@@ -266,6 +266,62 @@ curl -X GET \
 }
 ```
 
+### Get Rooms by Amenities
+
+Filter rooms based on specific amenities, with optional room type filtering.
+
+```http
+GET /api/rooms/amenities?amenities=AMENITY1,AMENITY2&roomType=TYPE
+```
+
+**Query Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| amenities | string | Yes | Comma-separated list of amenities to filter by (e.g., "wifi,minibar") |
+| roomType | string | No | Optional filter for room type (Single, Double, Suite) |
+
+**cURL Example**
+```bash
+curl -X GET \
+  'http://localhost:5000/api/rooms/amenities?amenities=wifi,minibar&roomType=Double'
+```
+
+**Response** (200 OK)
+```json
+{
+  "rooms": [
+    {
+      "roomId": 2,
+      "roomNumber": "102",
+      "roomType": "Double",
+      "pricePerNight": 150.00,
+      "maxGuests": 2,
+      "description": "Comfortable double room with amenities",
+      "availabilityStatus": "Available",
+      "amenities": ["wifi", "tv", "minibar"]
+    }
+  ],
+  "totalRooms": 1,
+  "requestedAmenities": ["wifi,minibar"]
+}
+```
+
+**Error Response** (400 Bad Request)
+```json
+{
+  "message": "Amenities parameter is required"
+}
+```
+
+**Error Response** (500 Internal Server Error)
+```json
+{
+  "message": "Error fetching rooms by amenities",
+  "error": "Error details"
+}
+```
+
 ## Error Responses
 
 ### Validation Error (400 Bad Request)

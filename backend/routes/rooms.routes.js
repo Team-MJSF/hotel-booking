@@ -4,7 +4,7 @@
  */
 import express from 'express';
 import { body } from 'express-validator';
-import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, checkRoomAvailability } from '../controllers/rooms.controller.js';
+import { getAllRooms, getRoomById, createRoom, updateRoom, deleteRoom, checkRoomAvailability, getRoomsByAmenities } from '../controllers/rooms.controller.js';
 
 // Create a new Express router instance for Room routes
 const router = express.Router();
@@ -55,5 +55,11 @@ router.delete('/:id', deleteRoom);
  * Checks room availability for a specified date range
  */
 router.get('/availability', checkRoomAvailability);
+
+/**
+ * GET /api/rooms/amenities
+ * Retrieves rooms that have specific amenities
+ */
+router.get('/amenities', getRoomsByAmenities);
 
 export default router;
