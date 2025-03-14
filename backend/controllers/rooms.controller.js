@@ -41,15 +41,9 @@ export const getAllRooms = async (request, response) => {
     }
 
     // Handle amenities filtering
-    if (amenities) {
-      // Parse amenities from query string to array
-      const amenitiesList = amenities.split(',');
-      
-      // We'll fetch all rooms matching other criteria first
-      // Then filter by amenities in JavaScript to handle different storage formats
-      // This is more reliable than using database-specific JSON operators
-      const hasAmenitiesFilter = true;
-    }
+    // We'll fetch all rooms matching other criteria first
+    // Then filter by amenities in JavaScript to handle different storage formats
+    // This is more reliable than using database-specific JSON operators
     
     // Apply filters to query
     const rooms = await Rooms.findAll({
@@ -67,15 +61,36 @@ export const getAllRooms = async (request, response) => {
         if (!room.amenities) return false;
         
         // Check if all requested amenities are included in the room's amenities
-        return amenitiesList.every(amenity => 
-          // Handle different storage formats (array or object)
-          Array.isArray(room.amenities) 
-            ? room.amenities.includes(amenity)
-            : room.amenities[amenity] === true || 
-              (typeof room.amenities === 'object' && 
-               Object.keys(room.amenities).includes(amenity))
-        );
+        return amenitiesList.every(amenity => {
+          // Handle different storage formats
+          if (Array.isArray(room.amenities)) {
+            // Array format: ['wifi', 'tv', 'minibar']
+            return room.amenities.includes(amenity);
+          } else if (typeof room.amenities === 'object') {
+            // Object format: {wifi: true, tv: true, minibar: false}
+            return room.amenities[amenity] === true;
+          }
+          return false;
+        });
       });
+      
+      // If other filters were applied, ensure we only return rooms that match ALL criteria
+      // This ensures that the amenities filter doesn't override the database filters
+      if (Object.keys(filter).length > 0) {
+        filteredRooms = filteredRooms.filter(room => {
+          // Check if room matches all the database filters
+          if (roomType && room.roomType !== roomType) return false;
+          
+          if (minPrice && room.pricePerNight < parseFloat(minPrice)) return false;
+          if (maxPrice && room.pricePerNight > parseFloat(maxPrice)) return false;
+          
+          if (maxGuests && room.maxGuests < parseInt(maxGuests, 10)) return false;
+          
+          if (availabilityStatus && room.availabilityStatus !== availabilityStatus) return false;
+          
+          return true;
+        });
+      }
     }
     
     response.json(filteredRooms);
@@ -290,13 +305,17 @@ export const getRoomsByAmenities = async (request, response) => {
       if (!room.amenities) return false;
       
       // Check if all requested amenities are included in the room's amenities
-      return amenitiesList.every(amenity => 
-        Array.isArray(room.amenities) 
-          ? room.amenities.includes(amenity)
-          : room.amenities[amenity] === true || 
-            (typeof room.amenities === 'object' && 
-             Object.keys(room.amenities).includes(amenity))
-      );
+      return amenitiesList.every(amenity => {
+        // Handle different storage formats
+        if (Array.isArray(room.amenities)) {
+          // Array format: ['wifi', 'tv', 'minibar']
+          return room.amenities.includes(amenity);
+        } else if (typeof room.amenities === 'object') {
+          // Object format: {wifi: true, tv: true, minibar: false}
+          return room.amenities[amenity] === true;
+        }
+        return false;
+      });
     });
     
     response.json({
