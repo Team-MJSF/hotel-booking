@@ -43,7 +43,8 @@ export const createBooking = async (request, response) => {
     const newBooking = await Bookings.create({
       userId: request.body.userId,
       roomId: request.body.roomId,
-      bookingDate: request.body.bookingDate,
+      checkInDate: request.body.checkInDate,
+      checkOutDate: request.body.checkOutDate,
       status: request.body.status || 'Pending',
     });
 
@@ -69,7 +70,8 @@ export const updateBooking = async (request, response) => {
     await booking.update({
       userId: request.body.userId || booking.userId,
       roomId: request.body.roomId || booking.roomId,
-      bookingDate: request.body.bookingDate || booking.bookingDate,
+      checkInDate: request.body.checkInDate || booking.checkInDate,
+      checkOutDate: request.body.checkOutDate || booking.checkOutDate,
       status: request.body.status || booking.status,
     });
 
