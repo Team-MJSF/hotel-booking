@@ -35,10 +35,15 @@ const Bookings = sequelize.define('Bookings', {
     },
     field: 'roomId'
   },
-  bookingDate: {
+  checkInDate: {
     type: DataTypes.DATE,
     allowNull: false,
-    field: 'bookingDate'
+    field: 'checkInDate'
+  },
+  checkOutDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    field: 'checkOutDate'
   },
   // Status of the booking
   // It can be 'Pending', 'Confirmed', or 'Cancelled'

@@ -198,6 +198,74 @@ curl -X DELETE \
 }
 ```
 
+### Check Room Availability
+
+Check availability of rooms for a specific date range with optional filtering by room type and guest capacity.
+
+```http
+GET /api/rooms/availability?checkInDate=YYYY-MM-DD&checkOutDate=YYYY-MM-DD&roomType=TYPE&maxGuests=NUMBER
+```
+
+**Query Parameters**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| checkInDate | string (YYYY-MM-DD) | Yes | The requested check-in date |
+| checkOutDate | string (YYYY-MM-DD) | Yes | The requested check-out date |
+| roomType | string | No | Filter by room type (Single, Double, Suite) |
+| maxGuests | number | No | Filter by minimum guest capacity |
+
+**cURL Example**
+```bash
+curl -X GET \
+  'http://localhost:5000/api/rooms/availability?checkInDate=2023-12-01&checkOutDate=2023-12-05&roomType=Double&maxGuests=2'
+```
+
+**Response** (200 OK)
+```json
+{
+  "availableRooms": [
+    {
+      "roomId": 1,
+      "roomNumber": "101",
+      "roomType": "Double",
+      "pricePerNight": 150.00,
+      "maxGuests": 2,
+      "description": "Comfortable double room with queen bed",
+      "availabilityStatus": "Available",
+      "amenities": ["TV", "WiFi", "Air Conditioning"]
+    },
+    {
+      "roomId": 3,
+      "roomNumber": "103",
+      "roomType": "Double",
+      "pricePerNight": 160.00,
+      "maxGuests": 2,
+      "description": "Spacious double room with city view",
+      "availabilityStatus": "Available",
+      "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar"]
+    }
+  ],
+  "totalAvailable": 2
+}
+```
+
+**Error Responses**
+
+*Invalid Date Parameters (400 Bad Request)*
+```json
+{
+  "message": "Both checkInDate and checkOutDate are required"
+}
+```
+
+*Invalid Date Range (400 Bad Request)*
+```json
+{
+  "message": "checkOutDate must be after checkInDate"
+}
+```
+
 ## Error Responses
 
 ### Validation Error (400 Bad Request)
