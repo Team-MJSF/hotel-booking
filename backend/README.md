@@ -11,6 +11,7 @@ This is the backend service for the Hotel Booking application, providing a robus
 - Input Validation and Error Handling
 - Database Migrations
 - Comprehensive Test Coverage
+- Factory Pattern & Dependency Injection for testable controllers
 
 ## Tech Stack
 
@@ -21,6 +22,46 @@ This is the backend service for the Hotel Booking application, providing a robus
 - Jest - Testing framework
 - Express Validator - Input validation
 - bcryptjs - Password hashing
+
+## Architecture
+
+### Controller Design Pattern
+
+This project uses the factory pattern with dependency injection for controllers, providing several benefits:
+
+- **Testability**: Dependencies can be easily mocked for unit testing
+- **Maintainability**: Clear separation of concerns and explicit dependencies
+- **Flexibility**: Controllers can be instantiated with different configurations
+
+Example of a controller using the factory pattern:
+
+```javascript
+// Controller factory function
+export const createUsersController = (deps = {}) => {
+  // Use provided dependencies or defaults
+  const {
+    Users = DefaultUsers,
+    validator = validationResult
+  } = deps;
+  
+  // Controller methods
+  const getAllUsers = async (request, response) => {
+    // Implementation using injected dependencies
+  };
+  
+  // Return controller methods
+  return {
+    getAllUsers,
+    // other methods...
+  };
+};
+
+// For backward compatibility
+const defaultController = createUsersController();
+export const { getAllUsers, /*...*/ } = defaultController;
+```
+
+This pattern is used across all controllers (Users, Rooms, Bookings, Payments) for consistency.
 
 ## Getting Started
 
@@ -62,6 +103,57 @@ npm run setup:db:all
 npm run dev
 ```
 
+## Testing
+
+The project includes comprehensive unit and integration tests using Jest.
+
+### Running Tests
+
+Run all tests:
+```bash
+npm test
+```
+
+Run specific test files:
+```bash
+npm test -- tests/controllers/users.controller.test.js
+```
+
+### Testing Approach
+
+- **Unit Tests**: Each controller has dedicated test files that verify functionality in isolation
+- **Dependency Injection**: Tests use mock implementations of models and services
+- **Test Organization**: Tests are organized into describe blocks by function with clear setup, call, and assertion sections
+
+Example test using dependency injection:
+
+```javascript
+// Mock dependencies
+const mockUsersModel = {
+  findAll: jest.fn(),
+  findByPk: jest.fn(),
+  create: jest.fn()
+};
+
+// Create controller with mocks
+const usersController = createUsersController({
+  Users: mockUsersModel,
+  validator: mockValidator
+});
+
+test('should return all users', async () => {
+  // SETUP: Configure mock behavior
+  mockUsersModel.findAll.mockResolvedValue([{ id: 1, name: 'Test User' }]);
+  
+  // CALL: Execute the function being tested
+  await usersController.getAllUsers(req, res);
+  
+  // ASSERTION: Verify expected outcomes
+  expect(mockUsersModel.findAll).toHaveBeenCalled();
+  expect(res.json).toHaveBeenCalledWith([{ id: 1, name: 'Test User' }]);
+});
+```
+
 ## API Documentation
 
 ### Base URL
@@ -100,26 +192,21 @@ http://localhost:5000/api
 - POST /api/payments - Create new payment
 - PUT /api/payments/:id - Update payment
 - DELETE /api/payments/:id - Delete payment
+- POST /api/payments/:id/process - Process a payment
 
-## Response Format
+### Error Handling
 
-Successful Response:
+All controllers implement consistent error handling:
+
+- **400 Bad Request**: Validation errors or invalid input
+- **404 Not Found**: Resource does not exist
+- **500 Internal Server Error**: Database or processing errors
+
+Example error response:
 ```json
 {
-  "success": true,
-  "data": {},
-  "message": "Operation successful"
-}
-```
-
-Error Response:
-```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Error description"
-  }
+  "message": "Error message",
+  "error": "Detailed error information"
 }
 ```
 
