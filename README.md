@@ -16,6 +16,25 @@ This project is a modern hotel booking system that allows users to manage room r
 - Node.js with Express.js
 - Sequelize ORM
 - MySQL Database
+- Jest for testing
+- Factory pattern with dependency injection for controllers
+
+## Architecture Highlights
+
+### Backend Design
+
+- **Controller Factory Pattern**: Uses factory functions with dependency injection for better testability and maintainability
+- **Comprehensive Test Coverage**: Each controller has dedicated test suites
+- **Consistent Error Handling**: Standardized approach across all endpoints
+- **Model-Controller Separation**: Clear separation of concerns between data models and business logic
+
+### Testing Approach
+
+The project includes extensive unit tests for controllers and models:
+
+- **Mocking Strategy**: Dependencies are mocked using Jest's mocking facilities
+- **Test Organization**: Tests follow the setup-call-assertion pattern for clarity
+- **Isolation**: Each test uses fresh instances of controllers with custom dependencies
 
 ## Project Structure
 
@@ -23,6 +42,11 @@ This project is a modern hotel booking system that allows users to manage room r
 hotel-booking/
 ├── frontend/       # React frontend application
 ├── backend/        # Express.js backend API
+│   ├── controllers/  # Business logic using factory pattern
+│   ├── models/       # Sequelize data models
+│   ├── routes/       # API routes
+│   ├── tests/        # Jest test files
+│   └── ...
 └── README.md       # This file
 ```
 
@@ -86,6 +110,24 @@ npm run dev
 cd frontend
 npm run dev
 ```
+
+### Testing
+
+Run backend tests:
+```bash
+cd backend
+npm test
+```
+
+Run specific test files:
+```bash
+cd backend
+npm test -- tests/controllers/users.controller.test.js
+```
+
+## API Documentation
+
+For detailed API documentation, please see the [Backend README](backend/README.md).
 
 ## Development Resources
 
