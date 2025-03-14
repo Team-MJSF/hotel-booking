@@ -381,12 +381,110 @@ export const createRoomsController = (deps = {}) => {
     }
   };
 
+  /**
+   * Delete a room by ID
+   * @param {Object} req - Express request object
+   * @param {Object} res - Express response object
+   * @returns {Object} Response with status message
+   */
+  const deleteRoom = async (req, res) => {
+    try {
+      // Find the room by ID
+      const room = await Rooms.findByPk(req.params.id);
+      
+      // If room doesn't exist, return 404
+      if (!room) {
+        return res.status(404).json({ message: 'Room not found' });
+      }
+      
+      // Delete the room
+      await room.destroy();
+      
+      // Return success message
+      return res.json({ message: 'Room deleted successfully' });
+    } catch (error) {
+      // Handle any errors
+      return res.status(500).json({
+        message: 'Error deleting room',
+        error: error.message
+      });
+    }
+  };
+
+  /**
+   * Get a room by ID
+   * @param {Object} req - Express request object with room ID parameter
+   * @param {Object} res - Express response object
+   * @returns {Object} Room data or error message
+   */
+  const getRoomById = async (req, res) => {
+    try {
+      // Find the room by ID
+      const room = await Rooms.findByPk(req.params.id);
+      
+      // If room doesn't exist, return 404
+      if (!room) {
+        return res.status(404).json({ message: 'Room not found' });
+      }
+      
+      // Return the room data
+      return res.json(room);
+    } catch (error) {
+      // Handle any errors
+      return res.status(500).json({
+        message: 'Error retrieving room',
+        error: error.message
+      });
+    }
+  };
+
+  /**
+   * Update a room by ID
+   * @param {Object} req - Express request object with room ID parameter and updated data
+   * @param {Object} res - Express response object
+   * @returns {Object} Updated room data or error message
+   */
+  const updateRoom = async (req, res) => {
+    try {
+      // Validate input if needed
+      if (validator && !validator(req)) {
+        return res.status(400).json({ message: 'Invalid room data provided' });
+      }
+      
+      // Find the room by ID
+      const room = await Rooms.findByPk(req.params.id);
+      
+      // If room doesn't exist, return 404
+      if (!room) {
+        return res.status(404).json({ message: 'Room not found' });
+      }
+      
+      // Update the room with new data
+      await room.update(req.body);
+      
+      // Return the updated room
+      return res.json({
+        message: 'Room updated successfully',
+        room
+      });
+    } catch (error) {
+      // Handle any errors
+      return res.status(500).json({
+        message: 'Error updating room',
+        error: error.message
+      });
+    }
+  };
+
   // Return all controller methods
   return {
     getAllRooms,
+    getRoomById,
     createRoom,
+    updateRoom,
     checkRoomAvailability,
-    getRoomsByAmenities
+    getRoomsByAmenities,
+    deleteRoom
   };
 };
 
@@ -394,7 +492,10 @@ export const createRoomsController = (deps = {}) => {
 const defaultController = createRoomsController();
 export const { 
   getAllRooms,
+  getRoomById,
   createRoom, 
+  updateRoom,
   checkRoomAvailability,
-  getRoomsByAmenities
+  getRoomsByAmenities,
+  deleteRoom
 } = defaultController;

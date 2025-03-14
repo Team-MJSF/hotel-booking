@@ -1060,3 +1060,392 @@ describe('Rooms Controller - createRoom', () => {
     });
   });
 });
+
+/**
+ * Tests for the updateRoom controller function
+ * 
+ * This test suite covers scenarios for updating a room,
+ * including successful updates, validation errors, not found cases, 
+ * and error handling.
+ */
+describe('Rooms Controller - updateRoom', () => {
+  // Reset mocks before each test
+  let roomsController;
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Create a fresh controller instance for each test with our mocks
+    roomsController = createRoomsController({
+      Rooms: mockRoomsModel,
+      Bookings: mockBookingsModel,
+      validator: mockValidator
+    });
+  });
+
+  /**
+   * Test successful room update
+   * The controller should update the room and return the updated data
+   */
+  test('should update a room and return updated data', async () => {
+    // SETUP
+    // Mock room data with update method
+    const updatedRoom = {
+      roomId: 1,
+      roomNumber: '101',
+      roomType: 'Deluxe',
+      pricePerNight: 150
+    };
+    
+    const mockRoom = {
+      roomId: 1,
+      roomNumber: '101',
+      roomType: 'Single',
+      pricePerNight: 100,
+      update: jest.fn().mockResolvedValue(updatedRoom)
+    };
+    
+    // Configure findByPk to return our mock room
+    mockRoomsModel.findByPk = jest.fn().mockResolvedValue(mockRoom);
+    
+    // Set validator to return true (valid input)
+    mockValidator.mockReturnValue(true);
+    
+    // Simulate a request with roomId parameter and updated data
+    const req = { 
+      params: { id: 1 },
+      body: {
+        roomType: 'Deluxe',
+        pricePerNight: 150
+      }
+    };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.updateRoom(req, res);
+    
+    // ASSERTION
+    // Verify that findByPk was called with the correct ID
+    expect(mockRoomsModel.findByPk).toHaveBeenCalledWith(1);
+    
+    // Verify that update was called with the request body
+    expect(mockRoom.update).toHaveBeenCalledWith(req.body);
+    
+    // Verify that we return a success message with the updated room
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Room updated successfully',
+      room: mockRoom
+    });
+  });
+
+  /**
+   * Test input validation failure
+   * The controller should return a 400 status when input validation fails
+   */
+  test('should return 400 if input validation fails', async () => {
+    // SETUP
+    // Set validator to return false (invalid input)
+    mockValidator.mockReturnValue(false);
+    
+    // Simulate a request with invalid data
+    const req = { 
+      params: { id: 1 },
+      body: {
+        roomType: '',  // Invalid: empty string
+        pricePerNight: -100  // Invalid: negative price
+      }
+    };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.updateRoom(req, res);
+    
+    // ASSERTION
+    // Verify that we return a 400 status with appropriate message
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Invalid room data provided'
+    });
+    
+    // Verify that findByPk was not called (validation failed)
+    expect(mockRoomsModel.findByPk).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Test updating a non-existent room
+   * The controller should return a 404 status when room is not found
+   */
+  test('should return 404 if room is not found', async () => {
+    // SETUP
+    // Configure findByPk to return null (room not found)
+    mockRoomsModel.findByPk = jest.fn().mockResolvedValue(null);
+    
+    // Set validator to return true (valid input)
+    mockValidator.mockReturnValue(true);
+    
+    // Simulate a request with non-existent roomId
+    const req = { 
+      params: { id: 999 },
+      body: {
+        roomType: 'Deluxe',
+        pricePerNight: 150
+      }
+    };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.updateRoom(req, res);
+    
+    // ASSERTION
+    // Verify that findByPk was called with the ID
+    expect(mockRoomsModel.findByPk).toHaveBeenCalledWith(999);
+    
+    // Verify that we return a 404 status with appropriate message
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Room not found'
+    });
+  });
+
+  /**
+   * Test database error handling when updating a room
+   * The controller should return a 500 status with an error message
+   */
+  test('should handle database errors and return 500 status', async () => {
+    // SETUP
+    // Simulate a database error
+    const errorMessage = 'Database error during update';
+    mockRoomsModel.findByPk = jest.fn().mockRejectedValue(new Error(errorMessage));
+    
+    // Set validator to return true (valid input)
+    mockValidator.mockReturnValue(true);
+    
+    // Simulate a request with roomId parameter
+    const req = { 
+      params: { id: 1 },
+      body: {
+        roomType: 'Deluxe',
+        pricePerNight: 150
+      }
+    };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.updateRoom(req, res);
+    
+    // ASSERTION
+    // Verify that we return a 500 status with an error message
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error updating room',
+      error: errorMessage
+    });
+  });
+
+  /**
+   * Test error handling when update operation fails
+   * The controller should return a 500 status with error information
+   */
+  test('should handle errors during update operation', async () => {
+    // SETUP
+    // Configure a mock room with an update method that fails
+    const errorMessage = 'Failed to update in database';
+    const mockRoom = {
+      roomId: 1,
+      roomNumber: '101',
+      roomType: 'Single',
+      update: jest.fn().mockRejectedValue(new Error(errorMessage))
+    };
+    
+    // Configure findByPk to return our mock room
+    mockRoomsModel.findByPk = jest.fn().mockResolvedValue(mockRoom);
+    
+    // Set validator to return true (valid input)
+    mockValidator.mockReturnValue(true);
+    
+    // Simulate a request with roomId parameter
+    const req = { 
+      params: { id: 1 },
+      body: {
+        roomType: 'Deluxe',
+        pricePerNight: 150
+      }
+    };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.updateRoom(req, res);
+    
+    // ASSERTION
+    // Verify that update was called but resulted in error
+    expect(mockRoom.update).toHaveBeenCalledWith(req.body);
+    
+    // Verify that we return a 500 status with an error message
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error updating room',
+      error: errorMessage
+    });
+  });
+});
+
+/**
+ * Tests for the deleteRoom controller function
+ * 
+ * This test suite covers scenarios for deleting rooms,
+ * including successful deletion, not found cases, and error handling.
+ */
+describe('Rooms Controller - deleteRoom', () => {
+  // Reset mocks before each test
+  let roomsController;
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+    
+    // Create the mock destroy method for room instances
+    const mockDestroy = jest.fn().mockResolvedValue();
+    
+    // Configure the findByPk mock to return a room with a destroy method
+    mockRoomsModel.findByPk = jest.fn().mockResolvedValue({
+      roomId: 1,
+      roomNumber: '101',
+      roomType: 'Single',
+      pricePerNight: 100,
+      destroy: mockDestroy
+    });
+    
+    // Create a fresh controller instance for each test with our mocks
+    roomsController = createRoomsController({
+      Rooms: mockRoomsModel,
+      Bookings: mockBookingsModel,
+      validator: mockValidator
+    });
+  });
+
+  /**
+   * Test successful room deletion
+   * The controller should delete the room and return a success message
+   */
+  test('should delete a room and return success message', async () => {
+    // SETUP
+    // Configure a mock room with a destroy method
+    const mockRoom = {
+      roomId: 1,
+      roomNumber: '101',
+      roomType: 'Single',
+      destroy: jest.fn().mockResolvedValue()
+    };
+    
+    // Configure findByPk to return our mock room
+    mockRoomsModel.findByPk.mockResolvedValue(mockRoom);
+    
+    // Simulate a request with roomId parameter
+    const req = { params: { id: 1 } };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.deleteRoom(req, res);
+    
+    // ASSERTION
+    // Verify that findByPk was called with the correct ID
+    expect(mockRoomsModel.findByPk).toHaveBeenCalledWith(1);
+    
+    // Verify that destroy was called on the room
+    expect(mockRoom.destroy).toHaveBeenCalled();
+    
+    // Verify that we return a success message
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Room deleted successfully'
+    });
+  });
+
+  /**
+   * Test deleting a non-existent room
+   * The controller should return a 404 status when room is not found
+   */
+  test('should return 404 if room is not found', async () => {
+    // SETUP
+    // Configure findByPk to return null (room not found)
+    mockRoomsModel.findByPk.mockResolvedValue(null);
+    
+    // Simulate a request with non-existent roomId
+    const req = { params: { id: 999 } };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.deleteRoom(req, res);
+    
+    // ASSERTION
+    // Verify that findByPk was called with the ID
+    expect(mockRoomsModel.findByPk).toHaveBeenCalledWith(999);
+    
+    // Verify that we return a 404 status with appropriate message
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Room not found'
+    });
+  });
+
+  /**
+   * Test database error handling when deleting a room
+   * The controller should return a 500 status with an error message
+   */
+  test('should handle database errors and return 500 status', async () => {
+    // SETUP
+    // Simulate a database error
+    const errorMessage = 'Database error during deletion';
+    mockRoomsModel.findByPk.mockRejectedValue(new Error(errorMessage));
+    
+    // Simulate a request with roomId parameter
+    const req = { params: { id: 1 } };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.deleteRoom(req, res);
+    
+    // ASSERTION
+    // Verify that we return a 500 status with an error message
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error deleting room',
+      error: errorMessage
+    });
+  });
+
+  /**
+   * Test error handling when destroy operation fails
+   * The controller should return a 500 status with error information
+   */
+  test('should handle errors during destroy operation', async () => {
+    // SETUP
+    // Configure a mock room with a destroy method that fails
+    const errorMessage = 'Failed to delete from database';
+    const mockRoom = {
+      roomId: 1,
+      roomNumber: '101',
+      roomType: 'Single',
+      destroy: jest.fn().mockRejectedValue(new Error(errorMessage))
+    };
+    
+    // Configure findByPk to return our mock room
+    mockRoomsModel.findByPk.mockResolvedValue(mockRoom);
+    
+    // Simulate a request with roomId parameter
+    const req = { params: { id: 1 } };
+    const res = mockResponse();
+    
+    // CALL
+    await roomsController.deleteRoom(req, res);
+    
+    // ASSERTION
+    // Verify that destroy was called but resulted in error
+    expect(mockRoom.destroy).toHaveBeenCalled();
+    
+    // Verify that we return a 500 status with an error message
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error deleting room',
+      error: errorMessage
+    });
+  });
+});
