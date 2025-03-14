@@ -84,6 +84,8 @@ http://localhost:5000/api
 - POST /api/rooms - Create new room
 - PUT /api/rooms/:id - Update room
 - DELETE /api/rooms/:id - Delete room
+- GET /api/rooms/availability - Check room availability for date range
+- GET /api/rooms/amenities - Filter rooms by amenities
 
 #### Bookings
 - GET /api/bookings - Get all bookings
