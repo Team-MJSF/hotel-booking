@@ -5,6 +5,7 @@
 import { validationResult } from 'express-validator';
 import { Op } from 'sequelize';
 import Rooms from '../models/Rooms.js';
+import Bookings from '../models/Bookings.js';
 
 // Get all rooms with optional filtering
 export const getAllRooms = async (request, response) => {
