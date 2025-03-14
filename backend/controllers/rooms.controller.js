@@ -10,7 +10,7 @@ import Bookings from '../models/Bookings.js';
 // Get all rooms with optional filtering
 export const getAllRooms = async (request, response) => {
   try {
-    const { roomType, minPrice, maxPrice, maxGuests, availabilityStatus } = request.query;
+    const { roomType, minPrice, maxPrice, maxGuests, availabilityStatus, amenities } = request.query;
     
     // Build filter object for Sequelize query
     const filter = {};
@@ -39,13 +39,46 @@ export const getAllRooms = async (request, response) => {
     if (availabilityStatus) {
       filter.availabilityStatus = availabilityStatus;
     }
+
+    // Handle amenities filtering
+    if (amenities) {
+      // Parse amenities from query string to array
+      const amenitiesList = amenities.split(',');
+      
+      // We'll fetch all rooms matching other criteria first
+      // Then filter by amenities in JavaScript to handle different storage formats
+      // This is more reliable than using database-specific JSON operators
+      const hasAmenitiesFilter = true;
+    }
     
     // Apply filters to query
     const rooms = await Rooms.findAll({
       where: filter
     });
     
-    response.json(rooms);
+    // If amenities filter is present, filter the rooms in JavaScript
+    let filteredRooms = rooms;
+    if (amenities) {
+      const amenitiesList = amenities.split(',');
+      
+      // Filter rooms that contain all the requested amenities
+      filteredRooms = rooms.filter(room => {
+        // Skip rooms without amenities
+        if (!room.amenities) return false;
+        
+        // Check if all requested amenities are included in the room's amenities
+        return amenitiesList.every(amenity => 
+          // Handle different storage formats (array or object)
+          Array.isArray(room.amenities) 
+            ? room.amenities.includes(amenity)
+            : room.amenities[amenity] === true || 
+              (typeof room.amenities === 'object' && 
+               Object.keys(room.amenities).includes(amenity))
+        );
+      });
+    }
+    
+    response.json(filteredRooms);
   } catch (error) {
     response.status(500).json({ message: 'Error fetching rooms', error: error.message });
   }
@@ -216,6 +249,65 @@ export const checkRoomAvailability = async (request, response) => {
   } catch (error) {
     response.status(500).json({ 
       message: 'Error checking room availability', 
+      error: error.message 
+    });
+  }
+};
+
+// Get rooms by specific amenities
+export const getRoomsByAmenities = async (request, response) => {
+  try {
+    const { amenities, roomType } = request.query;
+    
+    // Validate that amenities parameter is provided
+    if (!amenities) {
+      return response.status(400).json({ 
+        message: 'Amenities parameter is required' 
+      });
+    }
+    
+    // Parse amenities from query string to array
+    const amenitiesList = Array.isArray(amenities) ? amenities : [amenities];
+    
+    // Build filter object for Sequelize query
+    const filter = {};
+    
+    // Add roomType filter if provided
+    if (roomType) {
+      filter.roomType = roomType;
+    }
+    
+    // Get all rooms that match the filter criteria
+    const rooms = await Rooms.findAll({
+      where: filter
+    });
+    
+    // Filter rooms that contain all the requested amenities
+    // This is done in JavaScript because Sequelize JSON containment operators
+    // might vary across different database dialects
+    const filteredRooms = rooms.filter(room => {
+      // Skip rooms without amenities
+      if (!room.amenities) return false;
+      
+      // Check if all requested amenities are included in the room's amenities
+      return amenitiesList.every(amenity => 
+        Array.isArray(room.amenities) 
+          ? room.amenities.includes(amenity)
+          : room.amenities[amenity] === true || 
+            (typeof room.amenities === 'object' && 
+             Object.keys(room.amenities).includes(amenity))
+      );
+    });
+    
+    response.json({
+      rooms: filteredRooms,
+      totalRooms: filteredRooms.length,
+      requestedAmenities: amenitiesList
+    });
+    
+  } catch (error) {
+    response.status(500).json({ 
+      message: 'Error fetching rooms by amenities', 
       error: error.message 
     });
   }
