@@ -185,6 +185,122 @@ describe('Rooms Controller - getAllRooms', () => {
     expect(res.json).toHaveBeenCalledWith(mockRoomsData);
   });
 
+  test('should filter rooms by amenities when amenities are stored as an array', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', pricePerNight: 100, maxGuests: 1, availabilityStatus: 'Available', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 2, roomType: 'Double', pricePerNight: 150, maxGuests: 2, availabilityStatus: 'Available', amenities: ['wifi', 'tv'] },
+      { roomId: 3, roomType: 'Suite', pricePerNight: 250, maxGuests: 4, availabilityStatus: 'Booked', amenities: ['wifi', 'tv', 'minibar', 'jacuzzi'] }
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi,minibar' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getAllRooms(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({ where: {} });
+    // Should filter rooms with both wifi and minibar
+    expect(res.json).toHaveBeenCalledWith([
+      mockRoomsData[0], // Room 1 has both wifi and minibar
+      mockRoomsData[2]  // Room 3 has both wifi and minibar
+    ]);
+  });
+
+  test('should filter rooms by amenities when amenities are stored as an object', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', pricePerNight: 100, maxGuests: 1, availabilityStatus: 'Available', amenities: { wifi: true, tv: true, minibar: true } },
+      { roomId: 2, roomType: 'Double', pricePerNight: 150, maxGuests: 2, availabilityStatus: 'Available', amenities: { wifi: true, tv: true, minibar: false } },
+      { roomId: 3, roomType: 'Suite', pricePerNight: 250, maxGuests: 4, availabilityStatus: 'Booked', amenities: { wifi: true, tv: true, minibar: true, jacuzzi: true } }
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi,minibar' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getAllRooms(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({ where: {} });
+    // Should filter rooms with both wifi and minibar set to true
+    expect(res.json).toHaveBeenCalledWith([
+      mockRoomsData[0], // Room 1 has both wifi and minibar
+      mockRoomsData[2]  // Room 3 has both wifi and minibar
+    ]);
+  });
+
+  test('should handle rooms with no amenities when filtering by amenities', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', pricePerNight: 100, maxGuests: 1, availabilityStatus: 'Available', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 2, roomType: 'Double', pricePerNight: 150, maxGuests: 2, availabilityStatus: 'Available', amenities: null },
+      { roomId: 3, roomType: 'Suite', pricePerNight: 250, maxGuests: 4, availabilityStatus: 'Booked' } // No amenities property
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = { query: { amenities: 'wifi' } };
+    const res = mockResponse();
+    
+    // CALL
+    await getAllRooms(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({ where: {} });
+    // Should only include Room 1 which has wifi
+    expect(res.json).toHaveBeenCalledWith([
+      mockRoomsData[0] // Only Room 1 has amenities with wifi
+    ]);
+  });
+
+  test('should combine amenities filter with other filters', async () => {
+    // SETUP
+    const mockRoomsData = [
+      { roomId: 1, roomType: 'Single', pricePerNight: 100, maxGuests: 1, availabilityStatus: 'Available', amenities: ['wifi', 'tv'] },
+      { roomId: 2, roomType: 'Double', pricePerNight: 150, maxGuests: 2, availabilityStatus: 'Available', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 3, roomType: 'Double', pricePerNight: 180, maxGuests: 2, availabilityStatus: 'Available', amenities: ['wifi', 'tv', 'minibar'] },
+      { roomId: 4, roomType: 'Suite', pricePerNight: 250, maxGuests: 4, availabilityStatus: 'Available', amenities: ['wifi', 'tv', 'minibar', 'jacuzzi'] }
+    ];
+    
+    Rooms.findAll.mockResolvedValue(mockRoomsData);
+    
+    const req = {
+      query: {
+        roomType: 'Double',
+        minPrice: '100',
+        maxPrice: '200',
+        amenities: 'wifi,minibar'
+      }
+    };
+    const res = mockResponse();
+    
+    // CALL
+    await getAllRooms(req, res);
+    
+    // ASSERTION
+    expect(Rooms.findAll).toHaveBeenCalledWith({
+      where: {
+        roomType: 'Double',
+        pricePerNight: {
+          [Symbol.for('gte')]: 100,
+          [Symbol.for('lte')]: 200
+        }
+      }
+    });
+    
+    // Should filter to only Double rooms in price range with both wifi and minibar
+    expect(res.json).toHaveBeenCalledWith([
+      mockRoomsData[1], // Room 2 matches all criteria
+      mockRoomsData[2]  // Room 3 matches all criteria
+    ]);
+  });
+
   test('should handle errors and return 500 status', async () => {
     // SETUP
     const errorMessage = 'Database error';
