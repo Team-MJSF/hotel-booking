@@ -13,7 +13,7 @@ import paymentRoutes from './routes/payments.routes.js';
 dotenv.config();
 // Initialize express app
 const app = express();
-console.log('App initialized...');
+console.log('🏨 Hotel Booking API - Initializing application...');
 
 // Middleware:
 // Helps manage HTTP requests from different origins (if frontend + backend domains are different)
@@ -31,24 +31,32 @@ app.use('/api/payments', paymentRoutes);
 // Export the app for testing
 export default app;
 
-console.log('We are about to start the server...');
 // Start the server after database initialization
 const startServer = async () => {
   try {
+    console.log(`📊 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log('🗄️ Connecting to database...');
+    
     // Initialize database connection and sync models with imported function from database.js
     const dbInitialized = await initializeDatabase();
     if (!dbInitialized) {
-      console.error('Failed to initialize database. Exiting...');
+      console.error('❌ Failed to initialize database. Exiting...');
       process.exit(1);
     }
+    
+    console.log('✅ Database initialized successfully');
 
     // Start Express server using environment variable 'PORT' via dotenv object
     const PORT = process.env.PORT || 5000;
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
+      console.log(`
+🚀 Server is running!
+📡 API: http://localhost:${PORT}/api
+⚙️ Mode: ${process.env.NODE_ENV || 'development'}
+      `);
     });
   } catch (error) {
-    console.error('Error starting server:', error);
+    console.error('❌ Error starting server:', error);
     process.exit(1);
   }
 };
