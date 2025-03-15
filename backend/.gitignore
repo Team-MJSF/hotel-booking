@@ -1,5 +1,7 @@
 # Dependencies
 node_modules/
+dist/
+*.d.ts
 
 # Environment variables
 .env
