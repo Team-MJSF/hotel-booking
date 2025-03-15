@@ -2,45 +2,74 @@
   "name": "backend",
   "version": "1.0.0",
   "description": "",
-  "main": "server.js",
+  "main": "dist/server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js",
-    "dev": "nodemon server.js",
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
+    "build": "tsc -p tsconfig.build.json",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "migrate": "sequelize-cli db:migrate",
-    "migrate:undo": "sequelize-cli db:migrate:undo",
-    "migrate:undo:all": "sequelize-cli db:migrate:undo:all",
-    "lint": "eslint . --ext .js",
-    "db:create": "sequelize-cli db:create",
-    "db:migrate": "sequelize-cli db:migrate",
-    "setup:db": "npm run db:create && npm run db:migrate",
+    "test:ts": "node --experimental-vm-modules node_modules/jest/bin/jest.js -c jest.config.ts --verbose controllers/__tests__/users.controller.test.ts controllers/__tests__/rooms.controller.test.ts controllers/__tests__/payments.controller.test.ts controllers/__tests__/bookings.controller.test.ts",
+    "migrate": "cross-env npx sequelize-cli db:migrate",
+    "migrate:undo": "cross-env npx sequelize-cli db:migrate:undo",
+    "migrate:undo:all": "cross-env npx sequelize-cli db:migrate:undo:all",
+    "lint": "eslint . --ext .ts",
+    "db:create": "cross-env npx sequelize-cli db:create",
+    "db:migrate": "cross-env npx sequelize-cli db:migrate",
+    "db:seed:all": "cross-env npx sequelize-cli db:seed:all",
+    "db:seed:undo:all": "cross-env npx sequelize-cli db:seed:undo:all",
+    "setup:db": "cross-env npm run db:create && npm run db:migrate",
     "setup:db:all": "cross-env NODE_ENV=development npm run db:create && cross-env NODE_ENV=test npm run db:create && cross-env NODE_ENV=production npm run db:create && npm run db:migrate"
   },
   "jest": {
     "testEnvironment": "node",
-    "transform": {},
+    "transform": {
+      "\\.(ts|tsx)$": "ts-jest"
+    },
     "moduleNameMapper": {
       "^(\\.{1,2}/.*)\\.js$": "$1"
     },
+    "moduleFileExtensions": [
+      "js",
+      "mjs",
+      "cjs",
+      "ts",
+      "tsx",
+      "json"
+    ],
+    "extensionsToTreatAsEsm": [
+      ".ts",
+      ".tsx"
+    ],
     "verbose": true
   },
   "dependencies": {
+    "@types/node": "^20.0.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
-    "express-validator": "^7.2.1",
-    "jsonwebtoken": "^9.0.2",
-    "mysql2": "^3.12.0",
-    "sequelize": "^6.37.5"
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "mysql2": "^3.9.2",
+    "sequelize": "^6.31.0"
   },
   "devDependencies": {
+    "@jest/globals": "^29.5.0",
+    "@types/bcryptjs": "^2.4.2",
+    "@types/cors": "^2.8.13",
+    "@types/express": "^4.17.17",
+    "@types/jest": "^29.5.1",
+    "@types/supertest": "^2.0.12",
+    "@typescript-eslint/eslint-plugin": "^5.59.2",
+    "@typescript-eslint/parser": "^5.59.2",
     "cross-env": "^7.0.3",
-    "eslint": "^8.57.0",
-    "jest": "^29.7.0",
-    "nodemon": "^3.0.1",
-    "sequelize-cli": "^6.6.2",
-    "supertest": "^7.0.0"
+    "eslint": "^8.39.0",
+    "jest": "^29.5.0",
+    "sequelize-cli": "^6.6.0",
+    "supertest": "^6.3.3",
+    "ts-jest": "^29.1.0",
+    "ts-node": "^10.9.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.0.4"
   }
 }
