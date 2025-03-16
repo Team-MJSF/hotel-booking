@@ -17,13 +17,24 @@ import type { Request, Response } from 'express';
 import type { ValidationError } from 'express-validator';
 import type { UserAttributes } from '../../models/Users.js';
 
-// Create mock model that we'll inject into the controller
+// Define specific types for mock functions
+type UpdateFn = (data: Partial<UserAttributes>) => Promise<void>;
+type DestroyFn = () => Promise<void>;
+
+interface MockUser extends Partial<UserAttributes> {
+  userId: number;
+  update?: jest.MockedFunction<UpdateFn>;
+  destroy?: jest.MockedFunction<DestroyFn>;
+  toJSON?: () => Partial<UserAttributes>;
+}
+
+// Create typed mock models
 const mockUsersModel = {
-  findAll: jest.fn(),
-  findByPk: jest.fn(),
-  create: jest.fn(),
-  update: jest.fn(),
-  destroy: jest.fn()
+  findAll: jest.fn() as jest.MockedFunction<() => Promise<MockUser[]>>,
+  findByPk: jest.fn() as jest.MockedFunction<(id: string) => Promise<MockUser | null>>,
+  create: jest.fn() as jest.MockedFunction<(data: Partial<UserAttributes>) => Promise<MockUser>>,
+  update: jest.fn() as jest.MockedFunction<(data: Partial<UserAttributes>) => Promise<void>>,
+  destroy: jest.fn() as jest.MockedFunction<() => Promise<void>>
 };
 
 // Create a mock validator function
@@ -43,10 +54,14 @@ import { createUsersController } from '../../controllers/users.controller.js';
  * 
  * Both methods use Jest's mockReturnValue to make them chainable like the real Express methods
  */
-const mockResponse = () => {
+/**
+ * Helper function to create a mock response object
+ * Standardizes response mocking across test suites
+ */
+const mockResponse = (): Partial<Response> => {
   const res: Partial<Response> = {};
-  res.status = jest.fn().mockReturnValue(res) as any; // Makes res.status().json() possible
-  res.json = jest.fn().mockReturnValue(res) as any;   // Returns the res object for chaining
+  res.status = jest.fn().mockReturnValue(res) as jest.MockedFunction<any>;
+  res.json = jest.fn().mockReturnValue(res) as jest.MockedFunction<any>;
   return res;
 };
 
@@ -111,7 +126,7 @@ describe('Users Controller - getAllUsers', () => {
     const mockError = new Error('Database connection failed');
     
     // Configure the mock to throw an error when findAll is called
-    // @ts-expect-error - Mock implementation may not match exact types
+
     mockUsersModel.findAll.mockRejectedValue(mockError);
     
     // Simulate an HTTP request
@@ -271,7 +286,7 @@ describe('Users Controller - createUser', () => {
       message: 'Validation error',
       original: { sqlMessage: 'Duplicate entry' }
     };
-    // @ts-expect-error - Mock implementation may not match exact types
+
     mockUsersModel.create.mockRejectedValue(uniqueConstraintError);
     
     // Simulate HTTP request
@@ -379,7 +394,7 @@ describe('Users Controller - updateUser', () => {
     };
     
     // Configure mock to return null (user not found)
-    // @ts-expect-error - Mock implementation may not match exact types
+
     mockUsersModel.findByPk.mockResolvedValue(null);
     
     // Simulate HTTP request
@@ -512,7 +527,7 @@ describe('Users Controller - updateUser', () => {
     const mockError = new Error('Database error');
     
     // Configure mock to throw an error
-    // @ts-expect-error - Mock implementation may not match exact types
+
     mockUsersModel.findByPk.mockRejectedValue(mockError);
     
     // Simulate HTTP request
@@ -602,7 +617,7 @@ describe('Users Controller - deleteUser', () => {
     const userId = '999';
     
     // Configure mock to return null (user not found)
-    // @ts-expect-error - Mock implementation may not match exact types
+
     mockUsersModel.findByPk.mockResolvedValue(null);
     
     // Simulate HTTP request
@@ -632,7 +647,6 @@ describe('Users Controller - deleteUser', () => {
     const mockError = new Error('Database error');
     
     // Configure mock to throw an error
-    // @ts-expect-error - Mock implementation may not match exact types
     mockUsersModel.findByPk.mockRejectedValue(mockError);
     
     // Simulate HTTP request
