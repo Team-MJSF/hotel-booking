@@ -174,17 +174,17 @@ export const createBookingsController = (deps: BookingsControllerDependencies = 
     try {
       const bookingId = parseInt(req.params.id, 10);
       if (isNaN(bookingId)) {
-          res.status(400).json({ message: 'Invalid booking ID format' });
+        res.status(400).json({ message: 'Invalid booking ID format' });
       }
 
       const result = await Bookings.destroy({
-          where: { bookingId }
+        where: { bookingId }
       });
 
       if (result === 0) {
-          res.status(404).json({ message: 'Booking not found' });
+        res.status(404).json({ message: 'Booking not found' });
       } else {
-          res.json({ message: 'Booking deleted successfully' });
+        res.json({ message: 'Booking deleted successfully' });
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
