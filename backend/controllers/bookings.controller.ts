@@ -105,7 +105,7 @@ export const createBookingsController = (deps: BookingsControllerDependencies = 
         return;
       }
 
-      res.json(booking);
+      res.status(200).json(booking);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({ 
@@ -160,7 +160,7 @@ export const createBookingsController = (deps: BookingsControllerDependencies = 
         status: req.body.status || booking.status
       });
 
-      res.json(booking);
+      res.status(200).json(booking);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({ 
@@ -172,14 +172,20 @@ export const createBookingsController = (deps: BookingsControllerDependencies = 
 
   const deleteBooking = async (req: Request, res: Response): Promise<void> => {
     try {
-      const booking = await Bookings.findByPk(req.params.id);
-      if (!booking) {
-        res.status(404).json({ message: 'Booking not found' });
-        return;
+      const bookingId = parseInt(req.params.id, 10);
+      if (isNaN(bookingId)) {
+          res.status(400).json({ message: 'Invalid booking ID format' });
       }
 
-      await booking.destroy();
-      res.json({ message: 'Booking deleted successfully' });
+      const result = await Bookings.destroy({
+          where: { bookingId }
+      });
+
+      if (result === 0) {
+          res.status(404).json({ message: 'Booking not found' });
+      } else {
+          res.json({ message: 'Booking deleted successfully' });
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       res.status(500).json({ 

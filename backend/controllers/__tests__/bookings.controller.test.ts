@@ -61,15 +61,17 @@ const mockValidator = jest.fn().mockReturnValue({
 
 // Import controller factory with TypeScript types
 import { createBookingsController } from '../bookings.controller.js';
+const controller = createBookingsController({
+  Bookings: mockBookingsModel as any,
+  Users: mockUsersModel as any,
+  Rooms: mockRoomsModel as any,
+  validator: mockValidator as any
+});
 
 /**
  * Typed mock response object
  */
-const mockResponse = (): Response => ({
-  status: jest.fn().mockReturnThis(),
-  json: jest.fn().mockReturnThis(),
-  // Add Express Response type properties as needed
-} as unknown as Response);
+
 
 describe('Bookings Controller', () => {
   let bookingsController: ReturnType<typeof createBookingsController>;
@@ -109,5 +111,124 @@ describe('Bookings Controller', () => {
     });
   });
 
-  // Additional test cases for other endpoints...
+  // Test cases for getBookingById
+  /**
+ * Helper function to create a mock response object
+ */
+const mockResponse = () => {
+  const res: Partial<Response> = {};
+  res.status = jest.fn<() => Response>().mockReturnValue(res as Response);
+  res.json = jest.fn<() => Response>().mockReturnValue(res as Response);
+  res.send = jest.fn<() => Response>().mockReturnValue(res as Response);
+  res.sendStatus = jest.fn<() => Response>().mockReturnValue(res as Response);
+  return res as Response;
+};
+
+/**
+ * Helper to create mock requests with typed parameters
+ */
+const mockRequest = (params: { id: string }) => ({
+  params,
+  query: {},
+  body: {},
+  headers: {},
+  get: jest.fn()
+} as unknown as Request);
+
+describe('getBookingById', () => {
+
+    test('should return 200 with booking data for valid ID', async () => {
+      const mockBooking: MockBooking = {
+        bookingId: 1,
+        userId: 1,
+        roomId: 101,
+        checkInDate: '2024-01-01',
+        checkOutDate: '2024-01-05',
+        status: 'Confirmed'
+      };
+
+      mockBookingsModel.findByPk.mockResolvedValue(mockBooking);
+      const req = mockRequest({ id: '1' });
+      const res = mockResponse();
+
+      await bookingsController.getBookingById(req, res);
+
+      expect(mockBookingsModel.findByPk).toHaveBeenCalledWith('1', {
+        include: expect.any(Array)
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith(mockBooking);
+    });
+
+    test('should return 404 for invalid booking ID', async () => {
+      mockBookingsModel.findByPk.mockResolvedValue(null);
+      const req = mockRequest({ id: '999' });
+      const res = mockResponse();
+
+      await bookingsController.getBookingById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Booking not found' });
+    });
+
+    test('should return 500 on database error', async () => {
+      const testError = new Error('Database failure');
+      mockBookingsModel.findByPk.mockRejectedValue(testError);
+      const req = mockRequest({ id: '1' });
+      const res = mockResponse();
+
+      await bookingsController.getBookingById(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Error fetching booking',
+        error: 'Database failure'
+      });
+    });
+  });
+
+  describe('deleteBooking', () => {
+    test('should delete booking and return success', async () => {
+      mockBookingsModel.destroy.mockResolvedValue(1);
+      const req = { params: { id: '1' } } as unknown as Request;
+      const res = mockResponse();
+
+      await bookingsController.deleteBooking(req as Request, res);
+
+      expect(mockBookingsModel.destroy).toHaveBeenCalledWith({
+        where: { bookingId: 1 }
+      });
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Booking deleted successfully'
+      });
+    });
+
+    test('should return 404 if booking not found', async () => {
+      mockBookingsModel.destroy.mockResolvedValue(0);
+      const req = { params: { id: '999' } } as Partial<Request>;
+      const res = mockResponse();
+
+      await bookingsController.deleteBooking(req as Request, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Booking not found'
+      });
+    });
+
+    test('should handle errors and return 500 status', async () => {
+      const errorMessage = 'Database error';
+      mockBookingsModel.destroy.mockRejectedValue(new Error(errorMessage));
+      const req = { params: { id: '1' } } as unknown as Request;
+      const res = mockResponse();
+
+      await bookingsController.deleteBooking(req as Request, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({
+        message: 'Error deleting booking',
+        error: errorMessage
+      });
+    });
+  });
 });
