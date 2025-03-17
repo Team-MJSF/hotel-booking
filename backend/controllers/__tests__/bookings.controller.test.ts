@@ -19,6 +19,9 @@ interface MockBooking {
   status: 'Pending' | 'Confirmed' | 'Cancelled';
   Users?: MockUser;
   Rooms?: MockRoom;
+  update?: jest.MockedFunction<(data: Partial<MockBooking>) => Promise<MockBooking>>;
+  destroy?: jest.MockedFunction<() => Promise<number>>;
+  toJSON?: () => Partial<MockBooking>;
 }
 
 interface MockUser {
@@ -253,3 +256,118 @@ describe('Bookings Controller - deleteBooking', () => {
     });
   });
 });
+
+describe('Bookings Controller - createBooking', () => {
+
+  let bookingsController: ReturnType<typeof createBookingsController>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    bookingsController = createBookingsController({
+      Bookings: mockBookingsModel as any,
+      Users: mockUsersModel as any,
+      Rooms: mockRoomsModel as any,
+      validator: mockValidator as any
+    });
+  });
+
+  test('should create a new booking and return it', async () => {
+    const newBooking: MockBooking = {
+      bookingId: 2,
+      userId: 101,
+      roomId: 201,
+      checkInDate: '2024-03-15',
+      checkOutDate: '2024-03-20',
+      status: 'Confirmed'
+    };
+
+    // Mock validator to return isEmpty as true to pass validation
+    mockValidator.mockReturnValueOnce({
+      isEmpty: () => true,
+      array: () => [],
+      errors: [],
+      formatter: (error: ValidationError) => error.msg,
+      mapped: () => ({}),
+      formatWith: () => ({}),
+    });
+
+    // The controller extracts individual fields from req.body
+    const expectedCreateParams = {
+      userId: newBooking.userId,
+      roomId: newBooking.roomId,
+      checkInDate: newBooking.checkInDate,
+      checkOutDate: newBooking.checkOutDate,
+      status: newBooking.status
+    };
+
+    mockBookingsModel.create.mockResolvedValue(newBooking);
+    const req = {
+      body: newBooking
+    } as unknown as Request;
+    const res = mockResponse();
+
+    await bookingsController.createBooking(req, res);
+
+    expect(mockBookingsModel.create).toHaveBeenCalledWith(expectedCreateParams);
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(newBooking);
+  });
+
+  test('should return 400 if validation fails', async () => {
+    mockValidator.mockReturnValueOnce({
+      isEmpty: () => false,
+      array: () => [{ msg: 'Validation error' }],
+      errors: [],
+      formatter: (error: ValidationError) => error.msg,
+      mapped: () => ({}),
+      formatWith: () => ({}),
+    });
+
+    const req = {
+      body: {}
+    } as unknown as Request;
+    const res = mockResponse();
+
+    await bookingsController.createBooking(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({
+      errors: [{ msg: 'Validation error' }]
+    });
+  });
+
+  test('should return 500 on database error', async () => {
+    const testError = new Error('Database failure');
+    mockBookingsModel.create.mockRejectedValue(testError);
+    
+    // Mock validator to return isEmpty as true to pass validation
+    mockValidator.mockReturnValueOnce({
+      isEmpty: () => true,
+      array: () => [],
+      errors: [],
+      formatter: (error: ValidationError) => error.msg,
+      mapped: () => ({}),
+      formatWith: () => ({}),
+    });
+    
+    const req = {
+      body: {
+        userId: 101,
+        roomId: 201,
+        checkInDate: '2024-03-15',
+        checkOutDate: '2024-03-20',
+        status: 'Confirmed'
+      }
+    } as unknown as Request;
+    const res = mockResponse();
+
+    await bookingsController.createBooking(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error creating booking',
+      error: 'Database failure'
+    });
+  });
+});
+
