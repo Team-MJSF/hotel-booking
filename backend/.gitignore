@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 backend/dist/
+dist/
 *.d.ts
 
 # Environment variables
