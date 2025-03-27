@@ -1,10 +1,11 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
-import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
@@ -18,9 +19,11 @@ export class UsersService {
    * @returns Promise<User[]> Array of all users with their bookings
    */
   async findAll(): Promise<User[]> {
-    return this.usersRepository.find({
-      relations: ['bookings'],
-    });
+    try {
+      return await this.usersRepository.find();
+    } catch (error) {
+      throw new DatabaseException('Failed to fetch users', error as Error);
+    }
   }
 
   /**
@@ -30,16 +33,18 @@ export class UsersService {
    * @throws NotFoundException if user is not found
    */
   async findOne(id: number): Promise<User> {
-    const user = await this.usersRepository.findOne({
-      where: { id },
-      relations: ['bookings'],
-    });
-
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+    try {
+      const user = await this.usersRepository.findOne({ where: { id } });
+      if (!user) {
+        throw new ResourceNotFoundException('User', id);
+      }
+      return user;
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to fetch user', error as Error);
     }
-
-    return user;
   }
 
   /**
@@ -48,9 +53,11 @@ export class UsersService {
    * @returns Promise<User | null> The user with the specified email, or null if not found
    */
   async findByEmail(email: string): Promise<User | null> {
-    return this.usersRepository.findOne({
-      where: { email },
-    });
+    try {
+      return await this.usersRepository.findOne({ where: { email } });
+    } catch (error) {
+      throw new DatabaseException('Failed to fetch user by email', error as Error);
+    }
   }
 
   /**
@@ -59,12 +66,29 @@ export class UsersService {
    * @returns Promise<User> The newly created user
    */
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const user = this.usersRepository.create({
-      ...createUserDto,
-      password: hashedPassword,
-    });
-    return this.usersRepository.save(user);
+    try {
+      // Check if user with email already exists
+      const existingUser = await this.findByEmail(createUserDto.email);
+      if (existingUser) {
+        throw new ConflictException(`User with email ${createUserDto.email} already exists`);
+      }
+
+      // Hash password
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
+      // Create new user
+      const user = this.usersRepository.create({
+        ...createUserDto,
+        password: hashedPassword,
+      });
+
+      return await this.usersRepository.save(user);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to create user', error as Error);
+    }
   }
 
   /**
@@ -75,11 +99,34 @@ export class UsersService {
    * @throws NotFoundException if user is not found
    */
   async update(id: number, updateUserDto: UpdateUserDto): Promise<User> {
-    const result = await this.usersRepository.update(id, updateUserDto);
-    if (result.affected === 0) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+    try {
+      const user = await this.findOne(id);
+
+      // If email is being updated, check for conflicts
+      if (updateUserDto.email && updateUserDto.email !== user.email) {
+        const existingUser = await this.findByEmail(updateUserDto.email);
+        if (existingUser) {
+          throw new ConflictException(`User with email ${updateUserDto.email} already exists`);
+        }
+      }
+
+      // If password is being updated, hash it
+      if (updateUserDto.password) {
+        updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
+      }
+
+      const result = await this.usersRepository.update(id, updateUserDto);
+      if (result.affected === 0) {
+        throw new ResourceNotFoundException('User', id);
+      }
+
+      return this.findOne(id);
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException || error instanceof ConflictException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to update user', error as Error);
     }
-    return this.findOne(id);
   }
 
   /**
@@ -89,9 +136,24 @@ export class UsersService {
    * @throws NotFoundException if user is not found
    */
   async remove(id: number): Promise<void> {
-    const result = await this.usersRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`User with ID ${id} not found`);
+    try {
+      const result = await this.usersRepository.delete(id);
+      if (result.affected === 0) {
+        throw new ResourceNotFoundException('User', id);
+      }
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to delete user', error as Error);
+    }
+  }
+
+  async validatePassword(user: User, password: string): Promise<boolean> {
+    try {
+      return await bcrypt.compare(password, user.password);
+    } catch (error) {
+      throw new DatabaseException('Failed to validate password', error as Error);
     }
   }
 }

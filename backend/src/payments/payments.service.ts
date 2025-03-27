@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
+import { ResourceNotFoundException, DatabaseException, PaymentProcessingException } from '../common/exceptions/hotel-booking.exception';
 
 @Injectable()
 export class PaymentsService {
@@ -14,31 +15,42 @@ export class PaymentsService {
 
   /**
    * Retrieves all payments from the database
-   * @returns Promise<Payment[]> Array of all payments with their related booking
+   * @returns Promise<Payment[]> Array of all payments with their related bookings
    */
   async findAll(): Promise<Payment[]> {
-    return this.paymentsRepository.find({
-      relations: ['booking'],
-    });
+    try {
+      return await this.paymentsRepository.find({
+        relations: ['booking'],
+      });
+    } catch (error) {
+      throw new DatabaseException('Failed to fetch payments', error as Error);
+    }
   }
 
   /**
    * Retrieves a single payment by ID
    * @param id - The ID of the payment to retrieve
    * @returns Promise<Payment> The payment with the specified ID
-   * @throws NotFoundException if payment is not found
+   * @throws ResourceNotFoundException if payment is not found
    */
   async findOne(id: number): Promise<Payment> {
-    const payment = await this.paymentsRepository.findOne({
-      where: { id: id },
-      relations: ['booking'],
-    });
+    try {
+      const payment = await this.paymentsRepository.findOne({
+        where: { id },
+        relations: ['booking'],
+      });
 
-    if (!payment) {
-      throw new NotFoundException(`Payment with ID ${id} not found`);
+      if (!payment) {
+        throw new ResourceNotFoundException('Payment', id);
+      }
+
+      return payment;
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to fetch payment', error as Error);
     }
-
-    return payment;
   }
 
   /**
@@ -47,11 +59,12 @@ export class PaymentsService {
    * @returns Promise<Payment> The newly created payment
    */
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
-    const payment = this.paymentsRepository.create({
-      ...createPaymentDto,
-      status: createPaymentDto.status || PaymentStatus.PENDING,
-    });
-    return this.paymentsRepository.save(payment);
+    try {
+      const payment = this.paymentsRepository.create(createPaymentDto);
+      return await this.paymentsRepository.save(payment);
+    } catch (error) {
+      throw new DatabaseException('Failed to create payment', error as Error);
+    }
   }
 
   /**
@@ -59,24 +72,40 @@ export class PaymentsService {
    * @param id - The ID of the payment to update
    * @param updatePaymentDto - The data to update the payment with
    * @returns Promise<Payment> The updated payment
-   * @throws NotFoundException if payment is not found
+   * @throws ResourceNotFoundException if payment is not found
    */
   async update(id: number, updatePaymentDto: UpdatePaymentDto): Promise<Payment> {
-    const payment = await this.findOne(id);
-    Object.assign(payment, updatePaymentDto);
-    return this.paymentsRepository.save(payment);
+    try {
+      const result = await this.paymentsRepository.update(id, updatePaymentDto);
+      if (result.affected === 0) {
+        throw new ResourceNotFoundException('Payment', id);
+      }
+      return this.findOne(id);
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to update payment', error as Error);
+    }
   }
 
   /**
    * Removes a payment from the database
    * @param id - The ID of the payment to remove
    * @returns Promise<void>
-   * @throws NotFoundException if payment is not found
+   * @throws ResourceNotFoundException if payment is not found
    */
   async remove(id: number): Promise<void> {
-    const result = await this.paymentsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Payment with ID ${id} not found`);
+    try {
+      const result = await this.paymentsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new ResourceNotFoundException('Payment', id);
+      }
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to delete payment', error as Error);
     }
   }
 
@@ -95,15 +124,28 @@ export class PaymentsService {
   /**
    * Processes a refund for a payment
    * @param id - The ID of the payment to refund
-   * @param reason - The reason for the refund
+   * @param refundReason - The reason for the refund
    * @returns Promise<Payment> The updated payment with refund status
-   * @throws NotFoundException if payment is not found
+   * @throws ResourceNotFoundException if payment is not found
+   * @throws PaymentProcessingException if refund processing fails
    */
-  async processRefund(id: number, reason: string): Promise<Payment> {
-    const payment = await this.findOne(id);
-    payment.status = PaymentStatus.REFUNDED;
-    payment.refundReason = reason;
-    return this.paymentsRepository.save(payment);
+  async processRefund(id: number, refundReason: string): Promise<Payment> {
+    try {
+      const payment = await this.findOne(id);
+      
+      // Add your refund processing logic here
+      // For example, calling a payment gateway API
+      
+      payment.status = PaymentStatus.REFUNDED;
+      payment.refundReason = refundReason;
+      
+      return await this.paymentsRepository.save(payment);
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new PaymentProcessingException('Failed to process refund', error as Error);
+    }
   }
 
   /**
@@ -111,7 +153,7 @@ export class PaymentsService {
    * @param id - The ID of the payment to update
    * @param status - The new status for the payment
    * @returns Promise<Payment> The updated payment with new status
-   * @throws NotFoundException if payment is not found
+   * @throws ResourceNotFoundException if payment is not found
    */
   async updatePaymentStatus(id: number, status: PaymentStatus): Promise<Payment> {
     const payment = await this.findOne(id);

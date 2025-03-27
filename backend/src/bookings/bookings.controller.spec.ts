@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { BookingsController } from './bookings.controller.js';
-import { BookingsService } from './bookings.service.js';
-import { Booking, BookingStatus } from './entities/booking.entity.js';
-import { NotFoundException } from '@nestjs/common';
-import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity.js';
+import { BookingsController } from './bookings.controller';
+import { BookingsService } from './bookings.service';
+import { Booking, BookingStatus } from './entities/booking.entity';
+import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
+import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 
 // Increase timeout for all tests
@@ -92,6 +92,13 @@ describe('BookingsController', () => {
       expect(result).toEqual(bookings);
       expect(mockBookingsService.findAll).toHaveBeenCalled();
     });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to fetch bookings', new Error('Database error'));
+      mockBookingsService.findAll.mockRejectedValue(error);
+
+      await expect(controller.findAll()).rejects.toThrow(DatabaseException);
+    });
   });
 
   describe('findOne', () => {
@@ -104,10 +111,17 @@ describe('BookingsController', () => {
       expect(mockBookingsService.findOne).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException when booking is not found', async () => {
-      mockBookingsService.findOne.mockRejectedValue(new NotFoundException());
+    it('should throw ResourceNotFoundException when booking is not found', async () => {
+      mockBookingsService.findOne.mockRejectedValue(new ResourceNotFoundException('Booking', 1));
 
-      await expect(controller.findOne('999')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to fetch booking', new Error('Database error'));
+      mockBookingsService.findOne.mockRejectedValue(error);
+
+      await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -128,6 +142,40 @@ describe('BookingsController', () => {
       expect(result).toEqual(mockBooking);
       expect(mockBookingsService.create).toHaveBeenCalledWith(createBookingDto);
     });
+
+    it('should throw BookingValidationException for invalid dates', async () => {
+      const createBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date('2024-03-25'),
+        checkOutDate: new Date('2024-03-20'),
+        numberOfGuests: 2,
+      };
+
+      mockBookingsService.create.mockRejectedValue(
+        new BookingValidationException('Check-in date must be before check-out date', [
+          { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
+          { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
+        ]),
+      );
+
+      await expect(controller.create(createBookingDto)).rejects.toThrow(BookingValidationException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const createBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        numberOfGuests: 2,
+      };
+
+      const error = new DatabaseException('Failed to create booking', new Error('Database error'));
+      mockBookingsService.create.mockRejectedValue(error);
+
+      await expect(controller.create(createBookingDto)).rejects.toThrow(DatabaseException);
+    });
   });
 
   describe('update', () => {
@@ -145,14 +193,41 @@ describe('BookingsController', () => {
       expect(mockBookingsService.update).toHaveBeenCalledWith(1, updateBookingDto);
     });
 
-    it('should throw NotFoundException when booking is not found', async () => {
+    it('should throw ResourceNotFoundException when booking is not found', async () => {
       const updateBookingDto: Partial<Booking> = {
         status: BookingStatus.CONFIRMED,
       };
 
-      mockBookingsService.update.mockRejectedValue(new NotFoundException());
+      mockBookingsService.update.mockRejectedValue(new ResourceNotFoundException('Booking', 1));
 
-      await expect(controller.update('999', updateBookingDto)).rejects.toThrow(NotFoundException);
+      await expect(controller.update('1', updateBookingDto)).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw BookingValidationException for invalid dates', async () => {
+      const updateBookingDto: Partial<Booking> = {
+        checkInDate: new Date('2024-03-25'),
+        checkOutDate: new Date('2024-03-20'),
+      };
+
+      mockBookingsService.update.mockRejectedValue(
+        new BookingValidationException('Check-in date must be before check-out date', [
+          { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
+          { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
+        ]),
+      );
+
+      await expect(controller.update('1', updateBookingDto)).rejects.toThrow(BookingValidationException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const updateBookingDto: Partial<Booking> = {
+        status: BookingStatus.CONFIRMED,
+      };
+
+      const error = new DatabaseException('Failed to update booking', new Error('Database error'));
+      mockBookingsService.update.mockRejectedValue(error);
+
+      await expect(controller.update('1', updateBookingDto)).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -165,10 +240,17 @@ describe('BookingsController', () => {
       expect(mockBookingsService.remove).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException when booking is not found', async () => {
-      mockBookingsService.remove.mockRejectedValue(new NotFoundException());
+    it('should throw ResourceNotFoundException when booking is not found', async () => {
+      mockBookingsService.remove.mockRejectedValue(new ResourceNotFoundException('Booking', 1));
 
-      await expect(controller.remove('999')).rejects.toThrow(NotFoundException);
+      await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to delete booking', new Error('Database error'));
+      mockBookingsService.remove.mockRejectedValue(error);
+
+      await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });
 });

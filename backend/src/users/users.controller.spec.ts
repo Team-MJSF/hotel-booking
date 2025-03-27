@@ -1,10 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UsersController } from './users.controller.js';
-import { UsersService } from './users.service.js';
-import { CreateUserDto } from './dto/create-user.dto.js';
-import { UpdateUserDto } from './dto/update-user.dto.js';
-import { User } from './entities/user.entity.js';
-import { NotFoundException } from '@nestjs/common';
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+import { User } from './entities/user.entity';
+import { CreateUserDto } from './dto/create-user.dto';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -15,9 +15,11 @@ describe('UsersController', () => {
   const mockUsersService = {
     findAll: jest.fn(),
     findOne: jest.fn(),
+    findByEmail: jest.fn(),
     create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    validatePassword: jest.fn(),
   };
 
   const mockUser: User = {
@@ -63,6 +65,13 @@ describe('UsersController', () => {
       expect(result).toEqual(users);
       expect(mockUsersService.findAll).toHaveBeenCalled();
     });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to fetch users', new Error('Database error'));
+      mockUsersService.findAll.mockRejectedValue(error);
+
+      await expect(controller.findAll()).rejects.toThrow(DatabaseException);
+    });
   });
 
   describe('findOne', () => {
@@ -75,10 +84,17 @@ describe('UsersController', () => {
       expect(mockUsersService.findOne).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException when user is not found', async () => {
-      mockUsersService.findOne.mockRejectedValue(new NotFoundException());
+    it('should throw ResourceNotFoundException when user is not found', async () => {
+      mockUsersService.findOne.mockRejectedValue(new ResourceNotFoundException('User', 1));
 
-      await expect(controller.findOne('999')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to fetch user', new Error('Database error'));
+      mockUsersService.findOne.mockRejectedValue(error);
+
+      await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -98,6 +114,35 @@ describe('UsersController', () => {
       expect(result).toEqual(mockUser);
       expect(mockUsersService.create).toHaveBeenCalledWith(createUserDto);
     });
+
+    it('should throw ConflictException when email already exists', async () => {
+      const createUserDto: CreateUserDto = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+      };
+
+      mockUsersService.create.mockRejectedValue(
+        new ConflictException('User with email john@example.com already exists'),
+      );
+
+      await expect(controller.create(createUserDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const createUserDto: CreateUserDto = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+      };
+
+      const error = new DatabaseException('Failed to create user', new Error('Database error'));
+      mockUsersService.create.mockRejectedValue(error);
+
+      await expect(controller.create(createUserDto)).rejects.toThrow(DatabaseException);
+    });
   });
 
   describe('update', () => {
@@ -115,14 +160,37 @@ describe('UsersController', () => {
       expect(mockUsersService.update).toHaveBeenCalledWith(1, updateUserDto);
     });
 
-    it('should throw NotFoundException when user is not found', async () => {
+    it('should throw ResourceNotFoundException when user is not found', async () => {
       const updateUserDto: UpdateUserDto = {
         firstName: 'Jane',
       };
 
-      mockUsersService.update.mockRejectedValue(new NotFoundException());
+      mockUsersService.update.mockRejectedValue(new ResourceNotFoundException('User', 1));
 
-      await expect(controller.update('999', updateUserDto)).rejects.toThrow(NotFoundException);
+      await expect(controller.update('1', updateUserDto)).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw ConflictException when email already exists', async () => {
+      const updateUserDto: UpdateUserDto = {
+        email: 'jane@example.com',
+      };
+
+      mockUsersService.update.mockRejectedValue(
+        new ConflictException('User with email jane@example.com already exists'),
+      );
+
+      await expect(controller.update('1', updateUserDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const updateUserDto: UpdateUserDto = {
+        firstName: 'Jane',
+      };
+
+      const error = new DatabaseException('Failed to update user', new Error('Database error'));
+      mockUsersService.update.mockRejectedValue(error);
+
+      await expect(controller.update('1', updateUserDto)).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -135,10 +203,17 @@ describe('UsersController', () => {
       expect(mockUsersService.remove).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException when user is not found', async () => {
-      mockUsersService.remove.mockRejectedValue(new NotFoundException());
+    it('should throw ResourceNotFoundException when user is not found', async () => {
+      mockUsersService.remove.mockRejectedValue(new ResourceNotFoundException('User', 1));
 
-      await expect(controller.remove('999')).rejects.toThrow(NotFoundException);
+      await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to delete user', new Error('Database error'));
+      mockUsersService.remove.mockRejectedValue(error);
+
+      await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });
 });

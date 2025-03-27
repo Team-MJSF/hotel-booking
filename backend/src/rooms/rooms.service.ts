@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Room, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 
 @Injectable()
 export class RoomsService {
@@ -17,9 +18,11 @@ export class RoomsService {
    * @returns Promise<Room[]> Array of all rooms with their bookings
    */
   async findAll(): Promise<Room[]> {
-    return this.roomsRepository.find({
-      relations: ['bookings'],
-    });
+    try {
+      return await this.roomsRepository.find();
+    } catch (error) {
+      throw new DatabaseException('Failed to fetch rooms', error);
+    }
   }
 
   /**
@@ -29,16 +32,18 @@ export class RoomsService {
    * @throws NotFoundException if room is not found
    */
   async findOne(id: number): Promise<Room> {
-    const room = await this.roomsRepository.findOne({
-      where: { id: id },
-      relations: ['bookings'],
-    });
-
-    if (!room) {
-      throw new NotFoundException(`Room with ID ${id} not found`);
+    try {
+      const room = await this.roomsRepository.findOne({ where: { id } });
+      if (!room) {
+        throw new ResourceNotFoundException('Room', id);
+      }
+      return room;
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to fetch room', error);
     }
-
-    return room;
   }
 
   /**
@@ -47,8 +52,23 @@ export class RoomsService {
    * @returns Promise<Room> The newly created room
    */
   async create(createRoomDto: CreateRoomDto): Promise<Room> {
-    const room = this.roomsRepository.create(createRoomDto);
-    return this.roomsRepository.save(room);
+    try {
+      // Check if room number already exists
+      const existingRoom = await this.roomsRepository.findOne({
+        where: { roomNumber: createRoomDto.number },
+      });
+      if (existingRoom) {
+        throw new ConflictException(`Room with number ${createRoomDto.number} already exists`);
+      }
+
+      const room = this.roomsRepository.create(createRoomDto);
+      return await this.roomsRepository.save(room);
+    } catch (error) {
+      if (error instanceof ConflictException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to create room', error);
+    }
   }
 
   /**
@@ -59,11 +79,18 @@ export class RoomsService {
    * @throws NotFoundException if room is not found
    */
   async update(id: number, updateRoomDto: UpdateRoomDto): Promise<Room> {
-    const result = await this.roomsRepository.update(id, updateRoomDto);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Room with ID ${id} not found`);
+    try {
+      const result = await this.roomsRepository.update(id, updateRoomDto);
+      if (result.affected === 0) {
+        throw new ResourceNotFoundException('Room', id);
+      }
+      return this.findOne(id);
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to update room', error);
     }
-    return this.findOne(id);
   }
 
   /**
@@ -73,9 +100,16 @@ export class RoomsService {
    * @throws NotFoundException if room is not found
    */
   async remove(id: number): Promise<void> {
-    const result = await this.roomsRepository.delete(id);
-    if (result.affected === 0) {
-      throw new NotFoundException(`Room with ID ${id} not found`);
+    try {
+      const result = await this.roomsRepository.delete(id);
+      if (result.affected === 0) {
+        throw new ResourceNotFoundException('Room', id);
+      }
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to delete room', error);
     }
   }
 
@@ -95,31 +129,28 @@ export class RoomsService {
     maxGuests?: number,
     maxPrice?: number,
   ): Promise<Room[]> {
-    const query = this.roomsRepository
-      .createQueryBuilder('room')
-      .leftJoinAndSelect('room.bookings', 'booking')
-      .where('room.availabilityStatus = :status', {
-        status: AvailabilityStatus.AVAILABLE,
-      });
+    try {
+      const query = this.roomsRepository
+        .createQueryBuilder('room')
+        .where('room.availabilityStatus = :status', {
+          status: AvailabilityStatus.AVAILABLE,
+        });
 
-    if (roomType) {
-      query.andWhere('room.roomType = :roomType', { roomType });
+      if (roomType) {
+        query.andWhere('room.type = :type', { type: roomType });
+      }
+
+      if (maxGuests) {
+        query.andWhere('room.maxGuests >= :maxGuests', { maxGuests });
+      }
+
+      if (maxPrice) {
+        query.andWhere('room.pricePerNight <= :maxPrice', { maxPrice });
+      }
+
+      return await query.getMany();
+    } catch (error) {
+      throw new DatabaseException('Failed to fetch available rooms', error);
     }
-
-    if (maxGuests) {
-      query.andWhere('room.maxGuests >= :maxGuests', { maxGuests });
-    }
-
-    if (maxPrice) {
-      query.andWhere('room.pricePerNight <= :maxPrice', { maxPrice });
-    }
-
-    // Check for overlapping bookings
-    query.andWhere(
-      '(booking.checkInDate IS NULL OR booking.checkOutDate <= :checkInDate OR booking.checkInDate >= :checkOutDate)',
-      { checkInDate, checkOutDate },
-    );
-
-    return query.getMany();
   }
 }

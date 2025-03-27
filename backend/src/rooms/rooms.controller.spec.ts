@@ -4,7 +4,7 @@ import { RoomsService } from './rooms.service.js';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity.js';
-import { NotFoundException } from '@nestjs/common';
+import { ResourceNotFoundException, DatabaseException, ConflictException } from '../common/exceptions/hotel-booking.exception';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -71,6 +71,13 @@ describe('RoomsController', () => {
       expect(result).toEqual(rooms);
       expect(mockRoomsService.findAll).toHaveBeenCalled();
     });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to fetch rooms', new Error('Database error'));
+      mockRoomsService.findAll.mockRejectedValue(error);
+
+      await expect(controller.findAll()).rejects.toThrow(DatabaseException);
+    });
   });
 
   describe('findAvailableRooms', () => {
@@ -132,10 +139,17 @@ describe('RoomsController', () => {
       expect(mockRoomsService.findOne).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException when room is not found', async () => {
-      mockRoomsService.findOne.mockRejectedValue(new NotFoundException());
+    it('should throw ResourceNotFoundException when room is not found', async () => {
+      mockRoomsService.findOne.mockRejectedValue(new ResourceNotFoundException('Room', 1));
 
-      await expect(controller.findOne('999')).rejects.toThrow(NotFoundException);
+      await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to fetch room', new Error('Database error'));
+      mockRoomsService.findOne.mockRejectedValue(error);
+
+      await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -152,8 +166,8 @@ describe('RoomsController', () => {
           tv: true,
           airConditioning: true,
         }),
-        availabilityStatus: AvailabilityStatus.AVAILABLE,
         floor: 1,
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
       };
 
       mockRoomsService.create.mockResolvedValue(mockRoom);
@@ -162,6 +176,51 @@ describe('RoomsController', () => {
 
       expect(result).toEqual(mockRoom);
       expect(mockRoomsService.create).toHaveBeenCalledWith(createRoomDto);
+    });
+
+    it('should throw ConflictException when room number already exists', async () => {
+      const createRoomDto: CreateRoomDto = {
+        number: '101',
+        type: RoomType.DOUBLE,
+        pricePerNight: 100,
+        maxGuests: 2,
+        description: 'A comfortable double room',
+        amenities: JSON.stringify({
+          wifi: true,
+          tv: true,
+          airConditioning: true,
+        }),
+        floor: 1,
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
+      };
+
+      mockRoomsService.create.mockRejectedValue(
+        new ConflictException('Room with number 101 already exists'),
+      );
+
+      await expect(controller.create(createRoomDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const createRoomDto: CreateRoomDto = {
+        number: '101',
+        type: RoomType.DOUBLE,
+        pricePerNight: 100,
+        maxGuests: 2,
+        description: 'A comfortable double room',
+        amenities: JSON.stringify({
+          wifi: true,
+          tv: true,
+          airConditioning: true,
+        }),
+        floor: 1,
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
+      };
+
+      const error = new DatabaseException('Failed to create room', new Error('Database error'));
+      mockRoomsService.create.mockRejectedValue(error);
+
+      await expect(controller.create(createRoomDto)).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -181,14 +240,25 @@ describe('RoomsController', () => {
       expect(mockRoomsService.update).toHaveBeenCalledWith(1, updateRoomDto);
     });
 
-    it('should throw NotFoundException when room is not found', async () => {
+    it('should throw ResourceNotFoundException when room is not found', async () => {
       const updateRoomDto: UpdateRoomDto = {
         pricePerNight: 150,
       };
 
-      mockRoomsService.update.mockRejectedValue(new NotFoundException());
+      mockRoomsService.update.mockRejectedValue(new ResourceNotFoundException('Room', 1));
 
-      await expect(controller.update('999', updateRoomDto)).rejects.toThrow(NotFoundException);
+      await expect(controller.update('1', updateRoomDto)).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const updateRoomDto: UpdateRoomDto = {
+        pricePerNight: 150,
+      };
+
+      const error = new DatabaseException('Failed to update room', new Error('Database error'));
+      mockRoomsService.update.mockRejectedValue(error);
+
+      await expect(controller.update('1', updateRoomDto)).rejects.toThrow(DatabaseException);
     });
   });
 
@@ -201,10 +271,17 @@ describe('RoomsController', () => {
       expect(mockRoomsService.remove).toHaveBeenCalledWith(1);
     });
 
-    it('should throw NotFoundException when room is not found', async () => {
-      mockRoomsService.remove.mockRejectedValue(new NotFoundException());
+    it('should throw ResourceNotFoundException when room is not found', async () => {
+      mockRoomsService.remove.mockRejectedValue(new ResourceNotFoundException('Room', 1));
 
-      await expect(controller.remove('999')).rejects.toThrow(NotFoundException);
+      await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
+    });
+
+    it('should throw DatabaseException when service fails', async () => {
+      const error = new DatabaseException('Failed to delete room', new Error('Database error'));
+      mockRoomsService.remove.mockRejectedValue(error);
+
+      await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });
 });
