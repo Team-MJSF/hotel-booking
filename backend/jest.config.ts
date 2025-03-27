@@ -9,6 +9,7 @@ const config: JestConfigWithTsJest = {
       'ts-jest',
       {
         useESM: true,
+        tsconfig: 'tsconfig.json',
       },
     ],
   },
@@ -21,6 +22,38 @@ const config: JestConfigWithTsJest = {
     name: 'HOTEL-BOOKING',
     color: 'blue',
   },
+  // Test patterns
+  testMatch: [
+    '**/src/**/*.spec.ts',
+    '**/src/**/*.test.ts'
+  ],
+  // Ignore patterns
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/dist/',
+    '/*.d.ts'
+  ],
+  // Coverage configuration
+  collectCoverageFrom: [
+    'src/**/*.ts',
+    '!src/**/*.d.ts',
+    '!src/**/*.spec.ts',
+    '!src/**/*.test.ts'
+  ],
+  // Coverage directory
+  coverageDirectory: 'coverage',
+  // Coverage reporters
+  coverageReporters: ['text', 'lcov'],
+  // Test environment setup
+  testEnvironmentOptions: {
+    url: 'http://localhost',
+  },
+  // Module file extensions
+  moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  // Root directory
+  rootDir: '.',
+  // Test timeout
+  testTimeout: 10000
 };
 
 export default config; 
