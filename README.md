@@ -1,141 +1,196 @@
 # Hotel Booking System
 
-A full-stack web application for hotel booking management, built with React and Express.js.
-
-## Project Overview
-
-This project is a modern hotel booking system that allows users to manage room reservations, user accounts, and payments. It consists of a React-based frontend for the user interface and an Express.js backend for API services.
-
-## Tech Stack
-
-### Frontend
-- React (with Vite as build tool)
-- JavaScript
-
-### Backend
-- Node.js with Express.js
-- Sequelize ORM
-- MySQL Database
-- Jest for testing
-- Factory pattern with dependency injection for controllers
-
-## Architecture Highlights
-
-### Backend Design
-
-- **Controller Factory Pattern**: Uses factory functions with dependency injection for better testability and maintainability
-- **Comprehensive Test Coverage**: Each controller has dedicated test suites
-- **Consistent Error Handling**: Standardized approach across all endpoints
-- **Model-Controller Separation**: Clear separation of concerns between data models and business logic
-
-### Testing Approach
-
-The project includes extensive unit tests for controllers and models:
-
-- **Mocking Strategy**: Dependencies are mocked using Jest's mocking facilities
-- **Test Organization**: Tests follow the setup-call-assertion pattern for clarity
-- **Isolation**: Each test uses fresh instances of controllers with custom dependencies
+A full-stack hotel booking application built with NestJS (backend) and React (frontend).
 
 ## Project Structure
 
 ```
 hotel-booking/
-├── frontend/       # React frontend application
-├── backend/        # Express.js backend API
-│   ├── controllers/  # Business logic using factory pattern
-│   ├── models/       # Sequelize data models
-│   ├── routes/       # API routes
-│   ├── tests/        # Jest test files
-│   └── ...
-└── README.md       # This file
+├── backend/                 # NestJS backend application
+│   ├── src/                # Source code
+│   │   ├── config/        # Configuration files
+│   │   ├── users/         # User management module
+│   │   ├── rooms/         # Room management module
+│   │   ├── bookings/      # Booking management module
+│   │   ├── payments/      # Payment processing module
+│   │   └── migrations/    # Database migrations
+│   ├── test/              # Test files
+│   └── package.json       # Backend dependencies
+└── frontend/              # React frontend application
+    ├── src/              # Source code
+    ├── public/           # Static files
+    └── package.json      # Frontend dependencies
 ```
 
-Detailed documentation for each part can be found in their respective directories.
+## Features
+
+- User authentication and authorization
+- Room management and availability tracking
+- Booking system with real-time availability
+- Payment processing integration
+- Admin dashboard for hotel management
+- Responsive design for all devices
+
+## Tech Stack
+
+### Backend
+- NestJS (Node.js framework)
+- TypeORM (ORM)
+- MySQL (Database)
+- JWT (Authentication)
+- Swagger (API Documentation)
+
+### Frontend
+- React
+- TypeScript
+- Material-UI
+- Redux Toolkit
+- React Router
+
+## Prerequisites
+
+- Node.js (v16 or higher)
+- MySQL (v8 or higher)
+- npm or yarn
 
 ## Getting Started
 
-### Prerequisites
+### Backend Setup
 
-- Node.js (v14 or higher)
-- MySQL server
-- npm
+1. Navigate to the backend directory:
+   ```bash
+   cd backend
+   ```
 
-### Installation
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-1. Clone the repository
+3. Create a `.env` file in the backend directory with the following variables:
+   ```
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_NAME=hotel_booking
+   JWT_SECRET=your_jwt_secret
+   NODE_ENV=development
+   PORT=3000
+   ```
 
-2. Install Frontend Dependencies:
-```bash
-cd frontend
-npm install
-```
+4. Run database migrations:
+   ```bash
+   npm run migration:run
+   ```
 
-3. Install Backend Dependencies:
-```bash
-cd backend
-npm install
-```
+5. Start the development server:
+   ```bash
+   npm run start:dev
+   ```
 
-4. Configure Backend Environment:
-Create a `.env` file in the backend directory with:
-```env
-// APP
-PORT=5000
-NODE_ENV=development
+The backend API will be available at `http://localhost:3000`
+API documentation will be available at `http://localhost:3000/api`
 
-// DB
-DB_PORT=3306
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=your_password
-```
+### Frontend Setup
 
-5. Set up the Database:
-```bash
-cd backend
-# Create and set up all databases (development, test, production)
-npm run setup:db:all
-```
+1. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
 
-### Development
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-1. Start the Backend Server:
-```bash
-cd backend
-npm run dev
-```
+3. Start the development server:
+   ```bash
+   npm start
+   ```
 
-2. Start the Frontend Development Server:
-```bash
-cd frontend
-npm run dev
-```
+The frontend application will be available at `http://localhost:3001`
 
-### Testing
+## Testing
 
-Run backend tests:
+### Backend Tests
 ```bash
 cd backend
 npm test
 ```
 
-Run specific test files:
+### Frontend Tests
 ```bash
-cd backend
-npm test -- tests/controllers/users.controller.test.js
+cd frontend
+npm test
 ```
 
 ## API Documentation
 
-For detailed API documentation, please see the [Backend README](backend/README.md).
+The API documentation is automatically generated using Swagger and is available at:
+- Development: `http://localhost:3000/api`
+- Production: `https://your-domain.com/api`
 
-## Development Resources
+## Database Schema
 
-- React Documentation: https://react.dev/learn
-- Express.js Learning Resources: https://expressjs.com/
-- Sequelize Documentation: https://sequelize.org/docs/v6/getting-started/
+The application uses the following main entities:
+
+### Users
+- id (Primary Key)
+- firstName
+- lastName
+- email (Unique)
+- password (Hashed)
+- role (Enum: ADMIN, USER)
+- createdAt
+- updatedAt
+
+### Rooms
+- id (Primary Key)
+- roomNumber (Unique)
+- type (Enum: SINGLE, DOUBLE, SUITE, DELUXE)
+- pricePerNight
+- maxGuests
+- description
+- amenities (JSON)
+- availabilityStatus (Enum: AVAILABLE, OCCUPIED, MAINTENANCE)
+- isActive
+- createdAt
+- updatedAt
+
+### Bookings
+- id (Primary Key)
+- userId (Foreign Key)
+- roomId (Foreign Key)
+- checkInDate
+- checkOutDate
+- numberOfGuests
+- specialRequests
+- status (Enum: PENDING, CONFIRMED, CANCELLED)
+- createdAt
+- updatedAt
+
+### Payments
+- id (Primary Key)
+- bookingId (Foreign Key)
+- amount
+- currency
+- paymentMethod (Enum: CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER)
+- transactionId
+- status (Enum: PENDING, COMPLETED, FAILED, REFUNDED)
+- description
+- createdAt
+- updatedAt
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE.md file for details.
+This project is licensed under the MIT License - see the LICENSE file for details.
 

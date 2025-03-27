@@ -1,228 +1,669 @@
-# Hotel Booking Backend
+# Hotel Booking System - Backend
 
-This is the backend service for the Hotel Booking application, providing a robust RESTful API for managing hotel bookings, users, rooms, and payments.
+This is the backend service for the Hotel Booking System, built with NestJS.
 
-## Features
+## Key Technologies
 
-- User Management (authentication, roles, and permissions)
-- Room Management (availability, types, pricing)
-- Booking Management (create, update, cancel bookings)
-- Payment Processing (multiple payment methods)
-- Input Validation and Error Handling
-- Database Migrations
-- Comprehensive Test Coverage
-- Factory Pattern & Dependency Injection for testable controllers
+### NestJS
+- A progressive Node.js framework for building efficient and scalable server-side applications
+- Built on top of Express.js and uses TypeScript by default
+- Follows Angular's architectural patterns and dependency injection
+- Key features used in this project:
+  - Decorators for routing and dependency injection
+  - Modules for organizing code
+  - Guards for authentication
+  - Interceptors for request/response transformation
+  - Pipes for data validation and transformation
+  - Exception filters for error handling
 
-## Tech Stack
+### TypeScript
+- Superset of JavaScript that adds static typing
+- Configuration in `tsconfig.json`:
+  ```json
+  {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "declaration": true,
+      "removeComments": true,
+      "target": "ES2021",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true
+    }
+  }
+  ```
+- Key features used:
+  - Interfaces and types for data structures
+  - Decorators for metadata
+  - Generics for reusable components
+  - Enums for type-safe constants
+  - Type guards for runtime type checking
 
-- Node.js
-- Express.js - Web framework
-- Sequelize - ORM for MySQL
-- MySQL - Database
-- Jest - Testing framework
-- Express Validator - Input validation
-- bcryptjs - Password hashing
+### TypeORM
+- Object-Relational Mapping (ORM) for TypeScript and JavaScript
+- Configuration in `src/config/typeorm.config.ts`:
+  ```typescript
+  export default new DataSource({
+    type: 'mysql',
+    host: configService.get('DB_HOST'),
+    port: parseInt(configService.get('DB_PORT', '3306'), 10),
+    username: configService.get('DB_USER'),
+    password: configService.get('DB_PASSWORD'),
+    database: configService.get('DB_NAME'),
+    entities: [path.join(__dirname, '../**/*.entity.ts')],
+    migrations: [path.join(__dirname, '../migrations/*.ts')],
+    synchronize: false,
+    logging: configService.get('NODE_ENV') === 'development'
+  });
+  ```
+- Features used:
+  - Entity decorators for database models
+  - Repository pattern for data access
+  - Migrations for database versioning
+  - Relations between entities
+  - Query builders for complex queries
+  - Transaction support
+
+### Jest
+- Testing framework for JavaScript/TypeScript
+- Configuration in `jest.config.ts`:
+  ```typescript
+  const config: JestConfigWithTsJest = {
+    preset: 'ts-jest/presets/default-esm',
+    testEnvironment: 'node',
+    extensionsToTreatAsEsm: ['.ts', '.tsx'],
+    transform: {
+      '^.+\\.tsx?$': ['ts-jest', { useESM: true }]
+    },
+    testMatch: ['**/src/**/*.spec.ts'],
+    collectCoverageFrom: ['src/**/*.ts'],
+    coverageDirectory: 'coverage'
+  };
+  ```
+- Testing patterns used:
+  - Unit tests for services
+  - Controller tests for endpoints
+  - Mocking with Jest spies
+  - Test coverage reporting
+  - E2E tests with supertest
 
 ## Architecture
 
-### Controller Design Pattern
+The backend follows a modular architecture with the following key components:
 
-This project uses the factory pattern with dependency injection for controllers, providing several benefits:
+### Modules
 
-- **Testability**: Dependencies can be easily mocked for unit testing
-- **Maintainability**: Clear separation of concerns and explicit dependencies
-- **Flexibility**: Controllers can be instantiated with different configurations
+1. **Users Module**
+   - User management
+   - Authentication
+   - Authorization
+   - Profile management
 
-Example of a controller using the factory pattern:
+2. **Rooms Module**
+   - Room management
+   - Availability tracking
+   - Room types and pricing
+   - Amenities management
 
-```javascript
-// Controller factory function
-export const createUsersController = (deps = {}) => {
-  // Use provided dependencies or defaults
-  const {
-    Users = DefaultUsers,
-    validator = validationResult
-  } = deps;
-  
-  // Controller methods
-  const getAllUsers = async (request, response) => {
-    // Implementation using injected dependencies
-  };
-  
-  // Return controller methods
-  return {
-    getAllUsers,
-    // other methods...
-  };
-};
+3. **Bookings Module**
+   - Reservation management
+   - Availability checking
+   - Booking status tracking
+   - Guest information
 
-// For backward compatibility
-const defaultController = createUsersController();
-export const { getAllUsers, /*...*/ } = defaultController;
-```
+4. **Payments Module**
+   - Payment processing
+   - Transaction management
+   - Payment status tracking
+   - Refund handling
 
-This pattern is used across all controllers (Users, Rooms, Bookings, Payments) for consistency.
+### Database Design
 
-## Getting Started
+The application uses MySQL with TypeORM for database operations. Key features:
 
-### Prerequisites
+- Entity relationships with proper foreign key constraints
+- Enum types for status fields
+- Timestamps for auditing
+- Soft delete support where applicable
+- Indexed fields for performance
 
-- Node.js (v14 or higher)
-- MySQL server
+### API Design
 
-### Installation
+The API follows RESTful principles:
 
-1. Clone the repository and navigate to the backend directory
+- Resource-based URLs
+- HTTP methods for operations (GET, POST, PUT, DELETE)
+- Proper status codes
+- Consistent error handling
+- Swagger documentation
 
-2. Install dependencies:
-```bash
-npm install
-```
+## Development Setup
 
-3. Create a `.env` file in the root directory with the following variables:
-```env
-// APP
-PORT=5000
-NODE_ENV=development
+1. **Install Dependencies**
+   ```bash
+   npm install
+   ```
 
-// DB
-DB_PORT=3306
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=your_password
-```
+2. **Environment Configuration**
+   Create a `.env` file with:
+   ```
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=your_password
+   DB_NAME=hotel_booking
+   JWT_SECRET=your_jwt_secret
+   ```
 
-4. Set up the database:
-```bash
-# Create and set up all databases (development, test, production)
-npm run setup:db:all
-```
+   ### Environment Variables
+   
+   | Variable | Description | Default | Required |
+   |----------|-------------|---------|----------|
+   | `DB_HOST` | Database host | localhost | Yes |
+   | `DB_PORT` | Database port | 3306 | Yes |
+   | `DB_USER` | Database username | root | Yes |
+   | `DB_PASSWORD` | Database password | - | Yes |
+   | `DB_NAME` | Database name | hotel_booking | Yes |
+   | `JWT_SECRET` | Secret for JWT token generation | - | Yes |
+   | `JWT_EXPIRATION` | JWT token expiration time | 24h | No |
+   | `PORT` | Application port | 3000 | No |
+   | `NODE_ENV` | Environment (development/production) | development | No |
+   | `CORS_ORIGIN` | Allowed CORS origins | http://localhost:3001 | No |
+   | `LOG_LEVEL` | Logging level (error/warn/log/debug) | log | No |
 
-5. Start the development server:
-```bash
-npm run dev
-```
+3. **Database Setup**
+   ```bash
+   # Create database
+   mysql -u root -p
+   CREATE DATABASE hotel_booking;
+   
+   # Run migrations
+   npm run db:migrate
+   
+   # If you need to reset the database
+   npm run dev:reset
+   ```
+
+4. **Start Development Server**
+   ```bash
+   npm run dev
+   ```
 
 ## Testing
 
-The project includes comprehensive unit and integration tests using Jest.
-
-### Running Tests
-
-Run all tests:
+### Unit Tests
 ```bash
+# Run all unit tests
 npm test
+
+# Run tests in watch mode
+npm run test:watch
+
+# Run tests with coverage
+npm run test:cov
+
+# Run specific test file
+npm test -- src/users/users.service.spec.ts
 ```
 
-Run specific test files:
+### Test Structure
+```
+src/
+├── users/
+│   ├── users.controller.ts
+│   ├── users.controller.spec.ts
+│   ├── users.service.ts
+│   └── users.service.spec.ts
+├── rooms/
+│   ├── rooms.controller.ts
+│   ├── rooms.controller.spec.ts
+│   ├── rooms.service.ts
+│   └── rooms.service.spec.ts
+├── bookings/
+│   ├── bookings.controller.ts
+│   ├── bookings.controller.spec.ts
+│   ├── bookings.service.ts
+│   └── bookings.service.spec.ts
+└── payments/
+    ├── payments.controller.ts
+    ├── payments.controller.spec.ts
+    ├── payments.service.ts
+    └── payments.service.spec.ts
+```
+
+### Writing Tests
+```typescript
+// Example test file (users.service.spec.ts)
+describe('UsersService', () => {
+  let service: UsersService;
+  let repository: Repository<User>;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UsersService,
+        {
+          provide: getRepositoryToken(User),
+          useValue: {
+            find: jest.fn(),
+            findOne: jest.fn(),
+            create: jest.fn(),
+            save: jest.fn(),
+            delete: jest.fn(),
+          },
+        },
+      ],
+    }).compile();
+
+    service = module.get<UsersService>(UsersService);
+    repository = module.get<Repository<User>>(getRepositoryToken(User));
+  });
+
+  it('should be defined', () => {
+    expect(service).toBeDefined();
+  });
+
+  describe('create', () => {
+    it('should create a new user', async () => {
+      const createUserDto = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+      };
+
+      const user = { id: 1, ...createUserDto };
+      jest.spyOn(repository, 'create').mockReturnValue(user);
+      jest.spyOn(repository, 'save').mockResolvedValue(user);
+
+      const result = await service.create(createUserDto);
+
+      expect(result).toEqual(user);
+      expect(repository.create).toHaveBeenCalledWith(createUserDto);
+      expect(repository.save).toHaveBeenCalled();
+    });
+  });
+});
+```
+
+### E2E Tests
 ```bash
-npm test -- tests/controllers/users.controller.test.js
+# Run all E2E tests
+npm run test:e2e
+
+# Run specific E2E test file
+npm run test:e2e -- test/users.e2e-spec.ts
 ```
 
-### Testing Approach
+### Test Coverage
+```bash
+# Generate coverage report
+npm run test:cov
 
-- **Unit Tests**: Each controller has dedicated test files that verify functionality in isolation
-- **Dependency Injection**: Tests use mock implementations of models and services
-- **Test Organization**: Tests are organized into describe blocks by function with clear setup, call, and assertion sections
-
-Example test using dependency injection:
-
-```javascript
-// Mock dependencies
-const mockUsersModel = {
-  findAll: jest.fn(),
-  findByPk: jest.fn(),
-  create: jest.fn()
-};
-
-// Create controller with mocks
-const usersController = createUsersController({
-  Users: mockUsersModel,
-  validator: mockValidator
-});
-
-test('should return all users', async () => {
-  // SETUP: Configure mock behavior
-  mockUsersModel.findAll.mockResolvedValue([{ id: 1, name: 'Test User' }]);
-  
-  // CALL: Execute the function being tested
-  await usersController.getAllUsers(req, res);
-  
-  // ASSERTION: Verify expected outcomes
-  expect(mockUsersModel.findAll).toHaveBeenCalled();
-  expect(res.json).toHaveBeenCalledWith([{ id: 1, name: 'Test User' }]);
-});
+# Coverage report will be available at:
+# coverage/lcov-report/index.html
 ```
+
+### Test Environment
+- Tests use a separate test database
+- Each test suite runs in isolation
+- Database is cleaned between tests
+- Mock external services and dependencies
 
 ## API Documentation
 
-### Base URL
+The API documentation is available at `http://localhost:3000/api` when running in development mode.
+
+### Authentication
+
+The API uses JWT for authentication. Include the token in the Authorization header:
 ```
-http://localhost:5000/api
+Authorization: Bearer <your_jwt_token>
 ```
 
-### Available Endpoints
+### Endpoints
 
 #### Users
-- GET /api/users - Get all users
-- GET /api/users/:id - Get user by ID
-- POST /api/users - Create new user
-- PUT /api/users/:id - Update user
-- DELETE /api/users/:id - Delete user
+- `POST /users` - Create user
+  ```json
+  // Request
+  {
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "password": "securePassword123",
+    "role": "USER"
+  }
+  
+  // Response (201 Created)
+  {
+    "id": 1,
+    "firstName": "John",
+    "lastName": "Doe",
+    "email": "john@example.com",
+    "role": "USER",
+    "createdAt": "2024-03-15T10:00:00Z",
+    "updatedAt": "2024-03-15T10:00:00Z"
+  }
+  ```
+
+- `GET /users` - List users
+  ```json
+  // Response (200 OK)
+  {
+    "data": [
+      {
+        "id": 1,
+        "firstName": "John",
+        "lastName": "Doe",
+        "email": "john@example.com",
+        "role": "USER",
+        "createdAt": "2024-03-15T10:00:00Z",
+        "updatedAt": "2024-03-15T10:00:00Z"
+      }
+    ],
+    "meta": {
+      "total": 1,
+      "page": 1,
+      "limit": 10
+    }
+  }
+  ```
+
+- `GET /users/:id` - Get user details
+- `PUT /users/:id` - Update user
+- `DELETE /users/:id` - Delete user
 
 #### Rooms
-- GET /api/rooms - Get all rooms
-- GET /api/rooms/:id - Get room by ID
-- POST /api/rooms - Create new room
-- PUT /api/rooms/:id - Update room
-- DELETE /api/rooms/:id - Delete room
-- GET /api/rooms/availability - Check room availability for date range
-- GET /api/rooms/amenities - Filter rooms by amenities
+- `POST /rooms` - Create room
+  ```json
+  // Request
+  {
+    "roomNumber": "101",
+    "type": "DOUBLE",
+    "pricePerNight": 100,
+    "maxGuests": 2,
+    "description": "Comfortable double room",
+    "amenities": {
+      "wifi": true,
+      "tv": true,
+      "airConditioning": true
+    }
+  }
+  ```
+
+- `GET /rooms` - List rooms
+- `GET /rooms/:id` - Get room details
+- `PUT /rooms/:id` - Update room
+- `DELETE /rooms/:id` - Delete room
 
 #### Bookings
-- GET /api/bookings - Get all bookings
-- GET /api/bookings/:id - Get booking by ID
-- POST /api/bookings - Create new booking
-- PUT /api/bookings/:id - Update booking
-- DELETE /api/bookings/:id - Delete booking
+- `POST /bookings` - Create booking
+  ```json
+  // Request
+  {
+    "userId": 1,
+    "roomId": 1,
+    "checkInDate": "2024-03-20",
+    "checkOutDate": "2024-03-25",
+    "numberOfGuests": 2
+  }
+  ```
+
+- `GET /bookings` - List bookings
+- `GET /bookings/:id` - Get booking details
+- `PUT /bookings/:id` - Update booking
+- `DELETE /bookings/:id` - Cancel booking
 
 #### Payments
-- GET /api/payments - Get all payments
-- GET /api/payments/:id - Get payment by ID
-- POST /api/payments - Create new payment
-- PUT /api/payments/:id - Update payment
-- DELETE /api/payments/:id - Delete payment
-- POST /api/payments/:id/process - Process a payment
+- `POST /payments` - Create payment
+  ```json
+  // Request
+  {
+    "bookingId": 1,
+    "amount": 500,
+    "paymentMethod": "CREDIT_CARD",
+    "transactionId": "txn_123456"
+  }
+  ```
 
-### Error Handling
+- `GET /payments` - List payments
+- `GET /payments/:id` - Get payment details
+- `PUT /payments/:id` - Update payment
+- `DELETE /payments/:id` - Delete payment
 
-All controllers implement consistent error handling:
+## Error Handling
 
-- **400 Bad Request**: Validation errors or invalid input
-- **404 Not Found**: Resource does not exist
-- **500 Internal Server Error**: Database or processing errors
+The API uses a consistent error response format:
 
-Example error response:
 ```json
 {
+  "statusCode": 400,
   "message": "Error message",
-  "error": "Detailed error information"
+  "error": "Error type"
 }
 ```
 
-## Development
+Common HTTP status codes:
+- 200: Success
+- 201: Created
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Internal Server Error
 
-### Running Tests
-```bash
-npm test
+## Logging
+
+The application uses NestJS's built-in logger with the following levels:
+- ERROR: For error messages
+- WARN: For warning messages
+- LOG: For general information
+- DEBUG: For detailed debugging information
+
+## Performance Considerations
+
+1. **Database Indexing**
+   - Primary keys are automatically indexed
+   - Foreign keys are indexed for faster joins
+   - Frequently queried fields are indexed
+
+2. **Caching**
+   - Room availability is cached
+   - User sessions are cached
+   - Static data is cached
+
+3. **Query Optimization**
+   - Use of TypeORM relations
+   - Proper join strategies
+   - Pagination for large datasets
+
+## Security
+
+1. **Authentication**
+   - JWT-based authentication
+   - Password hashing with bcrypt
+   - Token expiration
+
+2. **Authorization**
+   - Role-based access control
+   - Resource-level permissions
+   - API endpoint protection
+
+3. **Data Protection**
+   - Input validation
+   - SQL injection prevention
+   - XSS protection
+
+## Deployment
+
+### Prerequisites
+- Node.js v16 or higher
+- MySQL v8 or higher
+- PM2 (for production process management)
+- Nginx (for reverse proxy)
+
+### Production Environment Setup
+
+1. **Build the Application**
+   ```bash
+   # Install dependencies
+   npm ci --only=production
+
+   # Build the application
+   npm run build
+   ```
+
+2. **Environment Configuration**
+   Create a `.env.production` file:
+   ```
+   NODE_ENV=production
+   PORT=3000
+   DB_HOST=your-production-db-host
+   DB_PORT=3306
+   DB_USERNAME=your-production-db-user
+   DB_PASSWORD=your-production-db-password
+   DB_DATABASE=hotel_booking_prod
+   JWT_SECRET=your-production-jwt-secret
+   JWT_EXPIRATION=24h
+   CORS_ORIGIN=https://your-frontend-domain.com
+   LOG_LEVEL=error
+   ```
+
+3. **Database Setup**
+   ```bash
+   # Run migrations
+   npm run migration:run
+   ```
+
+4. **Start the Application**
+   ```bash
+   # Using PM2
+   pm2 start dist/main.js --name hotel-booking
+
+   # Or using Node directly
+   node dist/main.js
+   ```
+
+### Docker Deployment
+
+1. **Build Docker Image**
+   ```bash
+   docker build -t hotel-booking-backend .
+   ```
+
+2. **Run Container**
+   ```bash
+   docker run -d \
+     --name hotel-booking-backend \
+     -p 3000:3000 \
+     --env-file .env.production \
+     --restart unless-stopped \
+     hotel-booking-backend
+   ```
+
+3. **Docker Compose**
+   ```yaml
+   # docker-compose.yml
+   version: '3.8'
+   services:
+     app:
+       build: .
+       ports:
+         - "3000:3000"
+       env_file:
+         - .env.production
+       depends_on:
+         - db
+       restart: unless-stopped
+
+     db:
+       image: mysql:8
+       environment:
+         MYSQL_ROOT_PASSWORD: your_root_password
+         MYSQL_DATABASE: hotel_booking_prod
+       volumes:
+         - mysql_data:/var/lib/mysql
+       restart: unless-stopped
+
+   volumes:
+     mysql_data:
+   ```
+
+### Nginx Configuration
+
+```nginx
+# /etc/nginx/sites-available/hotel-booking
+server {
+    listen 80;
+    server_name your-domain.com;
+
+    location / {
+        proxy_pass http://localhost:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host $host;
+        proxy_cache_bypass $http_upgrade;
+    }
+}
 ```
 
-### Code Style
-This project uses ESLint for code style enforcement. Run linting with:
-```bash
-npm run lint
-```
+### Monitoring and Logging
+
+1. **PM2 Monitoring**
+   ```bash
+   # Monitor application
+   pm2 monit
+
+   # View logs
+   pm2 logs hotel-booking
+   ```
+
+2. **Health Checks**
+   ```bash
+   # Health check endpoint
+   curl http://localhost:3000/health
+   ```
+
+### Backup and Recovery
+
+1. **Database Backup**
+   ```bash
+   # Create backup
+   mysqldump -u root -p hotel_booking_prod > backup.sql
+
+   # Restore backup
+   mysql -u root -p hotel_booking_prod < backup.sql
+   ```
+
+2. **Application Backup**
+   ```bash
+   # Backup environment files
+   cp .env.production .env.production.backup
+
+   # Backup database migrations
+   cp -r src/migrations migrations.backup
+   ```
+
+### Scaling
+
+1. **Horizontal Scaling**
+   - Use a load balancer (e.g., Nginx)
+   - Deploy multiple instances behind the load balancer
+   - Use sticky sessions if needed
+
+2. **Vertical Scaling**
+   - Increase server resources
+   - Optimize database queries
+   - Implement caching
+
+## Contributing
+
+1. Create a feature branch
+2. Make your changes
+3. Run tests
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details
+This project is licensed under the MIT License.
