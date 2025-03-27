@@ -2,6 +2,90 @@
 
 This is the backend service for the Hotel Booking System, built with NestJS.
 
+## Key Technologies
+
+### NestJS
+- A progressive Node.js framework for building efficient and scalable server-side applications
+- Built on top of Express.js and uses TypeScript by default
+- Follows Angular's architectural patterns and dependency injection
+- Key features used in this project:
+  - Decorators for routing and dependency injection
+  - Modules for organizing code
+  - Guards for authentication
+  - Interceptors for request/response transformation
+  - Pipes for data validation and transformation
+  - Exception filters for error handling
+
+### TypeScript
+- Superset of JavaScript that adds static typing
+- Configuration in `tsconfig.json`:
+  ```json
+  {
+    "compilerOptions": {
+      "module": "CommonJS",
+      "declaration": true,
+      "removeComments": true,
+      "target": "ES2021",
+      "experimentalDecorators": true,
+      "emitDecoratorMetadata": true
+    }
+  }
+  ```
+- Key features used:
+  - Interfaces and types for data structures
+  - Decorators for metadata
+  - Generics for reusable components
+  - Enums for type-safe constants
+  - Type guards for runtime type checking
+
+### TypeORM
+- Object-Relational Mapping (ORM) for TypeScript and JavaScript
+- Configuration in `src/config/typeorm.config.ts`:
+  ```typescript
+  export default new DataSource({
+    type: 'mysql',
+    host: configService.get('DB_HOST'),
+    port: parseInt(configService.get('DB_PORT', '3306'), 10),
+    username: configService.get('DB_USER'),
+    password: configService.get('DB_PASSWORD'),
+    database: configService.get('DB_NAME'),
+    entities: [path.join(__dirname, '../**/*.entity.ts')],
+    migrations: [path.join(__dirname, '../migrations/*.ts')],
+    synchronize: false,
+    logging: configService.get('NODE_ENV') === 'development'
+  });
+  ```
+- Features used:
+  - Entity decorators for database models
+  - Repository pattern for data access
+  - Migrations for database versioning
+  - Relations between entities
+  - Query builders for complex queries
+  - Transaction support
+
+### Jest
+- Testing framework for JavaScript/TypeScript
+- Configuration in `jest.config.ts`:
+  ```typescript
+  const config: JestConfigWithTsJest = {
+    preset: 'ts-jest/presets/default-esm',
+    testEnvironment: 'node',
+    extensionsToTreatAsEsm: ['.ts', '.tsx'],
+    transform: {
+      '^.+\\.tsx?$': ['ts-jest', { useESM: true }]
+    },
+    testMatch: ['**/src/**/*.spec.ts'],
+    collectCoverageFrom: ['src/**/*.ts'],
+    coverageDirectory: 'coverage'
+  };
+  ```
+- Testing patterns used:
+  - Unit tests for services
+  - Controller tests for endpoints
+  - Mocking with Jest spies
+  - Test coverage reporting
+  - E2E tests with supertest
+
 ## Architecture
 
 The backend follows a modular architecture with the following key components:
