@@ -23,8 +23,8 @@
     "db:migrate": "npm run migration:run",
     "db:revert": "npm run migration:revert",
     "db:generate": "npm run migration:generate",
-    "dev": "npm run db:migrate && npm run start:dev",
-    "dev:reset": "npm run db:revert && npm run db:migrate && npm run start:dev"
+    "dev": "npm run build && npm run db:migrate && npm run start:dev",
+    "dev:reset": "npm run build && npm run db:revert && npm run db:migrate && npm run start:dev"
   },
   "dependencies": {
     "@nestjs/common": "^10.0.0",
