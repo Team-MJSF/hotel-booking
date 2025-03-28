@@ -14,7 +14,6 @@ hotel-booking/
 │   │   ├── bookings/      # Booking management module
 │   │   ├── payments/      # Payment processing module
 │   │   └── migrations/    # Database migrations
-│   ├── test/              # Test files
 │   └── package.json       # Backend dependencies
 └── frontend/              # React frontend application
     ├── src/              # Source code
