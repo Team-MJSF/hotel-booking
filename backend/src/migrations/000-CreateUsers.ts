@@ -61,16 +61,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
       true,
     );
 
-    // Create indexes for better query performance
-    await queryRunner.createIndex(
-      'Users',
-      new TableIndex({
-        name: 'IDX_USERS_EMAIL',
-        columnNames: ['email'],
-        isUnique: true,
-      }),
-    );
-
+    // Create index for role
     await queryRunner.createIndex(
       'Users',
       new TableIndex({
@@ -80,7 +71,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
     );
 
     await queryRunner.query(
-      'ALTER TABLE "Users" ADD CONSTRAINT "FK_Users_createdBy" FOREIGN KEY ("createdBy") REFERENCES "Users"("id") ON DELETE SET NULL',
+      'ALTER TABLE `Users` ADD CONSTRAINT `FK_Users_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `Users`(`userId`) ON DELETE SET NULL',
     );
   }
 
@@ -88,7 +79,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
     const table = await queryRunner.getTable('Users');
     if (table) {
       const indices = table.indices.filter(
-        (index) => index.name === 'IDX_USERS_EMAIL' || index.name === 'IDX_USERS_ROLE',
+        (index) => index.name === 'IDX_USERS_ROLE',
       );
       await Promise.all(indices.map((index) => queryRunner.dropIndex('Users', index)));
     }
