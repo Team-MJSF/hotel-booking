@@ -5,12 +5,18 @@ import { Booking } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
+import { User } from '../users/entities/user.entity';
+import { Room } from '../rooms/entities/room.entity';
 
 @Injectable()
 export class BookingsService {
   constructor(
     @InjectRepository(Booking)
     private bookingsRepository: Repository<Booking>,
+    @InjectRepository(User)
+    private usersRepository: Repository<User>,
+    @InjectRepository(Room)
+    private roomsRepository: Repository<Room>,
   ) {}
 
   /**
@@ -68,10 +74,27 @@ export class BookingsService {
         ]);
       }
 
-      const booking = this.bookingsRepository.create(createBookingDto);
+      // Load user and room entities
+      const user = await this.usersRepository.findOne({ where: { id: createBookingDto.userId } });
+      if (!user) {
+        throw new ResourceNotFoundException('User', createBookingDto.userId);
+      }
+
+      const room = await this.roomsRepository.findOne({ where: { id: createBookingDto.roomId } });
+      if (!room) {
+        throw new ResourceNotFoundException('Room', createBookingDto.roomId);
+      }
+
+      // Create booking with relations
+      const booking = this.bookingsRepository.create({
+        ...createBookingDto,
+        user,
+        room,
+      });
+
       return await this.bookingsRepository.save(booking);
     } catch (error) {
-      if (error instanceof BookingValidationException) {
+      if (error instanceof BookingValidationException || error instanceof ResourceNotFoundException) {
         throw error;
       }
       throw new DatabaseException('Failed to create booking', error as Error);
@@ -87,6 +110,12 @@ export class BookingsService {
    */
   async update(id: number, updateBookingDto: UpdateBookingDto): Promise<Booking> {
     try {
+      // Find the existing booking
+      const booking = await this.findOne(id);
+      if (!booking) {
+        throw new ResourceNotFoundException('Booking', id);
+      }
+
       // Validate check-in and check-out dates if they are being updated
       if (updateBookingDto.checkInDate && updateBookingDto.checkOutDate) {
         if (updateBookingDto.checkInDate >= updateBookingDto.checkOutDate) {
@@ -97,11 +126,32 @@ export class BookingsService {
         }
       }
 
-      const result = await this.bookingsRepository.update(id, updateBookingDto);
-      if (result.affected === 0) {
-        throw new ResourceNotFoundException('Booking', id);
+      // Load user and room entities if they are being updated
+      let user = booking.user;
+      let room = booking.room;
+
+      if (updateBookingDto.userId) {
+        user = await this.usersRepository.findOne({ where: { id: updateBookingDto.userId } });
+        if (!user) {
+          throw new ResourceNotFoundException('User', updateBookingDto.userId);
+        }
       }
-      return this.findOne(id);
+
+      if (updateBookingDto.roomId) {
+        room = await this.roomsRepository.findOne({ where: { id: updateBookingDto.roomId } });
+        if (!room) {
+          throw new ResourceNotFoundException('Room', updateBookingDto.roomId);
+        }
+      }
+
+      // Update the booking with the new values and relations
+      const updatedBooking = this.bookingsRepository.merge(booking, {
+        ...updateBookingDto,
+        user,
+        room,
+      });
+
+      return await this.bookingsRepository.save(updatedBooking);
     } catch (error) {
       if (error instanceof ResourceNotFoundException || error instanceof BookingValidationException) {
         throw error;

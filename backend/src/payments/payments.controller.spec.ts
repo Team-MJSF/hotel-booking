@@ -5,6 +5,7 @@ import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity
 import { ResourceNotFoundException, DatabaseException, PaymentProcessingException } from '../common/exceptions/hotel-booking.exception';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { BookingStatus } from '../bookings/entities/booking.entity';
+import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -32,14 +33,38 @@ describe('PaymentsController', () => {
     refundReason: null,
     booking: {
       bookingId: 1,
-      userId: 1,
-      roomId: 1,
+      user: {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        password: 'hashedPassword',
+        role: 'user',
+        bookings: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      room: {
+        id: 1,
+        roomNumber: '101',
+        type: RoomType.DOUBLE,
+        pricePerNight: 100,
+        maxGuests: 2,
+        description: 'A comfortable double room',
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
+        amenities: JSON.stringify({
+          wifi: true,
+          tv: true,
+          airConditioning: true,
+        }),
+        bookings: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
       checkInDate: new Date('2024-03-20'),
       checkOutDate: new Date('2024-03-25'),
       numberOfGuests: 2,
-      status: BookingStatus.CONFIRMED,
-      user: null,
-      room: null,
+      status: BookingStatus.PENDING,
       payments: [],
       createdAt: new Date(),
       updatedAt: new Date(),

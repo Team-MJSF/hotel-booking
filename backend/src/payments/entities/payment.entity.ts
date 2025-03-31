@@ -5,6 +5,7 @@ import {
   ManyToOne,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { ApiProperty } from '@nestjs/swagger';
@@ -25,25 +26,26 @@ export enum PaymentMethod {
 
 @Entity('payments')
 export class Payment {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'payment_id' })
   @ApiProperty({ description: 'The unique identifier of the payment' })
     id: number;
 
-  @Column()
+  @Column({ name: 'booking_id' })
   @ApiProperty({
     description: 'The ID of the booking associated with this payment',
   })
     bookingId: number;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column('decimal', { name: 'amount', precision: 10, scale: 2 })
   @ApiProperty({ description: 'The amount of the payment' })
     amount: number;
 
-  @Column()
+  @Column({ name: 'currency' })
   @ApiProperty({ description: 'The currency of the payment' })
     currency: string;
 
   @Column({
+    name: 'payment_method',
     type: 'enum',
     enum: PaymentMethod,
     default: PaymentMethod.CREDIT_CARD,
@@ -51,11 +53,12 @@ export class Payment {
   @ApiProperty({ description: 'The payment method used', enum: PaymentMethod })
     paymentMethod: PaymentMethod;
 
-  @Column()
+  @Column({ name: 'transaction_id' })
   @ApiProperty({ description: 'The transaction ID from the payment provider' })
     transactionId: string;
 
   @Column({
+    name: 'status',
     type: 'enum',
     enum: PaymentStatus,
     default: PaymentStatus.PENDING,
@@ -66,19 +69,20 @@ export class Payment {
   })
     status: PaymentStatus;
 
-  @Column({ nullable: true })
+  @Column({ name: 'refund_reason', nullable: true })
   @ApiProperty({ description: 'The reason for the refund if applicable' })
     refundReason?: string;
 
   @ManyToOne(() => Booking, (booking) => booking.payments)
+  @JoinColumn({ name: 'booking_id' })
   @ApiProperty({ description: 'The booking associated with this payment' })
     booking: Booking;
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   @ApiProperty({ description: 'The date when the payment was created' })
     createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   @ApiProperty({ description: 'The date when the payment was last updated' })
     updatedAt: Date;
 }

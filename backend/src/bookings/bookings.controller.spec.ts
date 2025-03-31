@@ -5,34 +5,22 @@ import { Booking, BookingStatus } from './entities/booking.entity';
 import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
 import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
+import { User } from '../users/entities/user.entity';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
 
 describe('BookingsController', () => {
   let controller: BookingsController;
-
-  const mockBookingsService = {
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-  };
+  let mockBookingsService: jest.Mocked<BookingsService>;
 
   const mockBooking: Booking = {
     bookingId: 1,
-    userId: 1,
-    roomId: 1,
-    checkInDate: new Date('2024-03-20'),
-    checkOutDate: new Date('2024-03-25'),
-    numberOfGuests: 2,
-    status: BookingStatus.PENDING,
     user: {
       id: 1,
+      email: 'test@example.com',
       firstName: 'John',
       lastName: 'Doe',
-      email: 'john@example.com',
       password: 'hashedPassword',
       role: 'user',
       bookings: [],
@@ -56,6 +44,10 @@ describe('BookingsController', () => {
       createdAt: new Date(),
       updatedAt: new Date(),
     },
+    checkInDate: new Date('2024-03-20'),
+    checkOutDate: new Date('2024-03-25'),
+    numberOfGuests: 2,
+    status: BookingStatus.PENDING,
     payments: [],
     createdAt: new Date(),
     updatedAt: new Date(),

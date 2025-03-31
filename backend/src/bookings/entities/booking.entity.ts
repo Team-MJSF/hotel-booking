@@ -6,6 +6,7 @@ import {
   OneToMany,
   CreateDateColumn,
   UpdateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
@@ -22,27 +23,19 @@ export enum BookingStatus {
 @Entity('bookings')
 export class Booking {
   @ApiProperty({ description: 'The unique identifier of the booking' })
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'booking_id' })
     bookingId!: number;
 
-  @ApiProperty({ description: 'The ID of the user who made the booking' })
-  @Column()
-    userId!: number;
-
-  @ApiProperty({ description: 'The ID of the room being booked' })
-  @Column()
-    roomId!: number;
-
   @ApiProperty({ description: 'The check-in date for the booking' })
-  @Column()
+  @Column({ name: 'check_in_date' })
     checkInDate!: Date;
 
   @ApiProperty({ description: 'The check-out date for the booking' })
-  @Column()
+  @Column({ name: 'check_out_date' })
     checkOutDate!: Date;
 
   @ApiProperty({ description: 'The number of guests for the booking' })
-  @Column({ nullable: true })
+  @Column({ name: 'number_of_guests', nullable: true })
     numberOfGuests!: number;
 
   @ApiProperty({
@@ -51,6 +44,7 @@ export class Booking {
     default: BookingStatus.PENDING,
   })
   @Column({
+    name: 'status',
     type: 'enum',
     enum: BookingStatus,
     default: BookingStatus.PENDING,
@@ -58,11 +52,13 @@ export class Booking {
     status!: BookingStatus;
 
   @ApiProperty({ description: 'The user who made the booking' })
-  @ManyToOne(() => User)
+  @ManyToOne(() => User, (user) => user.bookings)
+  @JoinColumn({ name: 'user_id' })
     user!: User;
 
   @ApiProperty({ description: 'The room being booked' })
-  @ManyToOne(() => Room)
+  @ManyToOne(() => Room, (room) => room.bookings)
+  @JoinColumn({ name: 'room_id' })
     room!: Room;
 
   @ApiProperty({ description: 'The payments associated with this booking' })
@@ -70,10 +66,10 @@ export class Booking {
     payments!: Payment[];
 
   @ApiProperty({ description: 'The date when the booking was created' })
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
     createdAt!: Date;
 
   @ApiProperty({ description: 'The date when the booking was last updated' })
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
     updatedAt!: Date;
 }
