@@ -50,6 +50,11 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'photos',
+            type: 'json',
+            isNullable: true,
+          },
+          {
             name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',

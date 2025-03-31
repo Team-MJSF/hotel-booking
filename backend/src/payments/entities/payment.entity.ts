@@ -10,6 +10,11 @@ import {
 import { ApiProperty } from '@nestjs/swagger';
 import { Booking } from '../../bookings/entities/booking.entity';
 
+export enum Currency {
+  USD = 'USD',
+  EUR = 'EUR'
+}
+
 export enum PaymentStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',
@@ -24,13 +29,6 @@ export enum PaymentMethod {
   CASH = 'cash',
 }
 
-// Currency constants for USD
-export const CURRENCY = {
-  CODE: 'USD',
-  SYMBOL: '$',
-  DECIMALS: 2,
-} as const;
-
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn({ name: 'payment_id' })
@@ -42,9 +40,21 @@ export class Payment {
   @ApiProperty({ description: 'The booking associated with this payment' })
     booking: Booking;
 
-  @Column({ name: 'amount', type: 'decimal', precision: 10, scale: CURRENCY.DECIMALS })
-  @ApiProperty({ description: `The amount of the payment in ${CURRENCY.CODE}` })
+  @Column({ name: 'amount', type: 'decimal', precision: 10, scale: 2 })
+  @ApiProperty({ description: 'The amount of the payment' })
     amount: number;
+
+  @Column({ 
+    name: 'currency', 
+    type: 'enum', 
+    enum: Currency,
+    default: Currency.USD 
+  })
+  @ApiProperty({ 
+    description: 'The currency code for the payment',
+    enum: Currency
+  })
+    currency: Currency;
 
   @Column({
     name: 'payment_method',

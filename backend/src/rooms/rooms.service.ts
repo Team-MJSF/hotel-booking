@@ -132,10 +132,25 @@ export class RoomsService {
     try {
       const query = this.roomsRepository
         .createQueryBuilder('room')
+        // Join with bookings to check availability
+        .leftJoin('room.bookings', 'booking')
+        // Room must be in available status (not under maintenance, etc.)
         .where('room.availabilityStatus = :status', {
           status: AvailabilityStatus.AVAILABLE,
-        });
+        })
+        // Check for booking conflicts
+        .andWhere(
+          // Either no bookings exist OR no booking conflicts with requested dates
+          '(booking.bookingId IS NULL OR NOT (' +
+          ':checkInDate < booking.checkOutDate AND ' +
+          ':checkOutDate > booking.checkInDate))',
+          {
+            checkInDate,
+            checkOutDate,
+          }
+        );
 
+      // Apply optional filters
       if (roomType) {
         query.andWhere('room.type = :type', { type: roomType });
       }
@@ -147,6 +162,9 @@ export class RoomsService {
       if (maxPrice) {
         query.andWhere('room.pricePerNight <= :maxPrice', { maxPrice });
       }
+
+      // Ensure we don't get duplicate rooms
+      query.distinct(true);
 
       return await query.getMany();
     } catch (error) {

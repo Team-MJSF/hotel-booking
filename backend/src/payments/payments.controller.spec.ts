@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
-import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
+import { Payment, PaymentStatus, PaymentMethod, Currency } from './entities/payment.entity';
 import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
@@ -73,6 +73,7 @@ describe('PaymentsController', () => {
     amount: 100.00,
     paymentMethod: PaymentMethod.CREDIT_CARD,
     status: PaymentStatus.PENDING,
+    currency: Currency.USD,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -142,6 +143,7 @@ describe('PaymentsController', () => {
         bookingId: 1,
         amount: 100.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
+        currency: Currency.USD,
         status: PaymentStatus.PENDING,
       };
 
@@ -157,6 +159,7 @@ describe('PaymentsController', () => {
         bookingId: 1,
         amount: 100.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
+        currency: Currency.USD,
         status: PaymentStatus.PENDING,
       };
 
@@ -174,6 +177,7 @@ describe('PaymentsController', () => {
         amount: 150.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
+        currency: Currency.USD,
       };
 
       const updatedPayment = { ...mockPayment, ...updatePaymentDto };
@@ -190,6 +194,7 @@ describe('PaymentsController', () => {
         amount: 150.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
+        currency: Currency.USD,
       };
 
       mockPaymentsService.update.mockRejectedValue(new ResourceNotFoundException('Payment', 1));
@@ -203,6 +208,7 @@ describe('PaymentsController', () => {
         amount: 150.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
+        currency: Currency.USD,
       };
 
       const error = new DatabaseException('Failed to update payment', new Error('Database error'));

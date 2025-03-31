@@ -127,6 +127,57 @@ describe('RoomsController', () => {
         undefined,
       );
     });
+
+    it('should handle date overlap checking', async () => {
+      const checkInDate = '2024-03-20';
+      const checkOutDate = '2024-03-25';
+
+      // Mock a room with an overlapping booking
+      const roomWithBooking = {
+        ...mockRoom,
+        bookings: [{
+          checkInDate: new Date('2024-03-22'),
+          checkOutDate: new Date('2024-03-24'),
+        }],
+      };
+
+      // Mock a room without overlapping bookings
+      const availableRoom = {
+        ...mockRoom,
+        bookings: [],
+      };
+
+      mockRoomsService.findAvailableRooms.mockResolvedValue([availableRoom]);
+
+      const result = await controller.findAvailableRooms(checkInDate, checkOutDate);
+
+      expect(result).toEqual([availableRoom]);
+      expect(result).not.toContain(roomWithBooking);
+      expect(mockRoomsService.findAvailableRooms).toHaveBeenCalledWith(
+        new Date(checkInDate),
+        new Date(checkOutDate),
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+
+    it('should handle rooms with no bookings', async () => {
+      const checkInDate = '2024-03-20';
+      const checkOutDate = '2024-03-25';
+
+      const availableRoom = {
+        ...mockRoom,
+        bookings: [],
+      };
+
+      mockRoomsService.findAvailableRooms.mockResolvedValue([availableRoom]);
+
+      const result = await controller.findAvailableRooms(checkInDate, checkOutDate);
+
+      expect(result).toEqual([availableRoom]);
+      expect(result[0].bookings).toHaveLength(0);
+    });
   });
 
   describe('findOne', () => {

@@ -35,7 +35,7 @@ export default new DataSource({
   password: configService.get('DB_PASSWORD'),
   database: configService.get('DB_NAME'),
   entities: [path.join(__dirname, '../**/*.entity.ts')],
-  migrations: [path.join(__dirname, '../migrations/*.ts')],
+  migrations: [path.join(__dirname, '../database/migrations/*.ts')],
   synchronize: false,
   logging: configService.get('NODE_ENV') === 'development',
   driver: require('mysql2'),

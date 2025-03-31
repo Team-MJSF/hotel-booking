@@ -76,7 +76,7 @@ export class PaymentsController {
   @Patch(':id')
   @ApiOperation({ summary: 'Update a payment' })
   @ApiParam({ name: 'id', description: 'The ID of the payment' })
-  @ApiBody({ type: CreatePaymentDto })
+  @ApiBody({ type: UpdatePaymentDto })
   @ApiResponse({
     status: 200,
     description: 'Payment updated successfully',
@@ -85,7 +85,7 @@ export class PaymentsController {
   @ApiResponse({ status: 404, description: 'Payment not found' })
   update(
     @Param('id') id: string,
-    @Body() updatePaymentDto: CreatePaymentDto,
+    @Body() updatePaymentDto: UpdatePaymentDto,
   ): Promise<Payment> {
     return this.paymentsService.update(+id, updatePaymentDto);
   }

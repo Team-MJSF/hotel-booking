@@ -7,7 +7,7 @@ import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import type { User } from '../users/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
-import { Payment, PaymentStatus, PaymentMethod } from '../payments/entities/payment.entity';
+import { Payment, PaymentStatus, PaymentMethod, Currency } from '../payments/entities/payment.entity';
 import { UserRole } from '../users/entities/user.entity';
 
 // Increase timeout for all tests
@@ -66,6 +66,7 @@ describe('BookingsController', () => {
     status: PaymentStatus.PENDING,
     createdAt: new Date(),
     updatedAt: new Date(),
+    currency: Currency.USD,
   };
 
   const mockBooking: Booking = {

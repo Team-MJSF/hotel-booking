@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsEnum, IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { PaymentStatus, PaymentMethod } from '../entities/payment.entity';
+import { PaymentStatus, PaymentMethod, Currency } from '../entities/payment.entity';
 
 /**
  * Data Transfer Object for creating a new payment
@@ -27,6 +27,11 @@ export class CreatePaymentDto {
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
     paymentMethod: PaymentMethod;
+
+  @ApiProperty({ description: 'The currency of the payment', enum: Currency })
+  @IsNotEmpty()
+  @IsEnum(Currency)
+    currency: Currency;
 
   @ApiProperty({ description: 'The transaction ID from the payment provider' })
   @IsOptional()
