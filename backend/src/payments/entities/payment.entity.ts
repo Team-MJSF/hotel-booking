@@ -24,6 +24,13 @@ export enum PaymentMethod {
   CASH = 'cash',
 }
 
+// Currency constants for USD
+export const CURRENCY = {
+  CODE: 'USD',
+  SYMBOL: '$',
+  DECIMALS: 2,
+} as const;
+
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn({ name: 'payment_id' })
@@ -36,13 +43,9 @@ export class Payment {
   })
     bookingId: number;
 
-  @Column('decimal', { name: 'amount', precision: 10, scale: 2 })
-  @ApiProperty({ description: 'The amount of the payment' })
+  @Column('decimal', { name: 'amount', precision: 10, scale: CURRENCY.DECIMALS })
+  @ApiProperty({ description: `The amount of the payment in ${CURRENCY.CODE}` })
     amount: number;
-
-  @Column({ name: 'currency' })
-  @ApiProperty({ description: 'The currency of the payment' })
-    currency: string;
 
   @Column({
     name: 'payment_method',

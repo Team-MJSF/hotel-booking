@@ -4,6 +4,9 @@ import { PaymentsService } from './payments.service';
 import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
 import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import { CreatePaymentDto } from './dto/create-payment.dto';
+import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
+import { Room, RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
+import { User, UserRole } from '../users/entities/user.entity';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -17,21 +20,62 @@ describe('PaymentsController', () => {
     create: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
+    findByBookingId: jest.fn(),
     processRefund: jest.fn(),
+    updatePaymentStatus: jest.fn(),
+  };
+
+  const mockRoom: Room = {
+    id: 1,
+    roomNumber: '101',
+    type: RoomType.SINGLE,
+    pricePerNight: 100,
+    maxGuests: 2,
+    description: 'Test room',
+    amenities: '[]',
+    photos: [],
+    availabilityStatus: AvailabilityStatus.AVAILABLE,
+    bookings: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockUser: User = {
+    id: 1,
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    password: 'hashedPassword',
+    role: UserRole.USER,
+    phoneNumber: '1234567890',
+    address: '123 Main St',
+    bookings: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockBooking: Booking = {
+    bookingId: 1,
+    checkInDate: new Date(),
+    checkOutDate: new Date(),
+    numberOfGuests: 2,
+    status: BookingStatus.PENDING,
+    room: mockRoom,
+    user: mockUser,
+    payments: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 
   const mockPayment: Payment = {
     paymentId: 1,
     bookingId: 1,
-    amount: 500,
-    currency: 'USD',
+    amount: 100.00,
     paymentMethod: PaymentMethod.CREDIT_CARD,
-    transactionId: 'txn_123',
-    status: PaymentStatus.COMPLETED,
-    refundReason: null,
-    booking: null,
+    status: PaymentStatus.PENDING,
     createdAt: new Date(),
     updatedAt: new Date(),
+    booking: mockBooking,
   };
 
   beforeEach(async () => {
@@ -48,10 +92,6 @@ describe('PaymentsController', () => {
     controller = module.get<PaymentsController>(PaymentsController);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
@@ -62,7 +102,6 @@ describe('PaymentsController', () => {
       mockPaymentsService.findAll.mockResolvedValue(payments);
 
       const result = await controller.findAll();
-
       expect(result).toEqual(payments);
       expect(mockPaymentsService.findAll).toHaveBeenCalled();
     });
@@ -80,7 +119,6 @@ describe('PaymentsController', () => {
       mockPaymentsService.findOne.mockResolvedValue(mockPayment);
 
       const result = await controller.findOne('1');
-
       expect(result).toEqual(mockPayment);
       expect(mockPaymentsService.findOne).toHaveBeenCalledWith(1);
     });
@@ -103,17 +141,14 @@ describe('PaymentsController', () => {
     it('should create a new payment', async () => {
       const createPaymentDto: CreatePaymentDto = {
         bookingId: 1,
-        amount: 500,
-        currency: 'USD',
+        amount: 100.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
-        transactionId: 'tx_123',
         status: PaymentStatus.PENDING,
       };
 
       mockPaymentsService.create.mockResolvedValue(mockPayment);
 
       const result = await controller.create(createPaymentDto);
-
       expect(result).toEqual(mockPayment);
       expect(mockPaymentsService.create).toHaveBeenCalledWith(createPaymentDto);
     });
@@ -121,10 +156,8 @@ describe('PaymentsController', () => {
     it('should throw DatabaseException when service fails', async () => {
       const createPaymentDto: CreatePaymentDto = {
         bookingId: 1,
-        amount: 500,
-        currency: 'USD',
+        amount: 100.00,
         paymentMethod: PaymentMethod.CREDIT_CARD,
-        transactionId: 'tx_123',
         status: PaymentStatus.PENDING,
       };
 
@@ -137,7 +170,10 @@ describe('PaymentsController', () => {
 
   describe('update', () => {
     it('should update a payment', async () => {
-      const updatePaymentDto: Partial<Payment> = {
+      const updatePaymentDto: CreatePaymentDto = {
+        bookingId: 1,
+        amount: 150.00,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
       };
 
@@ -145,13 +181,15 @@ describe('PaymentsController', () => {
       mockPaymentsService.update.mockResolvedValue(updatedPayment);
 
       const result = await controller.update('1', updatePaymentDto);
-
       expect(result).toEqual(updatedPayment);
       expect(mockPaymentsService.update).toHaveBeenCalledWith(1, updatePaymentDto);
     });
 
     it('should throw ResourceNotFoundException when payment is not found', async () => {
-      const updatePaymentDto: Partial<Payment> = {
+      const updatePaymentDto: CreatePaymentDto = {
+        bookingId: 1,
+        amount: 150.00,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
       };
 
@@ -161,7 +199,10 @@ describe('PaymentsController', () => {
     });
 
     it('should throw DatabaseException when service fails', async () => {
-      const updatePaymentDto: Partial<Payment> = {
+      const updatePaymentDto: CreatePaymentDto = {
+        bookingId: 1,
+        amount: 150.00,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
       };
 
@@ -177,7 +218,6 @@ describe('PaymentsController', () => {
       mockPaymentsService.remove.mockResolvedValue(undefined);
 
       await controller.remove('1');
-
       expect(mockPaymentsService.remove).toHaveBeenCalledWith(1);
     });
 
@@ -195,36 +235,53 @@ describe('PaymentsController', () => {
     });
   });
 
+  describe('findByBookingId', () => {
+    it('should return payments for a booking', async () => {
+      const payments = [mockPayment];
+      mockPaymentsService.findByBookingId.mockResolvedValue(payments);
+
+      const result = await controller.findByBookingId('1');
+      expect(result).toEqual(payments);
+      expect(mockPaymentsService.findByBookingId).toHaveBeenCalledWith(1);
+    });
+  });
+
   describe('processRefund', () => {
     it('should process a refund', async () => {
-      const refundReason = 'Customer requested cancellation';
-      const refundedPayment = {
-        ...mockPayment,
-        status: PaymentStatus.REFUNDED,
-        refundReason,
-      };
-
+      const refundReason = 'Customer request';
+      const refundedPayment = { ...mockPayment, status: PaymentStatus.REFUNDED, refundReason };
       mockPaymentsService.processRefund.mockResolvedValue(refundedPayment);
 
       const result = await controller.processRefund('1', refundReason);
-
       expect(result).toEqual(refundedPayment);
       expect(mockPaymentsService.processRefund).toHaveBeenCalledWith(1, refundReason);
     });
 
     it('should throw ResourceNotFoundException when payment is not found', async () => {
-      const refundReason = 'Customer requested cancellation';
+      const refundReason = 'Customer request';
       mockPaymentsService.processRefund.mockRejectedValue(new ResourceNotFoundException('Payment', 1));
 
       await expect(controller.processRefund('1', refundReason)).rejects.toThrow(ResourceNotFoundException);
     });
 
     it('should throw DatabaseException when service fails', async () => {
-      const refundReason = 'Customer requested cancellation';
+      const refundReason = 'Customer request';
       const error = new DatabaseException('Failed to process refund', new Error('Database error'));
       mockPaymentsService.processRefund.mockRejectedValue(error);
 
       await expect(controller.processRefund('1', refundReason)).rejects.toThrow(DatabaseException);
+    });
+  });
+
+  describe('updatePaymentStatus', () => {
+    it('should update payment status', async () => {
+      const newStatus = PaymentStatus.COMPLETED;
+      const updatedPayment = { ...mockPayment, status: newStatus };
+      mockPaymentsService.updatePaymentStatus.mockResolvedValue(updatedPayment);
+
+      const result = await controller.updatePaymentStatus('1', newStatus);
+      expect(result).toEqual(updatedPayment);
+      expect(mockPaymentsService.updatePaymentStatus).toHaveBeenCalledWith(1, newStatus);
     });
   });
 });

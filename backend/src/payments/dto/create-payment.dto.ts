@@ -16,20 +16,12 @@ export class CreatePaymentDto {
     bookingId: number;
 
   /**
-   * The amount of the payment in the specified currency
+   * The amount of the payment in USD
    */
-  @ApiProperty({ description: 'The amount of the payment' })
+  @ApiProperty({ description: 'The amount of the payment in USD' })
   @IsNotEmpty()
   @IsNumber()
     amount: number;
-
-  /**
-   * The currency code for the payment (e.g., 'USD', 'EUR')
-   */
-  @ApiProperty({ description: 'The currency of the payment' })
-  @IsNotEmpty()
-  @IsString()
-    currency: string;
 
   @ApiProperty({ description: 'The payment method used', enum: PaymentMethod })
   @IsNotEmpty()
