@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody } from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { Payment, PaymentStatus } from './entities/payment.entity';
@@ -22,29 +22,11 @@ export class PaymentsController {
   @ApiOperation({ summary: 'Get all payments' })
   @ApiResponse({
     status: 200,
-    description: 'Return all payments',
+    description: 'Returns all payments',
     type: [Payment],
   })
   findAll(): Promise<Payment[]> {
     return this.paymentsService.findAll();
-  }
-
-  /**
-   * Retrieves all payments for a specific booking
-   * @param bookingId - The ID of the booking to get payments for
-   * @returns Promise<Payment[]> Array of payments for the specified booking
-   */
-  @Get('booking/:bookingId')
-  @ApiOperation({ summary: 'Get payments by booking ID' })
-  @ApiParam({ name: 'bookingId', description: 'Booking ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'Return payments for the booking',
-    type: [Payment],
-  })
-  @ApiResponse({ status: 404, description: 'Booking not found' })
-  findByBookingId(@Param('bookingId') bookingId: string): Promise<Payment[]> {
-    return this.paymentsService.findByBookingId(+bookingId);
   }
 
   /**
@@ -54,10 +36,10 @@ export class PaymentsController {
    */
   @Get(':id')
   @ApiOperation({ summary: 'Get a payment by ID' })
-  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiParam({ name: 'id', description: 'The ID of the payment' })
   @ApiResponse({
     status: 200,
-    description: 'Return the payment',
+    description: 'Returns the payment',
     type: Payment,
   })
   @ApiResponse({ status: 404, description: 'Payment not found' })
@@ -75,10 +57,12 @@ export class PaymentsController {
   @ApiBody({ type: CreatePaymentDto })
   @ApiResponse({
     status: 201,
-    description: 'The payment has been successfully created',
+    description: 'Payment created successfully',
     type: Payment,
   })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
+  @ApiResponse({ status: 400, description: 'Invalid input' })
+  @ApiResponse({ status: 404, description: 'Booking not found' })
+  @ApiResponse({ status: 409, description: 'Payment already exists for this booking' })
   create(@Body() createPaymentDto: CreatePaymentDto): Promise<Payment> {
     return this.paymentsService.create(createPaymentDto);
   }
@@ -91,15 +75,18 @@ export class PaymentsController {
    */
   @Patch(':id')
   @ApiOperation({ summary: 'Update a payment' })
-  @ApiParam({ name: 'id', description: 'Payment ID' })
-  @ApiBody({ type: UpdatePaymentDto })
+  @ApiParam({ name: 'id', description: 'The ID of the payment' })
+  @ApiBody({ type: CreatePaymentDto })
   @ApiResponse({
     status: 200,
-    description: 'The payment has been successfully updated',
+    description: 'Payment updated successfully',
     type: Payment,
   })
   @ApiResponse({ status: 404, description: 'Payment not found' })
-  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto): Promise<Payment> {
+  update(
+    @Param('id') id: string,
+    @Body() updatePaymentDto: CreatePaymentDto,
+  ): Promise<Payment> {
     return this.paymentsService.update(+id, updatePaymentDto);
   }
 
@@ -109,15 +96,31 @@ export class PaymentsController {
    * @returns Promise<void>
    */
   @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
   @ApiOperation({ summary: 'Delete a payment' })
-  @ApiParam({ name: 'id', description: 'Payment ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'The payment has been successfully deleted',
-  })
+  @ApiParam({ name: 'id', description: 'The ID of the payment' })
+  @ApiResponse({ status: 204, description: 'Payment deleted successfully' })
   @ApiResponse({ status: 404, description: 'Payment not found' })
   remove(@Param('id') id: string): Promise<void> {
     return this.paymentsService.remove(+id);
+  }
+
+  /**
+   * Retrieves all payments for a specific booking
+   * @param bookingId - The ID of the booking to get payments for
+   * @returns Promise<Payment> The payment for the specified booking
+   */
+  @Get('booking/:bookingId')
+  @ApiOperation({ summary: 'Get payment by booking ID' })
+  @ApiParam({ name: 'bookingId', description: 'The ID of the booking' })
+  @ApiResponse({
+    status: 200,
+    description: 'Returns the payment for the booking',
+    type: Payment,
+  })
+  @ApiResponse({ status: 404, description: 'Payment not found' })
+  findByBookingId(@Param('bookingId') bookingId: string): Promise<Payment> {
+    return this.paymentsService.findByBookingId(+bookingId);
   }
 
   /**
@@ -128,15 +131,14 @@ export class PaymentsController {
    */
   @Post(':id/refund')
   @ApiOperation({ summary: 'Process a refund for a payment' })
-  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiParam({ name: 'id', description: 'The ID of the payment' })
   @ApiBody({ schema: { properties: { refundReason: { type: 'string' } } } })
   @ApiResponse({
     status: 200,
-    description: 'The refund has been successfully processed',
+    description: 'Refund processed successfully',
     type: Payment,
   })
   @ApiResponse({ status: 404, description: 'Payment not found' })
-  @ApiResponse({ status: 400, description: 'Invalid refund request' })
   processRefund(
     @Param('id') id: string,
     @Body('refundReason') refundReason: string,
@@ -152,17 +154,16 @@ export class PaymentsController {
    */
   @Patch(':id/status')
   @ApiOperation({ summary: 'Update payment status' })
-  @ApiParam({ name: 'id', description: 'Payment ID' })
+  @ApiParam({ name: 'id', description: 'The ID of the payment' })
   @ApiBody({
     schema: { properties: { status: { enum: Object.values(PaymentStatus) } } },
   })
   @ApiResponse({
     status: 200,
-    description: 'The payment status has been successfully updated',
+    description: 'Payment status updated successfully',
     type: Payment,
   })
   @ApiResponse({ status: 404, description: 'Payment not found' })
-  @ApiResponse({ status: 400, description: 'Invalid status' })
   updatePaymentStatus(
     @Param('id') id: string,
     @Body('status') status: PaymentStatus,

@@ -16,6 +16,7 @@ export class CreatePayments1709913600003 implements MigrationInterface {
           {
             name: 'booking_id',
             type: 'int',
+            isUnique: true,
           },
           {
             name: 'amount',

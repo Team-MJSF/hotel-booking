@@ -62,20 +62,19 @@ describe('PaymentsController', () => {
     status: BookingStatus.PENDING,
     room: mockRoom,
     user: mockUser,
-    payments: [],
+    payment: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
 
   const mockPayment: Payment = {
     paymentId: 1,
-    bookingId: 1,
+    booking: mockBooking,
     amount: 100.00,
     paymentMethod: PaymentMethod.CREDIT_CARD,
     status: PaymentStatus.PENDING,
     createdAt: new Date(),
     updatedAt: new Date(),
-    booking: mockBooking,
   };
 
   beforeEach(async () => {
@@ -236,12 +235,11 @@ describe('PaymentsController', () => {
   });
 
   describe('findByBookingId', () => {
-    it('should return payments for a booking', async () => {
-      const payments = [mockPayment];
-      mockPaymentsService.findByBookingId.mockResolvedValue(payments);
+    it('should return payment for a booking', async () => {
+      mockPaymentsService.findByBookingId.mockResolvedValue(mockPayment);
 
       const result = await controller.findByBookingId('1');
-      expect(result).toEqual(payments);
+      expect(result).toEqual(mockPayment);
       expect(mockPaymentsService.findByBookingId).toHaveBeenCalledWith(1);
     });
   });

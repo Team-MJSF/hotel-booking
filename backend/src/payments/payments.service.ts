@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Payment, PaymentStatus } from './entities/payment.entity';
+import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
@@ -65,16 +65,20 @@ export class PaymentsService {
    */
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
     try {
-      // Load booking entity
+      // Check if booking exists and doesn't already have a payment
       const booking = await this.bookingsRepository.findOne({
         where: { bookingId: createPaymentDto.bookingId },
+        relations: ['payment'],
       });
 
       if (!booking) {
         throw new ResourceNotFoundException('Booking', createPaymentDto.bookingId);
       }
 
-      // Create payment with relation
+      if (booking.payment) {
+        throw new DatabaseException('Payment already exists for this booking');
+      }
+
       const payment = this.paymentsRepository.create({
         ...createPaymentDto,
         booking,
@@ -152,13 +156,25 @@ export class PaymentsService {
   /**
    * Retrieves all payments for a specific booking
    * @param bookingId - The ID of the booking to get payments for
-   * @returns Promise<Payment[]> Array of payments for the specified booking
+   * @returns Promise<Payment> The payment for the specified booking
+   * @throws ResourceNotFoundException if payment is not found
    */
-  async findByBookingId(bookingId: number): Promise<Payment[]> {
-    return this.paymentsRepository.find({
-      where: { booking: { bookingId } },
-      relations: ['booking'],
-    });
+  async findByBookingId(bookingId: number): Promise<Payment> {
+    try {
+      const payment = await this.paymentsRepository.findOne({
+        where: { booking: { bookingId } },
+        relations: ['booking'],
+      });
+      if (!payment) {
+        throw new ResourceNotFoundException('Payment for booking', bookingId);
+      }
+      return payment;
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to fetch payment for booking', error as Error);
+    }
   }
 
   /**
@@ -191,8 +207,15 @@ export class PaymentsService {
    * @throws ResourceNotFoundException if payment is not found
    */
   async updatePaymentStatus(id: number, status: PaymentStatus): Promise<Payment> {
-    const payment = await this.findOne(id);
-    payment.status = status;
-    return this.paymentsRepository.save(payment);
+    try {
+      const payment = await this.findOne(id);
+      payment.status = status;
+      return await this.paymentsRepository.save(payment);
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException('Failed to update payment status', error as Error);
+    }
   }
 }

@@ -6,6 +6,9 @@ import { ResourceNotFoundException, DatabaseException, BookingValidationExceptio
 import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import type { User } from '../users/entities/user.entity';
+import { Room } from '../rooms/entities/room.entity';
+import { Payment, PaymentStatus, PaymentMethod } from '../payments/entities/payment.entity';
+import { UserRole } from '../users/entities/user.entity';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -19,47 +22,61 @@ type MockBookingsService = {
   findByUserId: jest.Mock;
   findByRoomId: jest.Mock;
   updateStatus: jest.Mock;
+  findAvailableRooms: jest.Mock;
 };
 
 describe('BookingsController', () => {
   let controller: BookingsController;
   let mockBookingsService: MockBookingsService;
 
+  const mockRoom: Room = {
+    id: 1,
+    roomNumber: '101',
+    type: RoomType.SINGLE,
+    pricePerNight: 100,
+    maxGuests: 2,
+    description: 'Test room',
+    amenities: '[]',
+    photos: [],
+    availabilityStatus: AvailabilityStatus.AVAILABLE,
+    bookings: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockUser: User = {
+    id: 1,
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    password: 'hashedPassword',
+    role: UserRole.USER,
+    phoneNumber: '1234567890',
+    address: '123 Main St',
+    bookings: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
+  const mockPayment: Payment = {
+    paymentId: 1,
+    booking: null,
+    amount: 100.00,
+    paymentMethod: PaymentMethod.CREDIT_CARD,
+    status: PaymentStatus.PENDING,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+
   const mockBooking: Booking = {
     bookingId: 1,
-    user: {
-      id: 1,
-      email: 'test@example.com',
-      firstName: 'John',
-      lastName: 'Doe',
-      password: 'hashedPassword',
-      role: 'user',
-      bookings: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as User,
-    room: {
-      id: 1,
-      roomNumber: '101',
-      type: RoomType.DOUBLE,
-      pricePerNight: 100,
-      maxGuests: 2,
-      description: 'A comfortable double room',
-      availabilityStatus: AvailabilityStatus.AVAILABLE,
-      amenities: JSON.stringify({
-        wifi: true,
-        tv: true,
-        airConditioning: true,
-      }),
-      bookings: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-    checkInDate: new Date('2024-03-20'),
-    checkOutDate: new Date('2024-03-25'),
+    checkInDate: new Date(),
+    checkOutDate: new Date(),
     numberOfGuests: 2,
     status: BookingStatus.PENDING,
-    payments: [],
+    room: mockRoom,
+    user: mockUser,
+    payment: mockPayment,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -74,6 +91,7 @@ describe('BookingsController', () => {
       findByUserId: jest.fn(),
       findByRoomId: jest.fn(),
       updateStatus: jest.fn(),
+      findAvailableRooms: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -145,15 +163,14 @@ describe('BookingsController', () => {
       const createBookingDto: CreateBookingDto = {
         userId: 1,
         roomId: 1,
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
+        checkInDate: new Date(),
+        checkOutDate: new Date(),
         numberOfGuests: 2,
       };
 
       mockBookingsService.create.mockResolvedValue(mockBooking);
 
       const result = await controller.create(createBookingDto);
-
       expect(result).toEqual(mockBooking);
       expect(mockBookingsService.create).toHaveBeenCalledWith(createBookingDto);
     });
@@ -195,22 +212,29 @@ describe('BookingsController', () => {
 
   describe('update', () => {
     it('should update a booking', async () => {
-      const updateBookingDto: Partial<Booking> = {
-        status: BookingStatus.CONFIRMED,
+      const updateBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date(),
+        checkOutDate: new Date(),
+        numberOfGuests: 3,
       };
 
       const updatedBooking = { ...mockBooking, ...updateBookingDto };
       mockBookingsService.update.mockResolvedValue(updatedBooking);
 
       const result = await controller.update('1', updateBookingDto);
-
       expect(result).toEqual(updatedBooking);
       expect(mockBookingsService.update).toHaveBeenCalledWith(1, updateBookingDto);
     });
 
     it('should throw ResourceNotFoundException when booking is not found', async () => {
-      const updateBookingDto: Partial<Booking> = {
-        status: BookingStatus.CONFIRMED,
+      const updateBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date(),
+        checkOutDate: new Date(),
+        numberOfGuests: 3,
       };
 
       mockBookingsService.update.mockRejectedValue(new ResourceNotFoundException('Booking', 1));
@@ -219,9 +243,12 @@ describe('BookingsController', () => {
     });
 
     it('should throw BookingValidationException for invalid dates', async () => {
-      const updateBookingDto: Partial<Booking> = {
+      const updateBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
         checkInDate: new Date('2024-03-25'),
         checkOutDate: new Date('2024-03-20'),
+        numberOfGuests: 3,
       };
 
       mockBookingsService.update.mockRejectedValue(
@@ -235,8 +262,12 @@ describe('BookingsController', () => {
     });
 
     it('should throw DatabaseException when service fails', async () => {
-      const updateBookingDto: Partial<Booking> = {
-        status: BookingStatus.CONFIRMED,
+      const updateBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date(),
+        checkOutDate: new Date(),
+        numberOfGuests: 3,
       };
 
       const error = new DatabaseException('Failed to update booking', new Error('Database error'));
@@ -251,7 +282,6 @@ describe('BookingsController', () => {
       mockBookingsService.remove.mockResolvedValue(undefined);
 
       await controller.remove('1');
-
       expect(mockBookingsService.remove).toHaveBeenCalledWith(1);
     });
 

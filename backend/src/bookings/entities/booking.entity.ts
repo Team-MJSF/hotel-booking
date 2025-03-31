@@ -3,7 +3,7 @@ import {
   PrimaryGeneratedColumn,
   Column,
   ManyToOne,
-  OneToMany,
+  OneToOne,
   CreateDateColumn,
   UpdateDateColumn,
   JoinColumn,
@@ -61,9 +61,9 @@ export class Booking {
   @JoinColumn({ name: 'room_id' })
     room: Room;
 
-  @ApiProperty({ description: 'The payments associated with this booking' })
-  @OneToMany(() => Payment, (payment) => payment.booking)
-    payments: Payment[];
+  @ApiProperty({ description: 'The payment associated with this booking' })
+  @OneToOne(() => Payment, (payment) => payment.booking)
+    payment: Payment;
 
   @ApiProperty({ description: 'The date when the booking was created' })
   @CreateDateColumn({ name: 'created_at' })
