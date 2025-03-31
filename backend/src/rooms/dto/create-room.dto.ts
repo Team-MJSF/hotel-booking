@@ -48,30 +48,6 @@ export class CreateRoomDto {
     maxGuests: number;
 
   /**
-   * The floor number where the room is located
-   */
-  @ApiPropertyOptional({ description: 'The floor number where the room is located' })
-  @IsOptional()
-  @IsNumber()
-    floor?: number;
-
-  /**
-   * Whether the room has a balcony
-   */
-  @ApiPropertyOptional({ description: 'Whether the room has a balcony' })
-  @IsOptional()
-  @IsBoolean()
-    hasBalcony?: boolean;
-
-  /**
-   * Whether the room has a view
-   */
-  @ApiPropertyOptional({ description: 'Whether the room has a view' })
-  @IsOptional()
-  @IsBoolean()
-    hasView?: boolean;
-
-  /**
    * Optional description of the room's features or amenities
    */
   @ApiPropertyOptional({ description: 'Optional description of the room\'s features or amenities' })
