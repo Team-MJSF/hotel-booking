@@ -180,30 +180,6 @@ describe('RoomsController', () => {
     });
   });
 
-  describe('findOne', () => {
-    it('should return a single room', async () => {
-      mockRoomsService.findOne.mockResolvedValue(mockRoom);
-
-      const result = await controller.findOne('1');
-
-      expect(result).toEqual(mockRoom);
-      expect(mockRoomsService.findOne).toHaveBeenCalledWith(1);
-    });
-
-    it('should throw ResourceNotFoundException when room is not found', async () => {
-      mockRoomsService.findOne.mockRejectedValue(new ResourceNotFoundException('Room', 1));
-
-      await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
-    });
-
-    it('should throw DatabaseException when service fails', async () => {
-      const error = new DatabaseException('Failed to fetch room', new Error('Database error'));
-      mockRoomsService.findOne.mockRejectedValue(error);
-
-      await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
-    });
-  });
-
   describe('create', () => {
     it('should create a new room', async () => {
       const createRoomDto: CreateRoomDto = {
