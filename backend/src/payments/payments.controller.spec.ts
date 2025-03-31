@@ -23,52 +23,15 @@ describe('PaymentsController', () => {
   };
 
   const mockPayment: Payment = {
-    id: 1,
+    paymentId: 1,
     bookingId: 1,
     amount: 500,
     currency: 'USD',
-    status: PaymentStatus.PENDING,
     paymentMethod: PaymentMethod.CREDIT_CARD,
     transactionId: 'txn_123',
+    status: PaymentStatus.COMPLETED,
     refundReason: null,
-    booking: {
-      bookingId: 1,
-      user: {
-        id: 1,
-        email: 'test@example.com',
-        firstName: 'John',
-        lastName: 'Doe',
-        password: 'hashedPassword',
-        role: 'user',
-        bookings: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      room: {
-        id: 1,
-        roomNumber: '101',
-        type: RoomType.DOUBLE,
-        pricePerNight: 100,
-        maxGuests: 2,
-        description: 'A comfortable double room',
-        availabilityStatus: AvailabilityStatus.AVAILABLE,
-        amenities: JSON.stringify({
-          wifi: true,
-          tv: true,
-          airConditioning: true,
-        }),
-        bookings: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-      checkInDate: new Date('2024-03-20'),
-      checkOutDate: new Date('2024-03-25'),
-      numberOfGuests: 2,
-      status: BookingStatus.PENDING,
-      payments: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
+    booking: null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -144,9 +107,9 @@ describe('PaymentsController', () => {
         bookingId: 1,
         amount: 500,
         currency: 'USD',
-        status: PaymentStatus.PENDING,
         paymentMethod: PaymentMethod.CREDIT_CARD,
-        transactionId: 'txn_123',
+        transactionId: 'tx_123',
+        status: PaymentStatus.PENDING,
       };
 
       mockPaymentsService.create.mockResolvedValue(mockPayment);
@@ -162,9 +125,9 @@ describe('PaymentsController', () => {
         bookingId: 1,
         amount: 500,
         currency: 'USD',
-        status: PaymentStatus.PENDING,
         paymentMethod: PaymentMethod.CREDIT_CARD,
-        transactionId: 'txn_123',
+        transactionId: 'tx_123',
+        status: PaymentStatus.PENDING,
       };
 
       const error = new DatabaseException('Failed to create payment', new Error('Database error'));

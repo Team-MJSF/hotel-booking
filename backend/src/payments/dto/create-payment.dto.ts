@@ -10,7 +10,7 @@ export class CreatePaymentDto {
   /**
    * The ID of the booking this payment is associated with
    */
-  @ApiProperty({ description: 'The ID of the booking this payment is associated with' })
+  @ApiProperty({ description: 'The ID of the booking associated with this payment' })
   @IsNotEmpty()
   @IsNumber()
     bookingId: number;
@@ -18,7 +18,7 @@ export class CreatePaymentDto {
   /**
    * The amount of the payment in the specified currency
    */
-  @ApiProperty({ description: 'The amount of the payment in the specified currency' })
+  @ApiProperty({ description: 'The amount of the payment' })
   @IsNotEmpty()
   @IsNumber()
     amount: number;
@@ -26,39 +26,35 @@ export class CreatePaymentDto {
   /**
    * The currency code for the payment (e.g., 'USD', 'EUR')
    */
-  @ApiProperty({ description: 'The currency code for the payment (e.g., USD, EUR)' })
+  @ApiProperty({ description: 'The currency of the payment' })
   @IsNotEmpty()
   @IsString()
     currency: string;
 
-  @ApiProperty({ description: 'Payment method used', enum: PaymentMethod })
+  @ApiProperty({ description: 'The payment method used', enum: PaymentMethod })
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
     paymentMethod: PaymentMethod;
 
-  @ApiProperty({ description: 'Transaction ID from payment provider' })
-  @IsNotEmpty()
+  @ApiProperty({ description: 'The transaction ID from the payment provider' })
+  @IsOptional()
   @IsString()
-    transactionId: string;
+    transactionId?: string;
 
   /**
    * The status of the payment
    * @default PaymentStatus.PENDING
    */
-  @ApiPropertyOptional({
-    description: 'The status of the payment',
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
-  })
-  @IsOptional()
+  @ApiProperty({ description: 'The status of the payment', enum: PaymentStatus })
+  @IsNotEmpty()
   @IsEnum(PaymentStatus)
     status: PaymentStatus;
 
   /**
    * Optional description or notes about the payment
    */
-  @ApiPropertyOptional({ description: 'Optional description or notes about the payment' })
+  @ApiPropertyOptional({ description: 'The reason for the refund if applicable' })
   @IsOptional()
   @IsString()
-    description?: string;
+    refundReason?: string;
 }

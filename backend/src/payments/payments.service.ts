@@ -4,13 +4,18 @@ import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { ResourceNotFoundException, DatabaseException, PaymentProcessingException } from '../common/exceptions/hotel-booking.exception';
+import { ResourceNotFoundException, DatabaseException, ValidationException } from '../common/exceptions/hotel-booking.exception';
+import { Booking } from '../bookings/entities/booking.entity';
+import { BookingsService } from '../bookings/bookings.service';
 
 @Injectable()
 export class PaymentsService {
   constructor(
     @InjectRepository(Payment)
     private paymentsRepository: Repository<Payment>,
+    @InjectRepository(Booking)
+    private bookingsRepository: Repository<Booking>,
+    private bookingsService: BookingsService,
   ) {}
 
   /**
@@ -36,7 +41,7 @@ export class PaymentsService {
   async findOne(id: number): Promise<Payment> {
     try {
       const payment = await this.paymentsRepository.findOne({
-        where: { id },
+        where: { paymentId: id },
         relations: ['booking'],
       });
 
@@ -60,9 +65,26 @@ export class PaymentsService {
    */
   async create(createPaymentDto: CreatePaymentDto): Promise<Payment> {
     try {
-      const payment = this.paymentsRepository.create(createPaymentDto);
+      // Load booking entity
+      const booking = await this.bookingsRepository.findOne({
+        where: { bookingId: createPaymentDto.bookingId },
+      });
+
+      if (!booking) {
+        throw new ResourceNotFoundException('Booking', createPaymentDto.bookingId);
+      }
+
+      // Create payment with relation
+      const payment = this.paymentsRepository.create({
+        ...createPaymentDto,
+        booking,
+      });
+
       return await this.paymentsRepository.save(payment);
     } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
       throw new DatabaseException('Failed to create payment', error as Error);
     }
   }
@@ -76,11 +98,29 @@ export class PaymentsService {
    */
   async update(id: number, updatePaymentDto: UpdatePaymentDto): Promise<Payment> {
     try {
-      const result = await this.paymentsRepository.update(id, updatePaymentDto);
-      if (result.affected === 0) {
+      const payment = await this.findOne(id);
+      if (!payment) {
         throw new ResourceNotFoundException('Payment', id);
       }
-      return this.findOne(id);
+
+      // Load booking entity if it's being updated
+      let booking = payment.booking;
+      if (updatePaymentDto.bookingId) {
+        booking = await this.bookingsRepository.findOne({
+          where: { bookingId: updatePaymentDto.bookingId },
+        });
+        if (!booking) {
+          throw new ResourceNotFoundException('Booking', updatePaymentDto.bookingId);
+        }
+      }
+
+      // Update payment with relation
+      const updatedPayment = this.paymentsRepository.merge(payment, {
+        ...updatePaymentDto,
+        booking,
+      });
+
+      return await this.paymentsRepository.save(updatedPayment);
     } catch (error) {
       if (error instanceof ResourceNotFoundException) {
         throw error;
@@ -97,7 +137,7 @@ export class PaymentsService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.paymentsRepository.delete(id);
+      const result = await this.paymentsRepository.delete({ paymentId: id });
       if (result.affected === 0) {
         throw new ResourceNotFoundException('Payment', id);
       }
@@ -127,24 +167,28 @@ export class PaymentsService {
    * @param refundReason - The reason for the refund
    * @returns Promise<Payment> The updated payment with refund status
    * @throws ResourceNotFoundException if payment is not found
-   * @throws PaymentProcessingException if refund processing fails
+   * @throws ValidationException if refund processing fails
    */
   async processRefund(id: number, refundReason: string): Promise<Payment> {
     try {
       const payment = await this.findOne(id);
-      
-      // Add your refund processing logic here
-      // For example, calling a payment gateway API
-      
+      if (!payment) {
+        throw new ResourceNotFoundException('Payment', id);
+      }
+
+      if (payment.status !== PaymentStatus.COMPLETED) {
+        throw new ValidationException('Only completed payments can be refunded');
+      }
+
       payment.status = PaymentStatus.REFUNDED;
       payment.refundReason = refundReason;
       
       return await this.paymentsRepository.save(payment);
     } catch (error) {
-      if (error instanceof ResourceNotFoundException) {
+      if (error instanceof ResourceNotFoundException || error instanceof ValidationException) {
         throw error;
       }
-      throw new PaymentProcessingException('Failed to process refund', error as Error);
+      throw new DatabaseException('Failed to process refund', error as Error);
     }
   }
 

@@ -28,7 +28,7 @@ export enum PaymentMethod {
 export class Payment {
   @PrimaryGeneratedColumn({ name: 'payment_id' })
   @ApiProperty({ description: 'The unique identifier of the payment' })
-    id: number;
+    paymentId: number;
 
   @Column({ name: 'booking_id' })
   @ApiProperty({
@@ -53,9 +53,9 @@ export class Payment {
   @ApiProperty({ description: 'The payment method used', enum: PaymentMethod })
     paymentMethod: PaymentMethod;
 
-  @Column({ name: 'transaction_id' })
+  @Column({ name: 'transaction_id', nullable: true })
   @ApiProperty({ description: 'The transaction ID from the payment provider' })
-    transactionId: string;
+    transactionId?: string;
 
   @Column({
     name: 'status',
