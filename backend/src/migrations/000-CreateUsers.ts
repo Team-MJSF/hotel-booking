@@ -36,9 +36,9 @@ export class CreateUsers1709913600000 implements MigrationInterface {
           },
           {
             name: 'role',
-            type: 'varchar',
-            length: '20',
-            default: '\'user\'',
+            type: 'enum',
+            enum: ['admin', 'user', 'staff'],
+            default: `'user'`,
           },
           {
             name: 'phone_number',

@@ -1,5 +1,6 @@
-import { IsNotEmpty, IsString, IsEmail, MinLength, IsOptional } from 'class-validator';
+import { IsNotEmpty, IsString, IsEmail, MinLength, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { UserRole } from '../entities/user.entity';
 
 /**
  * Data Transfer Object for creating a new user
@@ -38,6 +39,14 @@ export class CreateUserDto {
   @IsString()
   @MinLength(8)
     password: string;
+
+  /**
+   * The user's role
+   */
+  @ApiProperty({ description: 'The user\'s role', enum: UserRole, default: UserRole.USER })
+  @IsEnum(UserRole)
+  @IsOptional()
+    role?: UserRole;
 
   /**
    * The user's phone number

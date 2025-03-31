@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { User } from './entities/user.entity';
+import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
@@ -15,8 +15,8 @@ export class UsersService {
   ) {}
 
   /**
-   * Retrieves all users from the database
-   * @returns Promise<User[]> Array of all users with their bookings
+   * Retrieves all users
+   * @returns Promise<User[]> Array of all users
    */
   async findAll(): Promise<User[]> {
     try {
@@ -27,10 +27,10 @@ export class UsersService {
   }
 
   /**
-   * Retrieves a single user by ID
+   * Retrieves a user by ID
    * @param id - The ID of the user to retrieve
    * @returns Promise<User> The user with the specified ID
-   * @throws NotFoundException if user is not found
+   * @throws ResourceNotFoundException if user is not found
    */
   async findOne(id: number): Promise<User> {
     try {
@@ -76,10 +76,11 @@ export class UsersService {
       // Hash password
       const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
 
-      // Create new user
+      // Create new user with default role if not specified
       const user = this.usersRepository.create({
         ...createUserDto,
         password: hashedPassword,
+        role: createUserDto.role || UserRole.USER,
       });
 
       return await this.usersRepository.save(user);
@@ -122,6 +123,7 @@ export class UsersService {
       if (updateUserDto.lastName !== undefined) updateData.lastName = updateUserDto.lastName;
       if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
       if (updateUserDto.password !== undefined) updateData.password = updateUserDto.password;
+      if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
       if (updateUserDto.phoneNumber !== undefined) updateData.phoneNumber = updateUserDto.phoneNumber;
       if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address;
 

@@ -9,6 +9,12 @@ import {
 import { Booking } from '../../bookings/entities/booking.entity';
 import { ApiProperty } from '@nestjs/swagger';
 
+export enum UserRole {
+  ADMIN = 'admin',
+  USER = 'user',
+  STAFF = 'staff',
+}
+
 @Entity('users')
 export class User {
   @PrimaryGeneratedColumn({ name: 'user_id' })
@@ -31,9 +37,9 @@ export class User {
   @ApiProperty({ description: 'The hashed password of the user' })
     password: string;
 
-  @Column({ name: 'role', default: 'user' })
-  @ApiProperty({ description: 'The role of the user' })
-    role: string;
+  @Column({ name: 'role', type: 'enum', enum: UserRole, default: UserRole.USER })
+  @ApiProperty({ description: 'The role of the user', enum: UserRole })
+    role: UserRole;
 
   @Column({ name: 'phone_number', length: '20', nullable: true })
   @ApiProperty({ description: 'The user\'s phone number', required: false })
