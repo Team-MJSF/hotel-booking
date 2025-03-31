@@ -23,6 +23,19 @@ export enum AvailabilityStatus {
   CLEANING = 'cleaning',
 }
 
+export enum PhotoType {
+  MAIN = 'main',
+  GALLERY = 'gallery',
+  AMENITY = 'amenity',
+}
+
+export interface RoomPhoto {
+  url: string;
+  type: PhotoType;
+  caption?: string;
+  displayOrder: number;
+}
+
 @Entity('rooms')
 export class Room {
   @PrimaryGeneratedColumn({ name: 'room_id' })
@@ -57,6 +70,23 @@ export class Room {
   @Column({ name: 'amenities', type: 'json', nullable: true })
   @ApiProperty({ description: 'The amenities available in the room' })
     amenities: string;
+
+  @Column({ name: 'photos', type: 'json', nullable: true })
+  @ApiProperty({ 
+    description: 'Array of photos associated with the room',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {
+        url: { type: 'string' },
+        type: { type: 'string', enum: Object.values(PhotoType) },
+        caption: { type: 'string' },
+        displayOrder: { type: 'number' }
+      }
+    },
+    required: false 
+  })
+    photos?: RoomPhoto[];
 
   @Column({
     name: 'availability_status',
