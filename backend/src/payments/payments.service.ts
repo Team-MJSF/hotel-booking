@@ -167,25 +167,16 @@ export class PaymentsService {
    * @param refundReason - The reason for the refund
    * @returns Promise<Payment> The updated payment with refund status
    * @throws ResourceNotFoundException if payment is not found
-   * @throws ValidationException if refund processing fails
    */
   async processRefund(id: number, refundReason: string): Promise<Payment> {
     try {
       const payment = await this.findOne(id);
-      if (!payment) {
-        throw new ResourceNotFoundException('Payment', id);
-      }
-
-      if (payment.status !== PaymentStatus.COMPLETED) {
-        throw new ValidationException('Only completed payments can be refunded');
-      }
-
       payment.status = PaymentStatus.REFUNDED;
       payment.refundReason = refundReason;
       
       return await this.paymentsRepository.save(payment);
     } catch (error) {
-      if (error instanceof ResourceNotFoundException || error instanceof ValidationException) {
+      if (error instanceof ResourceNotFoundException) {
         throw error;
       }
       throw new DatabaseException('Failed to process refund', error as Error);
