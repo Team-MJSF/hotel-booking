@@ -54,6 +54,17 @@ describe('BookingsController', () => {
   };
 
   beforeEach(async () => {
+    mockBookingsService = {
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      findByUserId: jest.fn(),
+      findByRoomId: jest.fn(),
+      updateStatus: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BookingsController],
       providers: [
