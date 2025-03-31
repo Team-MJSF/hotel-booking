@@ -115,9 +115,19 @@ export class UsersService {
         updateUserDto.password = await bcrypt.hash(updateUserDto.password, 10);
       }
 
-      const result = await this.usersRepository.update(id, updateUserDto);
-      if (result.affected === 0) {
-        throw new ResourceNotFoundException('User', id);
+      // Create a new object with only the fields that are being updated
+      const updateData: Partial<User> = {};
+      
+      if (updateUserDto.firstName !== undefined) updateData.firstName = updateUserDto.firstName;
+      if (updateUserDto.lastName !== undefined) updateData.lastName = updateUserDto.lastName;
+      if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
+      if (updateUserDto.password !== undefined) updateData.password = updateUserDto.password;
+      if (updateUserDto.phoneNumber !== undefined) updateData.phoneNumber = updateUserDto.phoneNumber;
+      if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address;
+
+      // Only perform update if there are fields to update
+      if (Object.keys(updateData).length > 0) {
+        await this.usersRepository.update(id, updateData);
       }
 
       return this.findOne(id);

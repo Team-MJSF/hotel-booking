@@ -28,6 +28,7 @@ describe('UsersController', () => {
     lastName: 'Doe',
     email: 'john@example.com',
     password: 'hashedPassword',
+    role: 'user',
     bookings: [],
     createdAt: new Date(),
     updatedAt: new Date(),

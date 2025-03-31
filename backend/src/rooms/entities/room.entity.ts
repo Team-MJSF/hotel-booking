@@ -23,7 +23,7 @@ export enum AvailabilityStatus {
   CLEANING = 'cleaning',
 }
 
-@Entity()
+@Entity('rooms')
 export class Room {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: 'The unique identifier of the room' })

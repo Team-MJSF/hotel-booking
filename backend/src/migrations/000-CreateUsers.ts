@@ -4,22 +4,22 @@ export class CreateUsers1709913600000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'Users',
+        name: 'users',
         columns: [
           {
-            name: 'userId',
+            name: 'user_id',
             type: 'int',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
           },
           {
-            name: 'firstName',
+            name: 'first_name',
             type: 'varchar',
             length: '100',
           },
           {
-            name: 'lastName',
+            name: 'last_name',
             type: 'varchar',
             length: '100',
           },
@@ -41,15 +41,26 @@ export class CreateUsers1709913600000 implements MigrationInterface {
             default: '\'user\'',
           },
           {
-            name: 'createdAt',
+            name: 'phone_number',
+            type: 'varchar',
+            length: '20',
+            isNullable: true,
+          },
+          {
+            name: 'address',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
+            name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
           },
           {
-            name: 'updatedAt',
+            name: 'updated_at',
             type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP',
-            onUpdate: 'CURRENT_TIMESTAMP',
+            default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
           {
             name: 'createdBy',
@@ -63,7 +74,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
 
     // Create index for role
     await queryRunner.createIndex(
-      'Users',
+      'users',
       new TableIndex({
         name: 'IDX_USERS_ROLE',
         columnNames: ['role'],
@@ -71,18 +82,18 @@ export class CreateUsers1709913600000 implements MigrationInterface {
     );
 
     await queryRunner.query(
-      'ALTER TABLE `Users` ADD CONSTRAINT `FK_Users_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `Users`(`userId`) ON DELETE SET NULL',
+      'ALTER TABLE `users` ADD CONSTRAINT `FK_Users_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `users`(`user_id`) ON DELETE SET NULL',
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('Users');
+    const table = await queryRunner.getTable('users');
     if (table) {
       const indices = table.indices.filter(
         (index) => index.name === 'IDX_USERS_ROLE',
       );
-      await Promise.all(indices.map((index) => queryRunner.dropIndex('Users', index)));
+      await Promise.all(indices.map((index) => queryRunner.dropIndex('users', index)));
     }
-    await queryRunner.dropTable('Users');
+    await queryRunner.dropTable('users');
   }
 }

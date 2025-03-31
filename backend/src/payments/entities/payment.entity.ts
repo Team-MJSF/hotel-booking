@@ -23,7 +23,7 @@ export enum PaymentMethod {
   CASH = 'cash',
 }
 
-@Entity()
+@Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn()
   @ApiProperty({ description: 'The unique identifier of the payment' })

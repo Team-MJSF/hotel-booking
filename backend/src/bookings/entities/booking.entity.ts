@@ -19,7 +19,7 @@ export enum BookingStatus {
   COMPLETED = 'completed',
 }
 
-@Entity('Bookings')
+@Entity('bookings')
 export class Booking {
   @ApiProperty({ description: 'The unique identifier of the booking' })
   @PrimaryGeneratedColumn()

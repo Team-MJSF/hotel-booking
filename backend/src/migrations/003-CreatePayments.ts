@@ -1,22 +1,21 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreatePayments1709913600003 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'Payments',
+        name: 'payments',
         columns: [
           {
-            name: 'paymentId',
+            name: 'payment_id',
             type: 'int',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
           },
           {
-            name: 'bookingId',
+            name: 'booking_id',
             type: 'int',
-            isNullable: false,
           },
           {
             name: 'amount',
@@ -25,41 +24,43 @@ export class CreatePayments1709913600003 implements MigrationInterface {
             scale: 2,
           },
           {
+            name: 'currency',
+            type: 'varchar',
+            length: '3',
+          },
+          {
+            name: 'payment_method',
+            type: 'enum',
+            enum: ['credit_card', 'debit_card', 'bank_transfer', 'cash'],
+            default: "'credit_card'",
+          },
+          {
+            name: 'transaction_id',
+            type: 'varchar',
+            length: '255',
+            isNullable: true,
+          },
+          {
             name: 'status',
             type: 'enum',
-            enum: ['Pending', 'Completed', 'Failed', 'Refunded'],
-            default: '\'Pending\'',
+            enum: ['pending', 'completed', 'failed', 'refunded'],
+            default: "'pending'",
           },
           {
-            name: 'paymentMethod',
-            type: 'enum',
-            enum: ['Credit Card', 'Debit Card', 'Bank Transfer', 'PayPal'],
-          },
-          {
-            name: 'transactionId',
+            name: 'refund_reason',
             type: 'varchar',
+            length: '255',
             isNullable: true,
           },
           {
-            name: 'paymentDetails',
-            type: 'json',
-            isNullable: true,
-          },
-          {
-            name: 'refundReason',
-            type: 'varchar',
-            isNullable: true,
-          },
-          {
-            name: 'createdAt',
+            name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
           },
           {
-            name: 'updatedAt',
+            name: 'updated_at',
             type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP',
-            onUpdate: 'CURRENT_TIMESTAMP',
+            default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
         ],
       }),
@@ -67,25 +68,15 @@ export class CreatePayments1709913600003 implements MigrationInterface {
     );
 
     // Add foreign key constraint
-    await queryRunner.createForeignKey(
-      'Payments',
-      new TableForeignKey({
-        columnNames: ['bookingId'],
-        referencedColumnNames: ['bookingId'],
-        referencedTableName: 'Bookings',
-        onDelete: 'CASCADE',
-      }),
+    await queryRunner.query(
+      'ALTER TABLE `payments` ADD CONSTRAINT `FK_231b42ff1bd554331c084a3617e` FOREIGN KEY (`booking_id`) REFERENCES `bookings`(`booking_id`) ON DELETE CASCADE',
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('Payments');
-    if (table) {
-      const foreignKey = table.foreignKeys.find((fk) => fk.columnNames.indexOf('bookingId') !== -1);
-      if (foreignKey) {
-        await queryRunner.dropForeignKey('Payments', foreignKey);
-      }
-    }
-    await queryRunner.dropTable('Payments');
+    await queryRunner.query(
+      'ALTER TABLE `payments` DROP FOREIGN KEY `FK_231b42ff1bd554331c084a3617e`',
+    );
+    await queryRunner.dropTable('payments');
   }
 }

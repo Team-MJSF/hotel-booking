@@ -1,52 +1,54 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table } from 'typeorm';
 
 export class CreateBookings1709913600002 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'Bookings',
+        name: 'bookings',
         columns: [
           {
-            name: 'bookingId',
+            name: 'booking_id',
             type: 'int',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
           },
           {
-            name: 'userId',
+            name: 'user_id',
             type: 'int',
-            isNullable: false,
           },
           {
-            name: 'roomId',
+            name: 'room_id',
             type: 'int',
-            isNullable: false,
           },
           {
-            name: 'checkInDate',
+            name: 'check_in_date',
             type: 'date',
           },
           {
-            name: 'checkOutDate',
+            name: 'check_out_date',
             type: 'date',
+          },
+          {
+            name: 'number_of_guests',
+            type: 'int',
+            isNullable: true,
           },
           {
             name: 'status',
             type: 'enum',
-            enum: ['Pending', 'Confirmed', 'Cancelled'],
-            default: '\'Pending\'',
+            enum: ['pending', 'confirmed', 'cancelled', 'completed'],
+            default: "'pending'",
           },
           {
-            name: 'createdAt',
+            name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
           },
           {
-            name: 'updatedAt',
+            name: 'updated_at',
             type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP',
-            onUpdate: 'CURRENT_TIMESTAMP',
+            default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
         ],
       }),
@@ -54,37 +56,21 @@ export class CreateBookings1709913600002 implements MigrationInterface {
     );
 
     // Add foreign key constraints
-    await queryRunner.createForeignKey(
-      'Bookings',
-      new TableForeignKey({
-        columnNames: ['userId'],
-        referencedColumnNames: ['userId'],
-        referencedTableName: 'Users',
-        onDelete: 'CASCADE',
-      }),
+    await queryRunner.query(
+      'ALTER TABLE `bookings` ADD CONSTRAINT `FK_9154ba42728899ce737b81fb694` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE',
     );
-
-    await queryRunner.createForeignKey(
-      'Bookings',
-      new TableForeignKey({
-        columnNames: ['roomId'],
-        referencedColumnNames: ['roomId'],
-        referencedTableName: 'Rooms',
-        onDelete: 'CASCADE',
-      }),
+    await queryRunner.query(
+      'ALTER TABLE `bookings` ADD CONSTRAINT `FK_9643fa98c94e908f6ea51f0c559` FOREIGN KEY (`room_id`) REFERENCES `rooms`(`room_id`) ON DELETE CASCADE',
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('Bookings');
-    if (table) {
-      const foreignKeys = table.foreignKeys.filter(
-        (fk) => fk.columnNames.indexOf('userId') !== -1 || fk.columnNames.indexOf('roomId') !== -1,
-      );
-      await Promise.all(
-        foreignKeys.map((foreignKey) => queryRunner.dropForeignKey('Bookings', foreignKey)),
-      );
-    }
-    await queryRunner.dropTable('Bookings');
+    await queryRunner.query(
+      'ALTER TABLE `bookings` DROP FOREIGN KEY `FK_9643fa98c94e908f6ea51f0c559`',
+    );
+    await queryRunner.query(
+      'ALTER TABLE `bookings` DROP FOREIGN KEY `FK_9154ba42728899ce737b81fb694`',
+    );
+    await queryRunner.dropTable('bookings');
   }
 }

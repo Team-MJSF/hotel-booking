@@ -4,40 +4,41 @@ export class CreateRooms1709913600001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
-        name: 'Rooms',
+        name: 'rooms',
         columns: [
           {
-            name: 'roomId',
+            name: 'room_id',
             type: 'int',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
           },
           {
-            name: 'roomNumber',
+            name: 'room_number',
             type: 'varchar',
+            length: '255',
           },
           {
-            name: 'roomType',
+            name: 'room_type',
             type: 'enum',
-            enum: ['Single', 'Double', 'Suite'],
-            default: '\'Single\'',
+            enum: ['single', 'double', 'suite', 'deluxe'],
+            default: "'single'",
           },
           {
-            name: 'pricePerNight',
+            name: 'price_per_night',
             type: 'decimal',
             precision: 10,
             scale: 2,
           },
           {
-            name: 'maxGuests',
+            name: 'max_guests',
             type: 'int',
           },
           {
-            name: 'availabilityStatus',
+            name: 'availability_status',
             type: 'enum',
-            enum: ['Available', 'Occupied', 'Maintenance', 'Cleaning'],
-            default: '\'available\'',
+            enum: ['available', 'occupied', 'maintenance', 'cleaning'],
+            default: "'available'",
           },
           {
             name: 'amenities',
@@ -45,15 +46,14 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'createdAt',
+            name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',
           },
           {
-            name: 'updatedAt',
+            name: 'updated_at',
             type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP',
-            onUpdate: 'CURRENT_TIMESTAMP',
+            default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
         ],
       }),
@@ -62,6 +62,6 @@ export class CreateRooms1709913600001 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.dropTable('Rooms');
+    await queryRunner.dropTable('rooms');
   }
 }
