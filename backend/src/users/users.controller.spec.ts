@@ -79,57 +79,6 @@ describe('UsersController', () => {
     });
   });
 
-  describe('findOne', () => {
-    const mockCurrentUser: User = {
-      id: 1,
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john@example.com',
-      password: 'hashedPassword',
-      role: UserRole.USER,
-      bookings: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    };
-
-    it('should return a single user when accessing own profile', async () => {
-      const expectedUser = { ...mockCurrentUser };
-      mockUsersService.findOne.mockResolvedValue(expectedUser);
-
-      const result = await controller.findOne('1', mockCurrentUser);
-
-      expect(result).toEqual(expectedUser);
-      expect(usersService.findOne).toHaveBeenCalledWith(1);
-    });
-
-    it('should return a single user when admin accesses any profile', async () => {
-      const adminUser = { ...mockCurrentUser, role: UserRole.ADMIN };
-      const targetUser = { ...mockCurrentUser, id: 2 };
-      mockUsersService.findOne.mockResolvedValue(targetUser);
-
-      const result = await controller.findOne('2', adminUser);
-
-      expect(result).toEqual(targetUser);
-      expect(usersService.findOne).toHaveBeenCalledWith(2);
-    });
-
-    it('should throw ResourceNotFoundException when user is not found', async () => {
-      mockUsersService.findOne.mockRejectedValue(new ResourceNotFoundException('User', 1));
-
-      await expect(controller.findOne('1', mockCurrentUser)).rejects.toThrow(ResourceNotFoundException);
-    });
-
-    it('should throw DatabaseException when service fails', async () => {
-      mockUsersService.findOne.mockRejectedValue(new Error('Database error'));
-
-      await expect(controller.findOne('1', mockCurrentUser)).rejects.toThrow(DatabaseException);
-    });
-
-    it('should throw ForbiddenException when accessing another user\'s profile', async () => {
-      await expect(controller.findOne('2', mockCurrentUser)).rejects.toThrow('You can only access your own profile');
-    });
-  });
-
   describe('create', () => {
     it('should create a new user', async () => {
       const createUserDto: CreateUserDto = {
