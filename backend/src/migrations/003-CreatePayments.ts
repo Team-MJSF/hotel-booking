@@ -32,7 +32,7 @@ export class CreatePayments1709913600003 implements MigrationInterface {
             name: 'payment_method',
             type: 'enum',
             enum: ['credit_card', 'debit_card', 'bank_transfer', 'cash'],
-            default: "'credit_card'",
+            default: `'credit_card'`,
           },
           {
             name: 'transaction_id',
@@ -44,7 +44,7 @@ export class CreatePayments1709913600003 implements MigrationInterface {
             name: 'status',
             type: 'enum',
             enum: ['pending', 'completed', 'failed', 'refunded'],
-            default: "'pending'",
+            default: `'pending'`,
           },
           {
             name: 'refund_reason',

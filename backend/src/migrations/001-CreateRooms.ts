@@ -22,7 +22,7 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             name: 'room_type',
             type: 'enum',
             enum: ['single', 'double', 'suite', 'deluxe'],
-            default: "'single'",
+            default: `'single'`,
           },
           {
             name: 'price_per_night',
@@ -42,7 +42,7 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             name: 'availability_status',
             type: 'enum',
             enum: ['available', 'occupied', 'maintenance', 'cleaning'],
-            default: "'available'",
+            default: `'available'`,
           },
           {
             name: 'amenities',

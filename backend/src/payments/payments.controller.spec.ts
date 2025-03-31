@@ -2,10 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { Payment, PaymentStatus, PaymentMethod } from './entities/payment.entity';
-import { ResourceNotFoundException, DatabaseException, PaymentProcessingException } from '../common/exceptions/hotel-booking.exception';
+import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import { CreatePaymentDto } from './dto/create-payment.dto';
-import { BookingStatus } from '../bookings/entities/booking.entity';
-import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -221,14 +219,12 @@ describe('PaymentsController', () => {
       await expect(controller.processRefund('1', refundReason)).rejects.toThrow(ResourceNotFoundException);
     });
 
-    it('should throw PaymentProcessingException when refund processing fails', async () => {
+    it('should throw DatabaseException when service fails', async () => {
       const refundReason = 'Customer requested cancellation';
-      const error = new Error('Payment gateway error');
-      mockPaymentsService.processRefund.mockRejectedValue(
-        new PaymentProcessingException('Failed to process refund', error),
-      );
+      const error = new DatabaseException('Failed to process refund', new Error('Database error'));
+      mockPaymentsService.processRefund.mockRejectedValue(error);
 
-      await expect(controller.processRefund('1', refundReason)).rejects.toThrow(PaymentProcessingException);
+      await expect(controller.processRefund('1', refundReason)).rejects.toThrow(DatabaseException);
     });
   });
 });

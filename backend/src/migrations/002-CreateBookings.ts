@@ -38,7 +38,7 @@ export class CreateBookings1709913600002 implements MigrationInterface {
             name: 'status',
             type: 'enum',
             enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-            default: "'pending'",
+            default: `'pending'`,
           },
           {
             name: 'created_at',

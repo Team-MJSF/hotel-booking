@@ -23,5 +23,13 @@
     "no-console": ["warn"],
     "no-undef": "off",
     "object-curly-spacing": ["error", "always"]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["**/migrations/*.ts"],
+      "rules": {
+        "quotes": "off"
+      }
+    }
+  ]
 }

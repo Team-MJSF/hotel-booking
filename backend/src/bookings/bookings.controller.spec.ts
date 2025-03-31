@@ -5,14 +5,25 @@ import { Booking, BookingStatus } from './entities/booking.entity';
 import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
 import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
-import { User } from '../users/entities/user.entity';
+import type { User } from '../users/entities/user.entity';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
 
+type MockBookingsService = {
+  findAll: jest.Mock;
+  findOne: jest.Mock;
+  create: jest.Mock;
+  update: jest.Mock;
+  remove: jest.Mock;
+  findByUserId: jest.Mock;
+  findByRoomId: jest.Mock;
+  updateStatus: jest.Mock;
+};
+
 describe('BookingsController', () => {
   let controller: BookingsController;
-  let mockBookingsService: jest.Mocked<BookingsService>;
+  let mockBookingsService: MockBookingsService;
 
   const mockBooking: Booking = {
     bookingId: 1,
@@ -26,7 +37,7 @@ describe('BookingsController', () => {
       bookings: [],
       createdAt: new Date(),
       updatedAt: new Date(),
-    },
+    } as User,
     room: {
       id: 1,
       roomNumber: '101',
@@ -63,7 +74,7 @@ describe('BookingsController', () => {
       findByUserId: jest.fn(),
       findByRoomId: jest.fn(),
       updateStatus: jest.fn(),
-    } as any;
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [BookingsController],

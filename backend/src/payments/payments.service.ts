@@ -4,7 +4,7 @@ import { Repository } from 'typeorm';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { ResourceNotFoundException, DatabaseException, ValidationException } from '../common/exceptions/hotel-booking.exception';
+import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import { Booking } from '../bookings/entities/booking.entity';
 import { BookingsService } from '../bookings/bookings.service';
 
