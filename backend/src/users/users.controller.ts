@@ -6,25 +6,32 @@ import {
   Patch,
   Param,
   Delete,
-  HttpCode,
-  HttpStatus,
+  UseGuards,
+  ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AdminGuard } from '../auth/guards/admin.guard';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
-@ApiTags('users')
+@ApiTags('Users')
 @Controller('users')
+@UseGuards(JwtAuthGuard)
+@ApiBearerAuth()
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get()
-  @ApiOperation({ summary: 'Get all users' })
-  @ApiResponse({ status: 200, description: 'Return all users', type: [User] })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Get all users (Admin only)' })
+  @ApiResponse({ status: 200, description: 'List of all users' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
   async findAll(): Promise<User[]> {
     try {
       return await this.usersService.findAll();
@@ -34,16 +41,23 @@ export class UsersController {
   }
 
   @Get(':id')
-  @ApiOperation({ summary: 'Get a user by id' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 200, description: 'Return the user', type: User })
+  @ApiOperation({ summary: 'Get user by ID (Admin or self only)' })
+  @ApiResponse({ status: 200, description: 'User found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only access own profile' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
-  async findOne(@Param('id') id: string): Promise<User> {
+  async findOne(
+    @Param('id') id: string,
+    @CurrentUser() currentUser: User,
+  ): Promise<User> {
     try {
+      // Only allow users to access their own profile or admins to access any profile
+      if (currentUser.role !== 'admin' && currentUser.id !== +id) {
+        throw new ForbiddenException('You can only access your own profile');
+      }
       return await this.usersService.findOne(+id);
     } catch (error) {
-      if (error instanceof ResourceNotFoundException) {
+      if (error instanceof ResourceNotFoundException || error instanceof ForbiddenException) {
         throw error;
       }
       throw new DatabaseException('Failed to fetch user', error as Error);
@@ -51,16 +65,11 @@ export class UsersController {
   }
 
   @Post()
-  @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Create a new user' })
-  @ApiResponse({
-    status: 201,
-    description: 'User created successfully',
-    type: User,
-  })
-  @ApiResponse({ status: 400, description: 'Invalid input data' })
-  @ApiResponse({ status: 409, description: 'User with this email already exists' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Create a new user (Admin only)' })
+  @ApiResponse({ status: 201, description: 'User created successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
   async create(@Body() createUserDto: CreateUserDto): Promise<User> {
     try {
       return await this.usersService.create(createUserDto);
@@ -73,16 +82,9 @@ export class UsersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Update a user' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({
-    status: 200,
-    description: 'User updated successfully',
-    type: User,
-  })
+  @ApiOperation({ summary: 'Update user' })
+  @ApiResponse({ status: 200, description: 'User updated successfully' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 409, description: 'User with this email already exists' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
@@ -98,12 +100,11 @@ export class UsersController {
   }
 
   @Delete(':id')
-  @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiOperation({ summary: 'Delete a user' })
-  @ApiParam({ name: 'id', description: 'User ID' })
-  @ApiResponse({ status: 204, description: 'User deleted successfully' })
-  @ApiResponse({ status: 404, description: 'User not found' })
-  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @UseGuards(AdminGuard)
+  @ApiOperation({ summary: 'Delete user (Admin only)' })
+  @ApiResponse({ status: 200, description: 'User deleted successfully' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 403, description: 'Forbidden - Admin only' })
   async remove(@Param('id') id: string): Promise<void> {
     try {
       await this.usersService.remove(+id);

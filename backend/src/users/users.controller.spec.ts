@@ -11,7 +11,17 @@ jest.setTimeout(10000);
 
 describe('UsersController', () => {
   let controller: UsersController;
-  let mockUsersService: Partial<UsersService>;
+  let usersService: UsersService;
+
+  const mockUsersService = {
+    findAll: jest.fn(),
+    findOne: jest.fn(),
+    findByEmail: jest.fn(),
+    create: jest.fn(),
+    update: jest.fn(),
+    remove: jest.fn(),
+    validatePassword: jest.fn(),
+  };
 
   const mockUser: User = {
     id: 1,
@@ -26,16 +36,6 @@ describe('UsersController', () => {
   };
 
   beforeEach(async () => {
-    mockUsersService = {
-      findAll: jest.fn(),
-      findOne: jest.fn(),
-      findByEmail: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-      remove: jest.fn(),
-      validatePassword: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       controllers: [UsersController],
       providers: [
@@ -47,6 +47,7 @@ describe('UsersController', () => {
     }).compile();
 
     controller = module.get<UsersController>(UsersController);
+    usersService = module.get<UsersService>(UsersService);
   });
 
   afterEach(() => {
@@ -59,44 +60,73 @@ describe('UsersController', () => {
 
   describe('findAll', () => {
     it('should return an array of users', async () => {
-      const users = [mockUser];
-      (mockUsersService.findAll as jest.Mock).mockResolvedValue(users);
+      const expectedUsers = [
+        { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+        { id: 2, firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com' },
+      ];
+      mockUsersService.findAll.mockResolvedValue(expectedUsers);
 
       const result = await controller.findAll();
 
-      expect(result).toEqual(users);
-      expect(mockUsersService.findAll).toHaveBeenCalled();
+      expect(result).toEqual(expectedUsers);
+      expect(usersService.findAll).toHaveBeenCalled();
     });
 
     it('should throw DatabaseException when service fails', async () => {
-      const error = new DatabaseException('Failed to fetch users', new Error('Database error'));
-      (mockUsersService.findAll as jest.Mock).mockRejectedValue(error);
+      mockUsersService.findAll.mockRejectedValue(new Error('Database error'));
 
       await expect(controller.findAll()).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('findOne', () => {
-    it('should return a user', async () => {
-      (mockUsersService.findOne as jest.Mock).mockResolvedValue(mockUser);
+    const mockCurrentUser: User = {
+      id: 1,
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      password: 'hashedPassword',
+      role: UserRole.USER,
+      bookings: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
 
-      const result = await controller.findOne('1');
+    it('should return a single user when accessing own profile', async () => {
+      const expectedUser = { ...mockCurrentUser };
+      mockUsersService.findOne.mockResolvedValue(expectedUser);
 
-      expect(result).toEqual(mockUser);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(1);
+      const result = await controller.findOne('1', mockCurrentUser);
+
+      expect(result).toEqual(expectedUser);
+      expect(usersService.findOne).toHaveBeenCalledWith(1);
+    });
+
+    it('should return a single user when admin accesses any profile', async () => {
+      const adminUser = { ...mockCurrentUser, role: UserRole.ADMIN };
+      const targetUser = { ...mockCurrentUser, id: 2 };
+      mockUsersService.findOne.mockResolvedValue(targetUser);
+
+      const result = await controller.findOne('2', adminUser);
+
+      expect(result).toEqual(targetUser);
+      expect(usersService.findOne).toHaveBeenCalledWith(2);
     });
 
     it('should throw ResourceNotFoundException when user is not found', async () => {
-      (mockUsersService.findOne as jest.Mock).mockRejectedValue(new ResourceNotFoundException('User', 1));
+      mockUsersService.findOne.mockRejectedValue(new ResourceNotFoundException('User', 1));
 
-      await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
+      await expect(controller.findOne('1', mockCurrentUser)).rejects.toThrow(ResourceNotFoundException);
     });
 
     it('should throw DatabaseException when service fails', async () => {
-      const error = new DatabaseException('Failed to fetch user', new Error('Database error'));
-      (mockUsersService.findOne as jest.Mock).mockRejectedValue(error);
+      mockUsersService.findOne.mockRejectedValue(new Error('Database error'));
 
-      await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
+      await expect(controller.findOne('1', mockCurrentUser)).rejects.toThrow(DatabaseException);
+    });
+
+    it('should throw ForbiddenException when accessing another user\'s profile', async () => {
+      await expect(controller.findOne('2', mockCurrentUser)).rejects.toThrow('You can only access your own profile');
     });
   });
 

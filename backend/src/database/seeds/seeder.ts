@@ -4,10 +4,7 @@ import { Room, RoomType, AvailabilityStatus } from '../../rooms/entities/room.en
 import { Booking, BookingStatus } from '../../bookings/entities/booking.entity';
 import { Payment, PaymentStatus, PaymentMethod, Currency } from '../../payments/entities/payment.entity';
 import * as bcrypt from 'bcrypt';
-import { config } from 'dotenv';
-
-// Load environment variables
-config();
+import dataSource from '../../config/typeorm.config';
 
 export class Seeder {
   constructor(private readonly dataSource: DataSource) {}
@@ -32,11 +29,7 @@ export class Seeder {
       console.error('Error during seeding:', error);
       throw error;
     } finally {
-      // Close the database connection
-      if (this.dataSource.isInitialized) {
-        await this.dataSource.destroy();
-        console.log('Database connection closed.');
-      }
+      await this.dataSource.destroy();
     }
   }
 
@@ -160,24 +153,14 @@ export class Seeder {
   }
 }
 
-// Run seeder if this file is executed directly
-if (require.main === module) {
-  const dataSource = new DataSource({
-    type: 'mysql',
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '3306'),
-    username: process.env.DB_USERNAME || 'root',
-    password: process.env.DB_PASSWORD || '',
-    database: process.env.DB_DATABASE || 'hotel_booking',
-    entities: ['src/**/*.entity.ts'],
-    synchronize: false,
-  });
-
-  const seeder = new Seeder(dataSource);
-  seeder.seed()
-    .then(() => process.exit(0))
-    .catch((error) => {
-      console.error('Seeding failed:', error);
-      process.exit(1);
-    });
-} 
+// Run the seeder
+const seeder = new Seeder(dataSource);
+seeder.seed()
+  .then(() => {
+    console.log('Seeding completed successfully!');
+    process.exit(0);
+  })
+  .catch((error) => {
+    console.error('Seeding failed:', error);
+    process.exit(1);
+  }); 
