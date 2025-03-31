@@ -29,7 +29,7 @@ export class CreateRoomDto {
   @ApiProperty({ description: 'The room number or identifier' })
   @IsNotEmpty()
   @IsString()
-    number: string;
+    roomNumber: string;
 
   /**
    * The price per night for the room
@@ -50,10 +50,10 @@ export class CreateRoomDto {
   /**
    * The floor number where the room is located
    */
-  @ApiProperty({ description: 'The floor number where the room is located' })
-  @IsNotEmpty()
+  @ApiPropertyOptional({ description: 'The floor number where the room is located' })
+  @IsOptional()
   @IsNumber()
-    floor: number;
+    floor?: number;
 
   /**
    * Whether the room has a balcony
@@ -91,8 +91,4 @@ export class CreateRoomDto {
   @IsEnum(AvailabilityStatus)
   @IsOptional()
     availabilityStatus: AvailabilityStatus;
-
-  @IsBoolean()
-  @IsOptional()
-    isActive?: boolean;
 }

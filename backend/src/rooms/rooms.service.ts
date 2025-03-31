@@ -55,10 +55,10 @@ export class RoomsService {
     try {
       // Check if room number already exists
       const existingRoom = await this.roomsRepository.findOne({
-        where: { roomNumber: createRoomDto.number },
+        where: { roomNumber: createRoomDto.roomNumber },
       });
       if (existingRoom) {
-        throw new ConflictException(`Room with number ${createRoomDto.number} already exists`);
+        throw new ConflictException(`Room with number ${createRoomDto.roomNumber} already exists`);
       }
 
       const room = this.roomsRepository.create(createRoomDto);

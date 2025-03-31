@@ -25,38 +25,41 @@ export enum AvailabilityStatus {
 
 @Entity('rooms')
 export class Room {
-  @PrimaryGeneratedColumn()
+  @PrimaryGeneratedColumn({ name: 'room_id' })
   @ApiProperty({ description: 'The unique identifier of the room' })
     id: number;
 
-  @Column()
+  @Column({ name: 'room_number', unique: true })
   @ApiProperty({ description: 'The room number' })
     roomNumber: string;
 
   @Column({
+    name: 'room_type',
     type: 'enum',
     enum: RoomType,
+    default: RoomType.SINGLE,
   })
   @ApiProperty({ description: 'The type of room', enum: RoomType })
     type: RoomType;
 
-  @Column('decimal', { precision: 10, scale: 2 })
+  @Column({ name: 'price_per_night', type: 'decimal', precision: 10, scale: 2 })
   @ApiProperty({ description: 'The price per night for the room' })
     pricePerNight: number;
 
-  @Column()
+  @Column({ name: 'max_guests' })
   @ApiProperty({ description: 'The maximum number of guests allowed' })
     maxGuests: number;
 
-  @Column()
+  @Column({ name: 'description', nullable: true })
   @ApiProperty({ description: 'The description of the room' })
     description: string;
 
-  @Column({ nullable: true })
+  @Column({ name: 'amenities', type: 'json', nullable: true })
   @ApiProperty({ description: 'The amenities available in the room' })
-    amenities?: string;
+    amenities: string;
 
   @Column({
+    name: 'availability_status',
     type: 'enum',
     enum: AvailabilityStatus,
     default: AvailabilityStatus.AVAILABLE,
@@ -71,11 +74,11 @@ export class Room {
   @ApiProperty({ description: 'The bookings associated with this room' })
     bookings: Booking[];
 
-  @CreateDateColumn()
+  @CreateDateColumn({ name: 'created_at' })
   @ApiProperty({ description: 'The date when the room was created' })
     createdAt: Date;
 
-  @UpdateDateColumn()
+  @UpdateDateColumn({ name: 'updated_at' })
   @ApiProperty({ description: 'The date when the room was last updated' })
     updatedAt: Date;
 }

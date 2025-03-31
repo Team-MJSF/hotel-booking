@@ -156,7 +156,7 @@ describe('RoomsController', () => {
   describe('create', () => {
     it('should create a new room', async () => {
       const createRoomDto: CreateRoomDto = {
-        number: '101',
+        roomNumber: '101',
         type: RoomType.DOUBLE,
         pricePerNight: 100,
         maxGuests: 2,
@@ -166,7 +166,6 @@ describe('RoomsController', () => {
           tv: true,
           airConditioning: true,
         }),
-        floor: 1,
         availabilityStatus: AvailabilityStatus.AVAILABLE,
       };
 
@@ -180,7 +179,7 @@ describe('RoomsController', () => {
 
     it('should throw ConflictException when room number already exists', async () => {
       const createRoomDto: CreateRoomDto = {
-        number: '101',
+        roomNumber: '101',
         type: RoomType.DOUBLE,
         pricePerNight: 100,
         maxGuests: 2,
@@ -190,7 +189,6 @@ describe('RoomsController', () => {
           tv: true,
           airConditioning: true,
         }),
-        floor: 1,
         availabilityStatus: AvailabilityStatus.AVAILABLE,
       };
 
@@ -203,7 +201,7 @@ describe('RoomsController', () => {
 
     it('should throw DatabaseException when service fails', async () => {
       const createRoomDto: CreateRoomDto = {
-        number: '101',
+        roomNumber: '101',
         type: RoomType.DOUBLE,
         pricePerNight: 100,
         maxGuests: 2,
@@ -213,7 +211,6 @@ describe('RoomsController', () => {
           tv: true,
           airConditioning: true,
         }),
-        floor: 1,
         availabilityStatus: AvailabilityStatus.AVAILABLE,
       };
 

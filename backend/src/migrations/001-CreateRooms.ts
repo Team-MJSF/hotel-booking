@@ -35,6 +35,10 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             type: 'int',
           },
           {
+            name: 'description',
+            type: 'text',
+          },
+          {
             name: 'availability_status',
             type: 'enum',
             enum: ['available', 'occupied', 'maintenance', 'cleaning'],
