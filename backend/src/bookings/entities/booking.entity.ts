@@ -24,19 +24,19 @@ export enum BookingStatus {
 export class Booking {
   @ApiProperty({ description: 'The unique identifier of the booking' })
   @PrimaryGeneratedColumn({ name: 'booking_id' })
-    bookingId!: number;
+    bookingId: number;
 
   @ApiProperty({ description: 'The check-in date for the booking' })
   @Column({ name: 'check_in_date' })
-    checkInDate!: Date;
+    checkInDate: Date;
 
   @ApiProperty({ description: 'The check-out date for the booking' })
   @Column({ name: 'check_out_date' })
-    checkOutDate!: Date;
+    checkOutDate: Date;
 
   @ApiProperty({ description: 'The number of guests for the booking' })
   @Column({ name: 'number_of_guests', nullable: true })
-    numberOfGuests!: number;
+    numberOfGuests?: number;
 
   @ApiProperty({
     description: 'The current status of the booking',
@@ -49,27 +49,27 @@ export class Booking {
     enum: BookingStatus,
     default: BookingStatus.PENDING,
   })
-    status!: BookingStatus;
+    status: BookingStatus;
 
   @ApiProperty({ description: 'The user who made the booking' })
   @ManyToOne(() => User, (user) => user.bookings)
   @JoinColumn({ name: 'user_id' })
-    user!: User;
+    user: User;
 
   @ApiProperty({ description: 'The room being booked' })
   @ManyToOne(() => Room, (room) => room.bookings)
   @JoinColumn({ name: 'room_id' })
-    room!: Room;
+    room: Room;
 
   @ApiProperty({ description: 'The payments associated with this booking' })
   @OneToMany(() => Payment, (payment) => payment.booking)
-    payments!: Payment[];
+    payments: Payment[];
 
   @ApiProperty({ description: 'The date when the booking was created' })
   @CreateDateColumn({ name: 'created_at' })
-    createdAt!: Date;
+    createdAt: Date;
 
   @ApiProperty({ description: 'The date when the booking was last updated' })
   @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt!: Date;
+    updatedAt: Date;
 }
