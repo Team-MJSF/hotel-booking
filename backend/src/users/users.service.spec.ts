@@ -1,3 +1,9 @@
+// Mock bcrypt before any imports
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockImplementation((password) => Promise.resolve(`hashed_${password}`)),
+  compare: jest.fn().mockImplementation((password, hash) => Promise.resolve(password === hash.replace('hashed_', '')))
+}));
+
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -7,11 +13,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import * as bcrypt from 'bcrypt';
-
-jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockImplementation((password) => Promise.resolve(`hashed_${password}`)),
-  compare: jest.fn().mockImplementation((password, hash) => Promise.resolve(password === hash.replace('hashed_', '')))
-}));
+import { Logger } from '@nestjs/common';
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -41,12 +43,26 @@ describe('UsersService', () => {
   };
 
   beforeEach(async () => {
+    const mockLoggerInstance = {
+      log: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+      verbose: jest.fn(),
+      fatal: jest.fn(),
+      localInstance: {} as Logger,
+    } as unknown as jest.Mocked<Logger>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UsersService,
         {
           provide: getRepositoryToken(User),
           useValue: mockRepository,
+        },
+        {
+          provide: Logger,
+          useValue: mockLoggerInstance,
         },
       ],
     }).compile();

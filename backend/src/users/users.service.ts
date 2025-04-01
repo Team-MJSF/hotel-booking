@@ -9,11 +9,10 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
-
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    private readonly logger: Logger = new Logger(UsersService.name),
   ) {}
 
   /**
