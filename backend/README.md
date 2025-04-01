@@ -1,167 +1,155 @@
-# Hotel Booking Backend
+# Hotel Booking System Backend
 
-A NestJS-based backend service for a hotel booking system. Built with TypeScript, TypeORM, and MySQL.
-
-## Technology Stack
-
-- **NestJS**: A progressive Node.js framework for building efficient and scalable server-side applications
-- **TypeScript**: For type-safe code and better developer experience
-- **TypeORM**: For database management and ORM functionality
-- **MySQL**: As the primary database
-- **JWT**: For authentication and authorization
-- **bcrypt**: For password hashing
-- **class-validator**: For DTO validation
-- **Swagger/OpenAPI**: For API documentation
+A NestJS-based backend for a hotel booking system, designed for a school project with inexperienced developers.
 
 ## Features
 
-- **Authentication & Authorization**
-  - JWT-based authentication
-  - Role-based access control (Admin/User)
-  - Protected routes with guards
-  - Password hashing with bcrypt
+### Room Management
+- Create, read, update, and delete rooms
+- Room types: Single, Double, Suite, Deluxe
+- Room amenities support
+- Room availability tracking
+- Room search with advanced filtering and sorting:
+  - Date range filtering
+  - Room type filtering
+  - Maximum guests filtering
+  - Price range filtering
+  - Amenities filtering
+  - Sorting by:
+    - Price (lowest/highest)
+    - Room type
+    - Maximum guests
+    - Room number
+  - Sort order (ascending/descending)
 
-- **User Management**
-  - User registration and login
-  - Profile management
-  - Role-based permissions
-  - Admin user management
+### Booking Management
+- Create, read, update, and delete bookings
+- Booking status tracking
+- Date conflict prevention
+- Guest information management
 
-- **Room Management**
-  - Room CRUD operations
-  - Room type management
-  - Room availability tracking
-  - Room pricing
+### User Management
+- User registration and authentication
+- Role-based access control (Admin, User)
+- User profile management
 
-- **Booking System**
-  - Create and manage bookings
-  - Check room availability
-  - Booking status tracking
+## API Endpoints
 
-## Prerequisites
+### Rooms
+- `GET /rooms` - Get all rooms
+- `GET /rooms/:id` - Get a specific room
+- `POST /rooms` - Create a new room
+- `PATCH /rooms/:id` - Update a room
+- `DELETE /rooms/:id` - Delete a room
+- `GET /rooms/search` - Search available rooms with filters and sorting
 
-- Node.js (v18 or higher)
-- MySQL (v8 or higher)
-- npm or yarn
+### Bookings
+- `GET /bookings` - Get all bookings
+- `GET /bookings/:id` - Get a specific booking
+- `POST /bookings` - Create a new booking
+- `PATCH /bookings/:id` - Update a booking
+- `DELETE /bookings/:id` - Delete a booking
 
-## Installation
+### Users
+- `POST /users/register` - Register a new user
+- `POST /users/login` - Login user
+- `GET /users/profile` - Get user profile
+- `PATCH /users/profile` - Update user profile
 
-1. Clone the repository:
+## Search Parameters
+
+### Room Search
+- `checkInDate`: Date - Check-in date for the booking
+- `checkOutDate`: Date - Check-out date for the booking
+- `roomType`: RoomType - Type of room to search for
+- `maxGuests`: number - Maximum number of guests
+- `minPrice`: number - Minimum price per night
+- `maxPrice`: number - Maximum price per night
+- `amenities`: string[] - List of required amenities
+- `sortBy`: SortField - Field to sort results by
+- `sortOrder`: SortOrder - Sort order (ASC/DESC)
+
+### Sort Fields
+- `price` - Sort by price per night
+- `type` - Sort by room type
+- `maxGuests` - Sort by maximum guests
+- `roomNumber` - Sort by room number
+
+### Sort Orders
+- `ASC` - Ascending order (default)
+- `DESC` - Descending order
+
+## Technologies Used
+
+- NestJS - Web framework
+- TypeORM - Database ORM
+- PostgreSQL - Database
+- JWT - Authentication
+- Class Validator - Input validation
+- Swagger - API documentation
+
+## Getting Started
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Set up environment variables:
+   ```bash
+   cp .env.example .env
+   ```
+
+3. Update the `.env` file with your database credentials
+
+4. Run migrations:
+   ```bash
+   npm run migration:run
+   ```
+
+5. Start the development server:
+   ```bash
+   npm run start:dev
+   ```
+
+## Testing
+
+Run tests:
 ```bash
-git clone <repository-url>
-cd hotel-booking/backend
+npm test
 ```
 
-2. Install dependencies:
+Run tests with coverage:
 ```bash
-npm install
-```
-
-3. Create a `.env` file in the root directory with the following variables:
-```env
-# Database
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=your_username
-DB_PASSWORD=your_password
-DB_NAME=hotel_booking_dev
-
-# JWT
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRATION=1d
-
-# Server
-PORT=5000
-```
-
-4. Run database migrations:
-```bash
-npm run db:migrate
-```
-
-## Running the Application
-
-Development mode:
-```bash
-npm run start:dev
-```
-
-Production mode:
-```bash
-npm run build
-npm run start:prod
+npm run test:cov
 ```
 
 ## API Documentation
 
-The API documentation is available at `/api` when running the application. You can test the endpoints directly through the Swagger UI.
-
-### Main Endpoints
-
-#### Authentication
-- `POST /auth/register` - Register a new user
-- `POST /auth/login` - Login user
-- `GET /auth/profile` - Get current user profile (Protected)
-
-#### Users
-- `GET /users` - Get all users (Admin only)
-- `GET /users/:id` - Get user by ID (Admin or self only)
-- `PATCH /users/:id` - Update user (Admin or self only)
-- `DELETE /users/:id` - Delete user (Admin only)
-
-#### Rooms
-- `GET /rooms` - Get all rooms
-- `GET /rooms/:id` - Get room by ID
-- `POST /rooms` - Create new room (Admin only)
-- `PATCH /rooms/:id` - Update room (Admin only)
-- `DELETE /rooms/:id` - Delete room (Admin only)
-
-#### Bookings
-- `GET /bookings` - Get all bookings (Admin) or user's bookings
-- `GET /bookings/:id` - Get booking by ID
-- `POST /bookings` - Create new booking
-- `PATCH /bookings/:id` - Update booking
-- `DELETE /bookings/:id` - Cancel booking
+Once the server is running, visit:
+```
+http://localhost:3000/api
+```
 
 ## Project Structure
 
 ```
 src/
-├── auth/                 # Authentication module
-│   ├── decorators/      # Custom decorators
-│   ├── dto/             # Data transfer objects
-│   ├── guards/          # Authentication guards
-│   └── strategies/      # Passport strategies
-├── users/               # User management module
-│   ├── dto/            # User DTOs
-│   └── entities/       # User entity
-├── rooms/              # Room management module
-│   ├── dto/           # Room DTOs
-│   └── entities/      # Room entity
-├── bookings/          # Booking management module
-│   ├── dto/          # Booking DTOs
-│   └── entities/     # Booking entity
-├── common/           # Shared resources
-│   ├── exceptions/   # Custom exceptions
-│   └── filters/      # Exception filters
+├── common/           # Common utilities and exceptions
+├── config/          # Configuration files
+├── rooms/           # Room-related modules
+├── bookings/        # Booking-related modules
+├── users/           # User-related modules
 └── main.ts          # Application entry point
-```
-
-## Testing
-
-Run unit tests:
-```bash
-npm run test
 ```
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Create a new branch for your feature
+2. Make your changes
+3. Write/update tests
+4. Submit a pull request
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License.
