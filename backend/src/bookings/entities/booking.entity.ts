@@ -38,6 +38,10 @@ export class Booking {
   @Column({ name: 'number_of_guests', nullable: true })
     numberOfGuests?: number;
 
+  @ApiProperty({ description: 'Special requests or notes for the booking' })
+  @Column({ name: 'special_requests', nullable: true })
+    specialRequests?: string;
+
   @ApiProperty({
     description: 'The current status of the booking',
     enum: BookingStatus,

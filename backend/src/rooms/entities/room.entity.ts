@@ -68,8 +68,11 @@ export class Room {
     description: string;
 
   @Column({ name: 'amenities', type: 'json', nullable: true })
-  @ApiProperty({ description: 'The amenities available in the room' })
-    amenities: string;
+  @ApiProperty({ 
+    description: 'The amenities available in the room',
+    type: 'string'
+  })
+  public amenities: string;
 
   @Column({ name: 'photos', type: 'json', nullable: true })
   @ApiProperty({ 

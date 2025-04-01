@@ -23,15 +23,22 @@ export class CreateBookings1709913600002 implements MigrationInterface {
           },
           {
             name: 'check_in_date',
-            type: 'date',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'check_out_date',
-            type: 'date',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'number_of_guests',
             type: 'int',
+            isNullable: true,
+          },
+          {
+            name: 'special_requests',
+            type: 'text',
             isNullable: true,
           },
           {

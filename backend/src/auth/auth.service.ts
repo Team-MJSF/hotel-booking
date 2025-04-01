@@ -24,7 +24,8 @@ export class AuthService {
       const isValid = await this.usersService.validatePassword(user, password);
       this.logger.debug(`Password validation result: ${isValid}`);
       if (isValid) {
-        const { password: _, ...result } = user;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const { password, ...result } = user;
         return result;
       }
     }
@@ -59,7 +60,8 @@ export class AuthService {
       role: UserRole.USER,
     });
 
-    const { password: _, ...result } = user;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
     return result;
   }
 

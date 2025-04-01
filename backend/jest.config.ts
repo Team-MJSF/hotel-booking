@@ -10,6 +10,7 @@ const config: JestConfigWithTsJest = {
       {
         useESM: true,
         tsconfig: 'tsconfig.json',
+        diagnostics: false,
       },
     ],
   },
@@ -22,6 +23,11 @@ const config: JestConfigWithTsJest = {
     name: 'HOTEL-BOOKING',
     color: 'blue',
   },
+  // Enable parallel test execution
+  maxWorkers: '50%',
+  // Enable caching
+  cache: true,
+  cacheDirectory: '.jest-cache',
   // Test patterns
   testMatch: [
     '**/src/**/*.spec.ts',
@@ -47,13 +53,23 @@ const config: JestConfigWithTsJest = {
   // Test environment setup
   testEnvironmentOptions: {
     url: 'http://localhost',
+    enableProcessManagement: false,
   },
   // Module file extensions
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   // Root directory
   rootDir: '.',
   // Test timeout
-  testTimeout: 10000
+  testTimeout: 10000,
+  // Additional performance optimizations
+  bail: process.env.CI ? 1 : 0,
+  detectOpenHandles: false,
+  errorOnDeprecated: false,
+  detectLeaks: false,
+  // Optimize module resolution
+  moduleDirectories: ['node_modules'],
+  // Add selective test running
+  watchPathIgnorePatterns: ['node_modules', 'dist', '.jest-cache']
 };
 
 export default config; 

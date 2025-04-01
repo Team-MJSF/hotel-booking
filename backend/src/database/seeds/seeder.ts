@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import { DataSource } from 'typeorm';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Room, RoomType, AvailabilityStatus } from '../../rooms/entities/room.entity';
