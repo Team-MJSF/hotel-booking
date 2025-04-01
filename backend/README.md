@@ -114,15 +114,32 @@ A NestJS-based backend for a hotel booking system, designed for a school project
 
 ## Testing
 
-Run tests:
+Run all tests (unit tests in parallel, integration tests sequentially):
 ```bash
 npm test
+```
+
+Run only unit tests (in parallel):
+```bash
+npm run test:unit
+```
+
+Run only integration tests (sequentially):
+```bash
+npm run test:integration
 ```
 
 Run tests with coverage:
 ```bash
 npm run test:cov
 ```
+
+Run tests in watch mode (useful during development):
+```bash
+npm run test:watch
+```
+
+Note: Integration tests run sequentially to prevent database conflicts, while unit tests run in parallel for faster execution.
 
 ## API Documentation
 
