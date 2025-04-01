@@ -1,23 +1,34 @@
 # Hotel Booking Backend
 
-A robust backend service for a hotel booking system built with NestJS, TypeORM, and PostgreSQL.
+A NestJS-based backend service for a hotel booking system. Built with TypeScript, TypeORM, and MySQL.
+
+## Technology Stack
+
+- **NestJS**: A progressive Node.js framework for building efficient and scalable server-side applications
+- **TypeScript**: For type-safe code and better developer experience
+- **TypeORM**: For database management and ORM functionality
+- **MySQL**: As the primary database
+- **JWT**: For authentication and authorization
+- **bcrypt**: For password hashing
+- **class-validator**: For DTO validation
+- **Swagger/OpenAPI**: For API documentation
 
 ## Features
 
 - **Authentication & Authorization**
   - JWT-based authentication
   - Role-based access control (Admin/User)
-  - Secure password hashing with bcrypt
   - Protected routes with guards
+  - Password hashing with bcrypt
 
 - **User Management**
   - User registration and login
   - Profile management
-  - Admin-only user management
   - Role-based permissions
+  - Admin user management
 
-- **Hotel Management**
-  - Room management
+- **Room Management**
+  - Room CRUD operations
   - Room type management
   - Room availability tracking
   - Room pricing
@@ -26,12 +37,11 @@ A robust backend service for a hotel booking system built with NestJS, TypeORM, 
   - Create and manage bookings
   - Check room availability
   - Booking status tracking
-  - Booking history
 
 ## Prerequisites
 
 - Node.js (v18 or higher)
-- PostgreSQL (v14 or higher)
+- MySQL (v8 or higher)
 - npm or yarn
 
 ## Installation
@@ -51,22 +61,22 @@ npm install
 ```env
 # Database
 DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=your_username
+DB_PORT=3306
+DB_USER=your_username
 DB_PASSWORD=your_password
-DB_DATABASE=hotel_booking
+DB_NAME=hotel_booking_dev
 
 # JWT
 JWT_SECRET=your_jwt_secret_key
 JWT_EXPIRATION=1d
 
 # Server
-PORT=3000
+PORT=5000
 ```
 
 4. Run database migrations:
 ```bash
-npm run migration:run
+npm run db:migrate
 ```
 
 ## Running the Application
@@ -84,57 +94,34 @@ npm run start:prod
 
 ## API Documentation
 
-The API documentation is available at `/api` when running the application.
+The API documentation is available at `/api` when running the application. You can test the endpoints directly through the Swagger UI.
 
-### Authentication Endpoints
+### Main Endpoints
 
+#### Authentication
 - `POST /auth/register` - Register a new user
 - `POST /auth/login` - Login user
-- `GET /auth/profile` - Get current user profile
+- `GET /auth/profile` - Get current user profile (Protected)
 
-### User Management Endpoints
-
+#### Users
 - `GET /users` - Get all users (Admin only)
 - `GET /users/:id` - Get user by ID (Admin or self only)
-- `POST /users` - Create new user (Admin only)
-- `PATCH /users/:id` - Update user
+- `PATCH /users/:id` - Update user (Admin or self only)
 - `DELETE /users/:id` - Delete user (Admin only)
 
-### Room Management Endpoints
-
+#### Rooms
 - `GET /rooms` - Get all rooms
 - `GET /rooms/:id` - Get room by ID
 - `POST /rooms` - Create new room (Admin only)
 - `PATCH /rooms/:id` - Update room (Admin only)
 - `DELETE /rooms/:id` - Delete room (Admin only)
 
-### Room Type Endpoints
-
-- `GET /room-types` - Get all room types
-- `GET /room-types/:id` - Get room type by ID
-- `POST /room-types` - Create new room type (Admin only)
-- `PATCH /room-types/:id` - Update room type (Admin only)
-- `DELETE /room-types/:id` - Delete room type (Admin only)
-
-### Booking Endpoints
-
+#### Bookings
 - `GET /bookings` - Get all bookings (Admin) or user's bookings
 - `GET /bookings/:id` - Get booking by ID
 - `POST /bookings` - Create new booking
 - `PATCH /bookings/:id` - Update booking
-- `DELETE /bookings/:id` - Delete booking (Admin only)
-
-## Testing
-
-Run unit tests:
-```bash
-npm run test
-```
-
-Run e2e tests:
-```bash
-npm run test:e2e
-```
+- `DELETE /bookings/:id` - Cancel booking
 
 ## Project Structure
 
@@ -142,24 +129,29 @@ npm run test:e2e
 src/
 ├── auth/                 # Authentication module
 │   ├── decorators/      # Custom decorators
-│   ├── dto/            # Data transfer objects
-│   ├── guards/         # Authentication guards
-│   ├── strategies/     # Passport strategies
-│   └── auth.service.ts # Authentication service
-├── users/              # User management module
-│   ├── dto/           # User DTOs
-│   ├── entities/      # User entity
-│   └── users.service.ts
-├── rooms/             # Room management module
-│   ├── dto/          # Room DTOs
-│   ├── entities/     # Room entities
-│   └── rooms.service.ts
-├── bookings/         # Booking management module
-│   ├── dto/         # Booking DTOs
-│   ├── entities/    # Booking entities
-│   └── bookings.service.ts
-├── common/          # Common utilities and exceptions
-└── main.ts         # Application entry point
+│   ├── dto/             # Data transfer objects
+│   ├── guards/          # Authentication guards
+│   └── strategies/      # Passport strategies
+├── users/               # User management module
+│   ├── dto/            # User DTOs
+│   └── entities/       # User entity
+├── rooms/              # Room management module
+│   ├── dto/           # Room DTOs
+│   └── entities/      # Room entity
+├── bookings/          # Booking management module
+│   ├── dto/          # Booking DTOs
+│   └── entities/     # Booking entity
+├── common/           # Shared resources
+│   ├── exceptions/   # Custom exceptions
+│   └── filters/      # Exception filters
+└── main.ts          # Application entry point
+```
+
+## Testing
+
+Run unit tests:
+```bash
+npm run test
 ```
 
 ## Contributing
