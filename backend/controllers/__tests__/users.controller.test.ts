@@ -11,7 +11,7 @@
  * The tests use dependency injection to provide mock implementations of the models,
  * making testing cleaner and more maintainable.
  */
-
+0
 import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import type { Request, Response } from 'express';
 import type { ValidationError } from 'express-validator';
@@ -21,6 +21,7 @@ import type { UserAttributes } from '../../models/Users.js';
 const mockUsersModel = {
   findAll: jest.fn(),
   findByPk: jest.fn(),
+  findOne: jest.fn<() => Promise<UserAttributes | null>>(),
   create: jest.fn(),
   update: jest.fn(),
   destroy: jest.fn()
@@ -650,6 +651,55 @@ describe('Users Controller - deleteUser', () => {
       message: 'Error deleting user',
       error: mockError.message
     });
+  });
+});
+
+
+
+//unit test for getbyID
+describe('Users Controller - getUserById (findOne)', () => {
+  let usersController: any;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    usersController = createUsersController({
+      Users: mockUsersModel as any
+    });
+  });
+
+  test('should return a user by ID using findOne', async () => {
+    const mockUser: UserAttributes = { 
+      userId: 1, 
+      fullName: 'John Doe', 
+      email: 'john@example.com', 
+      password: 'hashedpassword123',
+      role: 'Customer',
+      phoneNumber: '123-456-7890'
+    };
+
+    // Mock Sequelize's `findOne` response
+    mockUsersModel.findOne.mockResolvedValue(mockUser);
+
+    const req = { params: { id: '1' } } as unknown as Request;
+    const res = mockResponse();
+
+    await usersController.getUserById(req, res as Response);
+
+    expect(mockUsersModel.findOne).toHaveBeenCalledWith({ where: { userId: 1 } });
+    expect(res.json).toHaveBeenCalledWith(mockUser);
+  });
+
+  test('should return 404 if user is not found', async () => {
+    mockUsersModel.findOne.mockResolvedValue(null);
+
+    const req = { params: { id: '999' } } as unknown as Request;
+    const res = mockResponse();
+
+    await usersController.getUserById(req, res as Response);
+
+    expect(mockUsersModel.findOne).toHaveBeenCalledWith({ where: { userId: 999 } });
+    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.json).toHaveBeenCalledWith({ message: 'User not found' });
   });
 });
 
