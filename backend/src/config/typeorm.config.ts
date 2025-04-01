@@ -40,10 +40,19 @@ async function createDatabaseIfNotExists() {
       logger.log(`Dropped test database ${finalDbName}`);
     }
 
-    // Create fresh database
-    await connection.query(`CREATE DATABASE ${finalDbName}`);
+    // Check if database exists
+    const [rows] = await connection.query(`SHOW DATABASES LIKE '${finalDbName}'`);
+    const databaseExists = Array.isArray(rows) && rows.length > 0;
+
+    if (!databaseExists) {
+      // Create database only if it doesn't exist
+      await connection.query(`CREATE DATABASE ${finalDbName}`);
+      logger.log(`Database ${finalDbName} created successfully`);
+    } else {
+      logger.log(`Database ${finalDbName} already exists`);
+    }
+
     await connection.end();
-    logger.log(`Database ${finalDbName} created successfully`);
   } catch (error) {
     logger.error('Database connection error:', error);
     throw error;
