@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, SelectQueryBuilder } from 'typeorm';
 import { RoomsService } from './rooms.service';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
@@ -201,21 +201,21 @@ describe('RoomsService', () => {
     const maxGuests = 2;
     const maxPrice = 200;
 
-    const mockQueryBuilder = {
+    const mockQueryBuilder: Partial<SelectQueryBuilder<Room>> = {
       leftJoin: jest.fn().mockReturnThis(),
       where: jest.fn().mockReturnThis(),
       andWhere: jest.fn().mockReturnThis(),
       distinct: jest.fn().mockReturnThis(),
-      getMany: jest.fn(),
-    };
+      getMany: jest.fn().mockResolvedValue([]),
+    } as unknown as SelectQueryBuilder<Room>;
 
     beforeEach(() => {
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as SelectQueryBuilder<Room>);
     });
 
     it('should return available rooms with all filters', async () => {
       const availableRooms = [mockRoom];
-      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+      (mockQueryBuilder.getMany as jest.Mock).mockResolvedValue(availableRooms);
 
       const result = await service.findAvailableRooms(
         checkInDate,
@@ -237,7 +237,7 @@ describe('RoomsService', () => {
 
     it('should return available rooms without optional filters', async () => {
       const availableRooms = [mockRoom];
-      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+      (mockQueryBuilder.getMany as jest.Mock).mockResolvedValue(availableRooms);
 
       const result = await service.findAvailableRooms(checkInDate, checkOutDate);
 
@@ -247,7 +247,7 @@ describe('RoomsService', () => {
 
     it('should throw DatabaseException when query fails', async () => {
       const error = new Error('Database error');
-      mockQueryBuilder.getMany.mockRejectedValue(error);
+      (mockQueryBuilder.getMany as jest.Mock).mockRejectedValue(error);
 
       await expect(
         service.findAvailableRooms(checkInDate, checkOutDate),

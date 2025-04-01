@@ -13,7 +13,6 @@ describe('PaymentsService', () => {
   let service: PaymentsService;
   let paymentsRepository: Repository<Payment>;
   let bookingsRepository: Repository<Booking>;
-  let bookingsService: BookingsService;
 
   const mockPaymentsRepository = {
     find: jest.fn(),
@@ -80,7 +79,6 @@ describe('PaymentsService', () => {
     service = module.get<PaymentsService>(PaymentsService);
     paymentsRepository = module.get<Repository<Payment>>(getRepositoryToken(Payment));
     bookingsRepository = module.get<Repository<Booking>>(getRepositoryToken(Booking));
-    bookingsService = module.get<BookingsService>(BookingsService);
   });
 
   afterEach(() => {

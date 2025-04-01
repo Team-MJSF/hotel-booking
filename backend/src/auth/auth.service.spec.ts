@@ -15,8 +15,8 @@ jest.mock('bcrypt', () => ({
 
 describe('AuthService', () => {
   let service: AuthService;
-  let mockUsersService: jest.Mocked<UsersService>;
-  let mockJwtService: jest.Mocked<JwtService>;
+  let mockUsersService: Partial<jest.Mocked<UsersService>>;
+  let mockJwtService: Partial<jest.Mocked<JwtService>>;
 
   const mockUser: User = {
     id: 1,
@@ -34,15 +34,22 @@ describe('AuthService', () => {
 
   beforeEach(async () => {
     mockUsersService = {
+      findAll: jest.fn(),
       findByEmail: jest.fn(),
       create: jest.fn(),
       findOne: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
       validatePassword: jest.fn(),
-    } as any;
+    };
 
     mockJwtService = {
-      sign: jest.fn().mockReturnValue('test_token')
-    } as any;
+      sign: jest.fn().mockReturnValue('test_token'),
+      signAsync: jest.fn(),
+      verify: jest.fn(),
+      verifyAsync: jest.fn(),
+      decode: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
