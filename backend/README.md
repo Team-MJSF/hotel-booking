@@ -20,12 +20,19 @@ A NestJS backend for a hotel booking system with user authentication, room manag
 
 ## Environment Setup
 
-1. Copy the environment file:
+1. Copy the appropriate environment file based on your environment:
    ```bash
-   cp .env.example .env
+   # For development
+   cp .env.example .env.development
+
+   # For production
+   cp .env.example .env.production
+
+   # For testing
+   cp .env.example .env.test
    ```
 
-2. Update the environment variables in `.env`:
+2. Update the environment variables in your chosen environment file (e.g., `.env.development`):
    ```env
    # Environment Configuration
    NODE_ENV=development
@@ -44,6 +51,11 @@ A NestJS backend for a hotel booking system with user authentication, room manag
    ENABLE_SWAGGER=true
    ENABLE_LOGGING=true
    ```
+
+The application will automatically load the correct environment file based on the `NODE_ENV` value:
+- Development: `.env.development`
+- Production: `.env.production`
+- Test: `.env.test`
 
 ## Installation
 
