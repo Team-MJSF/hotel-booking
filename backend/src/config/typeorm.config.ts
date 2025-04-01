@@ -4,13 +4,14 @@ import { config } from 'dotenv';
 import { join } from 'path';
 import * as mysql from 'mysql2/promise';
 
-// Load environment variables
-config();
+// Load environment variables from the correct .env file based on NODE_ENV
+const env = process.env.NODE_ENV || 'development';
+config({ path: `.env.${env}` });
 
 const configService = new ConfigService();
 
 // Get environment
-const NODE_ENV = process.env.NODE_ENV || 'dev';
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // Map environment names
 const envMap: Record<string, string> = {
@@ -20,23 +21,23 @@ const envMap: Record<string, string> = {
 };
 
 // Get the correct environment name
-const env = envMap[NODE_ENV] || NODE_ENV;
+const currentEnv = envMap[NODE_ENV] || NODE_ENV;
 
-// Construct database name with environment
-const dbName = `hotel_booking_${env}`;
+// Use the database name from environment variables
+const dbName = configService.get('DB_NAME');
 
 // Create base configuration without database
 const baseConfig: DataSourceOptions = {
   type: 'mysql',
   host: configService.get('DB_HOST'),
-  port: configService.get('DB_PORT'),
+  port: parseInt(configService.get('DB_PORT', '3306'), 10),
   username: configService.get('DB_USER'),
   password: configService.get('DB_PASSWORD'),
   entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
   migrations: [join(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
   synchronize: false,
   logging: false,
-  migrationsRun: true, // Automatically run migrations
+  migrationsRun: true,
   migrationsTableName: 'migrations',
   dropSchema: false,
 };
@@ -45,9 +46,11 @@ const baseConfig: DataSourceOptions = {
 async function createDatabaseIfNotExists() {
   const connection = await mysql.createConnection({
     host: configService.get('DB_HOST'),
-    port: configService.get('DB_PORT'),
+    port: parseInt(configService.get('DB_PORT', '3306'), 10),
     user: configService.get('DB_USER'),
     password: configService.get('DB_PASSWORD'),
+    multipleStatements: true,
+    connectTimeout: 10000,
   });
 
   try {
@@ -62,6 +65,9 @@ async function createDatabaseIfNotExists() {
     } else {
       console.log(`[TypeOrmConfig] Database ${dbName} already exists`);
     }
+  } catch (error) {
+    console.error('Error during database creation:', error);
+    throw error;
   } finally {
     await connection.end();
   }
@@ -81,7 +87,7 @@ if (require.main === module) {
       process.exit(0);
     })
     .catch((error) => {
-      console.log('Error during database creation:', error);
+      console.error('Error during database creation:', error);
       process.exit(1);
     });
 }

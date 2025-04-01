@@ -6,6 +6,24 @@ import { Booking, BookingStatus } from '../../bookings/entities/booking.entity';
 import { Payment, PaymentStatus, PaymentMethod, Currency } from '../../payments/entities/payment.entity';
 import * as bcrypt from 'bcrypt';
 import { AppDataSource } from '../../config/typeorm.config';
+import { config } from 'dotenv';
+import * as path from 'path';
+
+// Load environment variables
+const env = process.env.NODE_ENV || 'development';
+config({ path: path.resolve(process.cwd(), `.env.${env}`) });
+
+async function runSeeder() {
+  try {
+    const seeder = new Seeder(AppDataSource);
+    await seeder.seed();
+    console.log('Seeding completed successfully!');
+    process.exit(0);
+  } catch (error) {
+    console.error('Seeding failed:', error);
+    process.exit(1);
+  }
+}
 
 export class Seeder {
   constructor(private readonly dataSource: DataSource) {}
@@ -158,14 +176,7 @@ export class Seeder {
   }
 }
 
-// Run the seeder
-const seeder = new Seeder(AppDataSource);
-seeder.seed()
-  .then(() => {
-    console.log('Seeding completed successfully!');
-    process.exit(0);
-  })
-  .catch((error) => {
-    console.error('Seeding failed:', error);
-    process.exit(1);
-  }); 
+// Run the seeder if this file is executed directly
+if (require.main === module) {
+  runSeeder();
+} 

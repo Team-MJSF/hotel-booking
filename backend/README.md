@@ -22,28 +22,25 @@ A NestJS backend for a hotel booking system with user authentication, room manag
 
 1. Copy the environment file:
    ```bash
-   cp .env.example .env.development
+   cp .env.example .env
    ```
 
-2. Update the environment variables in `.env.development`:
+2. Update the environment variables in `.env`:
    ```env
-   # APP
-   PORT=5000
+   # Environment Configuration
    NODE_ENV=development
 
-   # DB
+   # Database Configuration
    DB_HOST=localhost
    DB_PORT=3306
    DB_USER=root
-   DB_PASSWORD=password
+   DB_PASSWORD=root
    DB_NAME=hotel_booking_dev
 
-   # JWT
-   JWT_SECRET=your_jwt_secret
-   JWT_EXPIRATION=24h
-
-   # Logging
+   # Logging Configuration
    LOG_LEVEL=debug
+
+   # Feature Flags
    ENABLE_SWAGGER=true
    ENABLE_LOGGING=true
    ```
@@ -93,10 +90,12 @@ This will:
 
 ## Database Structure
 
-The database name follows the pattern: `hotel_booking_{env}` where `{env}` is:
-- `dev` for development
-- `prod` for production
-- `test` for testing
+The database name is configured through the `DB_NAME` environment variable. By default:
+- Development: `hotel_booking_dev`
+- Production: `hotel_booking_prod`
+- Test: `hotel_booking_test`
+
+The database configuration is managed through environment variables and TypeORM configuration, ensuring proper separation between environments.
 
 ## API Documentation
 
