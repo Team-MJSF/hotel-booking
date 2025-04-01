@@ -1,12 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Booking } from './entities/booking.entity';
+import { Booking, BookingStatus } from './entities/booking.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
 import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
 import { User } from '../users/entities/user.entity';
-import { Room } from '../rooms/entities/room.entity';
+import { Room, AvailabilityStatus } from '../rooms/entities/room.entity';
 
 @Injectable()
 export class BookingsService {
@@ -26,7 +26,7 @@ export class BookingsService {
   async findAll(): Promise<Booking[]> {
     try {
       return await this.bookingsRepository.find({
-        relations: ['user', 'room', 'payments'],
+        relations: ['user', 'room', 'payment'],
       });
     } catch (error) {
       throw new DatabaseException('Failed to fetch bookings', error as Error);
@@ -43,7 +43,7 @@ export class BookingsService {
     try {
       const booking = await this.bookingsRepository.findOne({
         where: { bookingId: id },
-        relations: ['user', 'room', 'payments'],
+        relations: ['user', 'room', 'payment'],
       });
 
       if (!booking) {
@@ -108,7 +108,7 @@ export class BookingsService {
    * @returns Promise<Booking> The updated booking
    * @throws ResourceNotFoundException if booking is not found
    */
-  async update(id: number, updateBookingDto: UpdateBookingDto): Promise<Booking> {
+  async update(id: number, updateBookingDto: UpdateBookingDto & { status?: BookingStatus }): Promise<Booking> {
     try {
       // Find the existing booking
       const booking = await this.findOne(id);
@@ -151,6 +151,16 @@ export class BookingsService {
         room,
       });
 
+      // If status is being updated, update room availability
+      if (updateBookingDto.status) {
+        if (updateBookingDto.status === BookingStatus.CONFIRMED) {
+          room.availabilityStatus = AvailabilityStatus.OCCUPIED;
+        } else if (updateBookingDto.status === BookingStatus.CANCELLED || updateBookingDto.status === BookingStatus.COMPLETED) {
+          room.availabilityStatus = AvailabilityStatus.AVAILABLE;
+        }
+        await this.roomsRepository.save(room);
+      }
+
       return await this.bookingsRepository.save(updatedBooking);
     } catch (error) {
       if (error instanceof ResourceNotFoundException || error instanceof BookingValidationException) {
@@ -168,7 +178,7 @@ export class BookingsService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.bookingsRepository.delete(id);
+      const result = await this.bookingsRepository.delete({ bookingId: id });
       if (result.affected === 0) {
         throw new ResourceNotFoundException('Booking', id);
       }

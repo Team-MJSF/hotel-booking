@@ -109,7 +109,7 @@ describe('BookingsService', () => {
 
       expect(result).toEqual(bookings);
       expect(bookingRepository.find).toHaveBeenCalledWith({
-        relations: ['user', 'room', 'payments'],
+        relations: ['user', 'room', 'payment'],
       });
     });
 
@@ -130,7 +130,7 @@ describe('BookingsService', () => {
       expect(result).toEqual(mockBooking);
       expect(bookingRepository.findOne).toHaveBeenCalledWith({
         where: { bookingId: 1 },
-        relations: ['user', 'room', 'payments'],
+        relations: ['user', 'room', 'payment'],
       });
     });
 
@@ -286,7 +286,7 @@ describe('BookingsService', () => {
 
       await service.remove(1);
 
-      expect(bookingRepository.delete).toHaveBeenCalledWith(1);
+      expect(bookingRepository.delete).toHaveBeenCalledWith({ bookingId: 1 });
     });
 
     it('should throw ResourceNotFoundException when booking not found', async () => {
