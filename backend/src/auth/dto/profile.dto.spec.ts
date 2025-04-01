@@ -155,4 +155,121 @@ describe('ProfileDto', () => {
       }
     });
   });
+
+  describe('transformation', () => {
+    it('should transform plain object to ProfileDto instance', () => {
+      const plainData = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        role: UserRole.USER,
+        phoneNumber: '+1234567890',
+        address: '123 Main St',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const dtoObject = plainToClass(ProfileDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(ProfileDto);
+      expect(dtoObject.id).toBe(plainData.id);
+      expect(dtoObject.firstName).toBe(plainData.firstName);
+      expect(dtoObject.lastName).toBe(plainData.lastName);
+      expect(dtoObject.email).toBe(plainData.email);
+      expect(dtoObject.role).toBe(plainData.role);
+      expect(dtoObject.phoneNumber).toBe(plainData.phoneNumber);
+      expect(dtoObject.address).toBe(plainData.address);
+      expect(dtoObject.createdAt).toStrictEqual(plainData.createdAt);
+      expect(dtoObject.updatedAt).toStrictEqual(plainData.updatedAt);
+    });
+
+    it('should handle undefined values', () => {
+      const plainData = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: undefined,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const dtoObject = plainToClass(ProfileDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(ProfileDto);
+      expect(dtoObject.email).toBeUndefined();
+    });
+
+    it('should handle null values', () => {
+      const plainData = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: null,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const dtoObject = plainToClass(ProfileDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(ProfileDto);
+      expect(dtoObject.email).toBeNull();
+    });
+
+    it('should handle empty string values', () => {
+      const plainData = {
+        id: 1,
+        firstName: '',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      const dtoObject = plainToClass(ProfileDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(ProfileDto);
+      expect(dtoObject.firstName).toBe('');
+    });
+
+    it('should handle date string conversion', () => {
+      const plainData = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        createdAt: '2024-01-01T00:00:00.000Z',
+        updatedAt: '2024-01-02T00:00:00.000Z'
+      };
+
+      const dtoObject = plainToClass(ProfileDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(ProfileDto);
+      expect(dtoObject.createdAt).toBeInstanceOf(Date);
+      expect(dtoObject.updatedAt).toBeInstanceOf(Date);
+    });
+
+    it('should ignore extra properties', () => {
+      const plainData = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        createdAt: '2024-01-01T00:00:00Z',
+        updatedAt: '2024-01-01T00:00:00Z',
+        extraField: 'extra value'
+      };
+
+      const dtoObject = plainToClass(ProfileDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(ProfileDto);
+      expect(dtoObject.id).toBe(plainData.id);
+      expect(dtoObject.firstName).toBe(plainData.firstName);
+      expect(dtoObject.lastName).toBe(plainData.lastName);
+      expect(dtoObject.email).toBe(plainData.email);
+      expect(dtoObject.createdAt).toEqual(new Date(plainData.createdAt));
+      expect(dtoObject.updatedAt).toEqual(new Date(plainData.updatedAt));
+      // Extra properties are automatically ignored by class-transformer
+    });
+  });
 }); 

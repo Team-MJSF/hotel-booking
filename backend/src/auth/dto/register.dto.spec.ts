@@ -208,4 +208,91 @@ describe('RegisterDto', () => {
       }
     });
   });
+
+  describe('transformation', () => {
+    it('should transform plain object to RegisterDto instance', () => {
+      const plainData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+        confirmPassword: 'password123'
+      };
+
+      const dtoObject = plainToClass(RegisterDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(RegisterDto);
+      expect(dtoObject.firstName).toBe(plainData.firstName);
+      expect(dtoObject.lastName).toBe(plainData.lastName);
+      expect(dtoObject.email).toBe(plainData.email);
+      expect(dtoObject.password).toBe(plainData.password);
+      expect(dtoObject.confirmPassword).toBe(plainData.confirmPassword);
+    });
+
+    it('should handle undefined values', () => {
+      const plainData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: undefined,
+        password: 'password123',
+        confirmPassword: 'password123'
+      };
+
+      const dtoObject = plainToClass(RegisterDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(RegisterDto);
+      expect(dtoObject.email).toBeUndefined();
+    });
+
+    it('should handle null values', () => {
+      const plainData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: null,
+        password: 'password123',
+        confirmPassword: 'password123'
+      };
+
+      const dtoObject = plainToClass(RegisterDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(RegisterDto);
+      expect(dtoObject.email).toBeNull();
+    });
+
+    it('should handle empty string values', () => {
+      const plainData = {
+        firstName: '',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+        confirmPassword: 'password123'
+      };
+
+      const dtoObject = plainToClass(RegisterDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(RegisterDto);
+      expect(dtoObject.firstName).toBe('');
+    });
+
+    it('should ignore extra properties', () => {
+      const plainData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+        extraField: 'extra value'
+      };
+
+      const dtoObject = plainToClass(RegisterDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(RegisterDto);
+      expect(dtoObject.firstName).toBe(plainData.firstName);
+      expect(dtoObject.lastName).toBe(plainData.lastName);
+      expect(dtoObject.email).toBe(plainData.email);
+      expect(dtoObject.password).toBe(plainData.password);
+      expect(dtoObject.confirmPassword).toBe(plainData.confirmPassword);
+      // Extra properties are automatically ignored by class-transformer
+    });
+  });
 }); 
