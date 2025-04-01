@@ -6,15 +6,15 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Room } from '../../rooms/entities/room.entity';
-import { Booking } from '../entities/booking.entity';
-import { Payment } from '../../payments/entities/payment.entity';
+import { Booking } from '../../bookings/entities/booking.entity';
+import { Payment } from '../entities/payment.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 import * as path from 'path';
 
-describe('Booking Flow Integration Tests', () => {
+describe('Payment Flow Integration Tests', () => {
   let app: INestApplication;
   let userRepository: Repository<User>;
   let jwtService: JwtService;
@@ -114,13 +114,14 @@ describe('Booking Flow Integration Tests', () => {
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
   });
 
-  describe('Complete Booking Flow', () => {
+  describe('Complete Payment Flow', () => {
+    let authToken: string;
+    let adminToken: string;
     let userId: number;
     let roomId: number;
-    let userToken: string;
-    let adminToken: string;
+    let bookingId: number;
 
-    it('should complete the full booking flow', async () => {
+    it('should complete the full payment flow', async () => {
       // Step 1: Register a new user
       const registerResponse = await request(app.getHttpServer())
         .post('/auth/register')
@@ -138,7 +139,7 @@ describe('Booking Flow Integration Tests', () => {
         })
         .expect(201);
 
-      userToken = loginResponse.body.access_token;
+      authToken = loginResponse.body.access_token;
 
       // Step 3: Create a room (as admin)
       await userRepository.update(userId, { role: UserRole.ADMIN });
@@ -155,86 +156,91 @@ describe('Booking Flow Integration Tests', () => {
 
       roomId = roomResponse.body.id;
 
-      // Step 4: Search for available rooms
+      // Step 4: Create a booking
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dayAfterTomorrow = new Date(tomorrow);
       dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
-      const searchResponse = await request(app.getHttpServer())
-        .get('/rooms/available')
-        .query({
-          checkInDate: tomorrow.toISOString().split('T')[0],
-          checkOutDate: dayAfterTomorrow.toISOString().split('T')[0],
-          maxGuests: '2',
-        })
-        .expect(200);
-
-      expect(searchResponse.body).toHaveLength(1);
-      expect(searchResponse.body[0].id).toBe(roomId);
-
-      // Step 5: Create a booking
       const bookingResponse = await request(app.getHttpServer())
         .post('/bookings')
-        .set('Authorization', `Bearer ${userToken}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           userId,
           roomId,
           checkInDate: tomorrow.toISOString(),
           checkOutDate: dayAfterTomorrow.toISOString(),
           numberOfGuests: 2,
-          specialRequests: 'Late check-in requested',
         })
         .expect(201);
 
-      const bookingId = bookingResponse.body.bookingId;
+      bookingId = bookingResponse.body.bookingId;
 
-      // Step 6: Verify booking details
-      const getBookingResponse = await request(app.getHttpServer())
-        .get(`/bookings/${bookingId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+      // Step 5: Create a payment for the booking
+      const paymentResponse = await request(app.getHttpServer())
+        .post('/payments')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          bookingId,
+          amount: 200.00,
+          currency: 'USD',
+          paymentMethod: 'CREDIT_CARD',
+          transactionId: 'test-transaction-123',
+        })
+        .expect(201);
+
+      const paymentId = paymentResponse.body.paymentId;
+
+      // Step 6: Verify payment details
+      const getPaymentResponse = await request(app.getHttpServer())
+        .get(`/payments/${paymentId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(getBookingResponse.body).toMatchObject({
-        bookingId,
+      expect(getPaymentResponse.body).toMatchObject({
+        paymentId,
+        amount: '200.00',
+        currency: 'USD',
+        paymentMethod: 'credit_card',
         status: 'pending',
-        numberOfGuests: 2,
-        specialRequests: 'Late check-in requested',
+        transactionId: 'test-transaction-123',
       });
 
-      // Step 7: Update booking status (as admin)
-      const updateResponse = await request(app.getHttpServer())
-        .patch(`/bookings/${bookingId}`)
+      // Step 7: Update payment status to completed
+      const updatePaymentResponse = await request(app.getHttpServer())
+        .patch(`/payments/${paymentId}`)
         .set('Authorization', `Bearer ${adminToken}`)
-        .send({ status: 'confirmed' })
+        .send({ status: 'completed' })
         .expect(200);
 
-      expect(updateResponse.body.status).toBe('confirmed');
+      expect(updatePaymentResponse.body.status).toBe('completed');
 
-      // Step 8: Verify room status is updated
-      const getRoomResponse = await request(app.getHttpServer())
-        .get(`/rooms/${roomId}`)
+      // Step 8: Process a refund
+      const refundResponse = await request(app.getHttpServer())
+        .patch(`/payments/${paymentId}`)
         .set('Authorization', `Bearer ${adminToken}`)
+        .send({
+          status: 'refunded',
+          refundReason: 'Customer requested cancellation',
+        })
         .expect(200);
 
-      expect(getRoomResponse.body.availabilityStatus).toBe('occupied');
+      expect(refundResponse.body).toMatchObject({
+        status: 'refunded',
+        refundReason: 'Customer requested cancellation',
+      });
 
-      // Step 9: Cancel booking
-      const cancelResponse = await request(app.getHttpServer())
-        .patch(`/bookings/${bookingId}`)
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({ status: 'cancelled' })
+      // Step 9: Verify payment history
+      const paymentHistoryResponse = await request(app.getHttpServer())
+        .get(`/payments/booking/${bookingId}`)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      expect(cancelResponse.body.status).toBe('cancelled');
-
-      // Step 10: Verify room status is updated back to available
-      const getRoomAfterCancelResponse = await request(app.getHttpServer())
-        .get(`/rooms/${roomId}`)
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200);
-
-      expect(getRoomAfterCancelResponse.body.availabilityStatus).toBe('available');
+      expect(paymentHistoryResponse.body).toMatchObject({
+        paymentId,
+        status: 'refunded',
+        refundReason: 'Customer requested cancellation',
+      });
     });
   });
 }); 

@@ -1,6 +1,6 @@
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { ExecutionContext } from '@nestjs/common';
-import { AuthGuard, IAuthGuard } from '@nestjs/passport';
+import { IAuthGuard } from '@nestjs/passport';
 
 describe('JwtAuthGuard', () => {
   let guard: JwtAuthGuard;
