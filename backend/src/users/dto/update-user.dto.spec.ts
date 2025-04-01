@@ -114,4 +114,162 @@ describe('UpdateUserDto', () => {
       expect(errors.length).toBe(0);
     });
   });
+
+  describe('transformation', () => {
+    it('should transform plain object to UpdateUserDto instance with correct types', () => {
+      const plainData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com',
+        password: 'password123',
+        role: 'admin',
+        phoneNumber: '+1234567890',
+        address: '123 Main St'
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(UpdateUserDto);
+      expect(dtoObject.firstName).toBe('John');
+      expect(dtoObject.lastName).toBe('Doe');
+      expect(dtoObject.email).toBe('john.doe@example.com');
+      expect(dtoObject.password).toBe('password123');
+      expect(dtoObject.role).toBe(UserRole.ADMIN);
+      expect(dtoObject.phoneNumber).toBe('+1234567890');
+      expect(dtoObject.address).toBe('123 Main St');
+    });
+
+    it('should handle undefined values for all fields', () => {
+      const plainData = {
+        firstName: undefined,
+        lastName: undefined,
+        email: undefined,
+        password: undefined,
+        role: undefined,
+        phoneNumber: undefined,
+        address: undefined
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.firstName).toBeUndefined();
+      expect(dtoObject.lastName).toBeUndefined();
+      expect(dtoObject.email).toBeUndefined();
+      expect(dtoObject.password).toBeUndefined();
+      expect(dtoObject.role).toBeUndefined();
+      expect(dtoObject.phoneNumber).toBeUndefined();
+      expect(dtoObject.address).toBeUndefined();
+    });
+
+    it('should handle null values for all fields', () => {
+      const plainData = {
+        firstName: null,
+        lastName: null,
+        email: null,
+        password: null,
+        role: null,
+        phoneNumber: null,
+        address: null
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.firstName).toBeNull();
+      expect(dtoObject.lastName).toBeNull();
+      expect(dtoObject.email).toBeNull();
+      expect(dtoObject.password).toBeNull();
+      expect(dtoObject.role).toBeNull();
+      expect(dtoObject.phoneNumber).toBeNull();
+      expect(dtoObject.address).toBeNull();
+    });
+
+    it('should handle empty string values', () => {
+      const plainData = {
+        firstName: '',
+        lastName: '',
+        email: '',
+        password: '',
+        phoneNumber: '',
+        address: ''
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.firstName).toBe('');
+      expect(dtoObject.lastName).toBe('');
+      expect(dtoObject.email).toBe('');
+      expect(dtoObject.password).toBe('');
+      expect(dtoObject.phoneNumber).toBe('');
+      expect(dtoObject.address).toBe('');
+    });
+
+    it('should handle enum values with case transformation', () => {
+      const plainData = {
+        role: 'ADMIN'
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.role).toBe(UserRole.ADMIN);
+    });
+
+    it('should handle single field update', () => {
+      const plainData = {
+        firstName: 'John'
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.firstName).toBe('John');
+      expect(dtoObject.lastName).toBeUndefined();
+      expect(dtoObject.email).toBeUndefined();
+      expect(dtoObject.password).toBeUndefined();
+      expect(dtoObject.role).toBeUndefined();
+      expect(dtoObject.phoneNumber).toBeUndefined();
+      expect(dtoObject.address).toBeUndefined();
+    });
+
+    it('should handle multiple fields update', () => {
+      const plainData = {
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john.doe@example.com'
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.firstName).toBe('John');
+      expect(dtoObject.lastName).toBe('Doe');
+      expect(dtoObject.email).toBe('john.doe@example.com');
+      expect(dtoObject.password).toBeUndefined();
+      expect(dtoObject.role).toBeUndefined();
+      expect(dtoObject.phoneNumber).toBeUndefined();
+      expect(dtoObject.address).toBeUndefined();
+    });
+
+    it('should handle empty object update', () => {
+      const plainData = {};
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject.firstName).toBeUndefined();
+      expect(dtoObject.lastName).toBeUndefined();
+      expect(dtoObject.email).toBeUndefined();
+      expect(dtoObject.password).toBeUndefined();
+      expect(dtoObject.role).toBeUndefined();
+      expect(dtoObject.phoneNumber).toBeUndefined();
+      expect(dtoObject.address).toBeUndefined();
+    });
+
+    it('should preserve extra properties in the transformed object', () => {
+      const plainData = {
+        firstName: 'John',
+        extraField: 'extra value'
+      };
+
+      const dtoObject = plainToClass(UpdateUserDto, plainData);
+
+      expect(dtoObject).toHaveProperty('extraField', 'extra value');
+    });
+  });
 }); 

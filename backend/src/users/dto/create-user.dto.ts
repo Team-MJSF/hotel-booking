@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsString, IsEmail, MinLength, IsOptional, IsEnum } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
+import { Transform } from 'class-transformer';
 
 /**
  * Data Transfer Object for creating a new user
@@ -46,6 +47,12 @@ export class CreateUserDto {
   @ApiProperty({ description: 'The user\'s role', enum: UserRole, default: UserRole.USER })
   @IsEnum(UserRole)
   @IsOptional()
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toLowerCase();
+    }
+    return value;
+  })
     role?: UserRole;
 
   /**
