@@ -26,19 +26,17 @@ async function createDatabaseIfNotExists() {
     throw new Error('Missing required database configuration. Please check your .env file.');
   }
 
+  let connection;
   try {
-    const connection = await mysql.createConnection({
+    // First try to connect without database
+    connection = await mysql.createConnection({
       host: dbHost,
       port: parseInt(dbPort, 10),
       user: dbUser,
       password: dbPassword,
+      multipleStatements: true,
+      connectTimeout: 10000,
     });
-
-    if (isTest) {
-      // Drop test database if it exists
-      await connection.query(`DROP DATABASE IF EXISTS ${finalDbName}`);
-      logger.log(`Dropped test database ${finalDbName}`);
-    }
 
     // Check if database exists
     const [rows] = await connection.query(`SHOW DATABASES LIKE '${finalDbName}'`);
@@ -46,15 +44,23 @@ async function createDatabaseIfNotExists() {
 
     if (!databaseExists) {
       // Create database only if it doesn't exist
-      await connection.query(`CREATE DATABASE ${finalDbName}`);
+      await connection.query(`CREATE DATABASE IF NOT EXISTS ${finalDbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
       logger.log(`Database ${finalDbName} created successfully`);
     } else {
       logger.log(`Database ${finalDbName} already exists`);
     }
 
+    // Close the connection
     await connection.end();
   } catch (error) {
     logger.error('Database connection error:', error);
+    if (connection) {
+      try {
+        await connection.end();
+      } catch (closeError) {
+        logger.error('Error closing connection:', closeError);
+      }
+    }
     throw error;
   }
 }
@@ -93,7 +99,11 @@ export const getTypeOrmConfig = async (
       extra: {
         connectionLimit: 10,
         waitForConnections: true,
-        queueLimit: 0
+        queueLimit: 0,
+        dateStrings: true,
+        timezone: 'local',
+        charset: 'utf8mb4',
+        collation: 'utf8mb4_unicode_ci'
       }
     };
 
