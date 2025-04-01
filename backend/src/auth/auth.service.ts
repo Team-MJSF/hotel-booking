@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, NotFoundException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, NotFoundException, Logger } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -9,6 +9,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private usersService: UsersService,
     private jwtService: JwtService,
@@ -16,9 +18,15 @@ export class AuthService {
 
   async validateUser(email: string, password: string): Promise<Omit<User, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
-    if (user && await bcrypt.compare(password, user.password)) {
-      const { password: _, ...result } = user;
-      return result;
+    this.logger.debug(`Found user: ${user ? 'Yes' : 'No'}`);
+    
+    if (user) {
+      const isValid = await this.usersService.validatePassword(user, password);
+      this.logger.debug(`Password validation result: ${isValid}`);
+      if (isValid) {
+        const { password: _, ...result } = user;
+        return result;
+      }
     }
     return null;
   }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
@@ -9,6 +9,8 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UsersService {
+  private readonly logger = new Logger(UsersService.name);
+
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -73,13 +75,9 @@ export class UsersService {
         throw new ConflictException(`User with email ${createUserDto.email} already exists`);
       }
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-
       // Create new user with default role if not specified
       const user = this.usersRepository.create({
         ...createUserDto,
-        password: hashedPassword,
         role: createUserDto.role || UserRole.USER,
       });
 
@@ -163,8 +161,12 @@ export class UsersService {
 
   async validatePassword(user: User, password: string): Promise<boolean> {
     try {
-      return await bcrypt.compare(password, user.password);
+      this.logger.debug(`Comparing passwords for user ${user.email}`);
+      const result = await bcrypt.compare(password, user.password);
+      this.logger.debug(`Password comparison result: ${result}`);
+      return result;
     } catch (error) {
+      this.logger.error(`Password validation error: ${error.message}`);
       throw new DatabaseException('Failed to validate password', error as Error);
     }
   }

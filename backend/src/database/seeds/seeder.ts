@@ -60,7 +60,7 @@ export class Seeder {
     });
 
     // Create test user
-    const userPassword = await bcrypt.hash('user123', 10);
+    const userPassword = await bcrypt.hash('user1234', 10);
     const user = await userRepository.save({
       firstName: 'Test',
       lastName: 'User',
