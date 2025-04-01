@@ -20,53 +20,53 @@ export class SearchRoomsDto {
   @IsOptional()
   @IsDate()
   @Type(() => Date)
-  checkInDate?: Date;
+    checkInDate?: Date;
 
   @ApiProperty({ required: false, description: 'Check-out date for the booking' })
   @IsOptional()
   @IsDate()
   @Type(() => Date)
-  checkOutDate?: Date;
+    checkOutDate?: Date;
 
   @ApiProperty({ required: false, enum: RoomType, description: 'Type of room to search for' })
   @IsOptional()
   @IsEnum(RoomType)
-  roomType?: RoomType;
+    roomType?: RoomType;
 
   @ApiProperty({ required: false, description: 'Maximum number of guests the room should accommodate' })
   @IsOptional()
   @IsInt()
   @Min(1)
   @Type(() => Number)
-  maxGuests?: number;
+    maxGuests?: number;
 
   @ApiProperty({ required: false, description: 'Minimum price per night' })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  minPrice?: number;
+    minPrice?: number;
 
   @ApiProperty({ required: false, description: 'Maximum price per night' })
   @IsOptional()
   @IsNumber()
   @Min(0)
   @Type(() => Number)
-  maxPrice?: number;
+    maxPrice?: number;
 
   @ApiProperty({ required: false, type: [String], description: 'List of amenities required' })
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  amenities?: string[];
+    amenities?: string[];
 
   @ApiProperty({ required: false, enum: SortField, description: 'Field to sort results by' })
   @IsOptional()
   @IsEnum(SortField)
-  sortBy?: SortField;
+    sortBy?: SortField;
 
   @ApiProperty({ required: false, enum: SortOrder, description: 'Sort order (ascending or descending)' })
   @IsOptional()
   @IsEnum(SortOrder)
-  sortOrder?: SortOrder;
+    sortOrder?: SortOrder;
 } 
