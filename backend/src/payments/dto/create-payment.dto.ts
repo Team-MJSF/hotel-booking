@@ -1,6 +1,7 @@
 import { IsNotEmpty, IsNumber, IsEnum, IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentStatus, PaymentMethod, Currency } from '../entities/payment.entity';
+import { Transform } from 'class-transformer';
 
 /**
  * Data Transfer Object for creating a new payment
@@ -13,6 +14,12 @@ export class CreatePaymentDto {
   @ApiProperty({ description: 'The ID of the booking associated with this payment' })
   @IsNotEmpty()
   @IsNumber()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return value;
+    }
+    return Number(value);
+  })
     bookingId: number;
 
   /**
@@ -21,16 +28,34 @@ export class CreatePaymentDto {
   @ApiProperty({ description: 'The amount of the payment in USD' })
   @IsNotEmpty()
   @IsNumber()
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return value;
+    }
+    return Number(value);
+  })
     amount: number;
 
   @ApiProperty({ description: 'The payment method used', enum: PaymentMethod })
   @IsNotEmpty()
   @IsEnum(PaymentMethod)
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toLowerCase().replace(/\s+/g, '_');
+    }
+    return value;
+  })
     paymentMethod: PaymentMethod;
 
   @ApiProperty({ description: 'The currency of the payment', enum: Currency })
   @IsNotEmpty()
   @IsEnum(Currency)
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toUpperCase();
+    }
+    return value;
+  })
     currency: Currency;
 
   @ApiProperty({ description: 'The transaction ID from the payment provider' })
@@ -45,6 +70,12 @@ export class CreatePaymentDto {
   @ApiProperty({ description: 'The status of the payment', enum: PaymentStatus })
   @IsNotEmpty()
   @IsEnum(PaymentStatus)
+  @Transform(({ value }) => {
+    if (typeof value === 'string') {
+      return value.toLowerCase();
+    }
+    return value;
+  })
     status: PaymentStatus;
 
   /**
