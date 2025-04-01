@@ -8,7 +8,10 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import * as bcrypt from 'bcrypt';
 
-jest.mock('bcrypt');
+jest.mock('bcrypt', () => ({
+  hash: jest.fn().mockImplementation((password) => Promise.resolve(`hashed_${password}`)),
+  compare: jest.fn().mockImplementation((password, hash) => Promise.resolve(password === hash.replace('hashed_', '')))
+}));
 
 describe('UsersService', () => {
   let service: UsersService;
@@ -243,28 +246,31 @@ describe('UsersService', () => {
 
   describe('validatePassword', () => {
     it('should return true when passwords match', async () => {
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      const user = { ...mockUser, password: 'hashed_password123' };
+      (bcrypt.compare as jest.Mock).mockResolvedValueOnce(true);
 
-      const result = await service.validatePassword(mockUser, 'correctPassword');
+      const result = await service.validatePassword(user, 'password123');
 
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith('correctPassword', mockUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith('password123', user.password);
     });
 
     it('should return false when passwords do not match', async () => {
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      const user = { ...mockUser, password: 'hashed_password123' };
+      (bcrypt.compare as jest.Mock).mockResolvedValueOnce(false);
 
-      const result = await service.validatePassword(mockUser, 'wrongPassword');
+      const result = await service.validatePassword(user, 'wrongpassword');
 
       expect(result).toBe(false);
-      expect(bcrypt.compare).toHaveBeenCalledWith('wrongPassword', mockUser.password);
+      expect(bcrypt.compare).toHaveBeenCalledWith('wrongpassword', user.password);
     });
 
     it('should throw DatabaseException when bcrypt fails', async () => {
+      const user = { ...mockUser, password: 'hashed_password123' };
       const error = new Error('Bcrypt error');
-      (bcrypt.compare as jest.Mock).mockRejectedValue(error);
+      (bcrypt.compare as jest.Mock).mockRejectedValueOnce(error);
 
-      await expect(service.validatePassword(mockUser, 'password')).rejects.toThrow(DatabaseException);
+      await expect(service.validatePassword(user, 'password123')).rejects.toThrow(DatabaseException);
     });
   });
 }); 
