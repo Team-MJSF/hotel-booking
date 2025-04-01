@@ -22,6 +22,8 @@ const config: JestConfigWithTsJest = {
     name: 'HOTEL-BOOKING',
     color: 'blue',
   },
+  // Enable parallel test execution
+  maxWorkers: '50%',
   // Test patterns
   testMatch: [
     '**/src/**/*.spec.ts',
