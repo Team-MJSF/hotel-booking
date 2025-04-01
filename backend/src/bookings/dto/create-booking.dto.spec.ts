@@ -164,4 +164,131 @@ describe('CreateBookingDto', () => {
       expect(dtoObject.checkOutDate instanceof Date).toBe(true);
     });
   });
+
+  describe('transformation', () => {
+    it('should transform plain object to CreateBookingDto instance', () => {
+      const plainData = {
+        userId: 1,
+        roomId: 2,
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: 2,
+        specialRequests: 'Late check-in requested'
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(dtoObject.userId).toBe(plainData.userId);
+      expect(dtoObject.roomId).toBe(plainData.roomId);
+      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
+      expect(dtoObject.checkOutDate).toEqual(new Date(plainData.checkOutDate));
+      expect(dtoObject.numberOfGuests).toBe(plainData.numberOfGuests);
+      expect(dtoObject.specialRequests).toBe(plainData.specialRequests);
+    });
+
+    it('should handle undefined values', () => {
+      const plainData = {
+        userId: 1,
+        roomId: 2,
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: 2,
+        specialRequests: undefined
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(dtoObject.specialRequests).toBeUndefined();
+    });
+
+    it('should handle null values', () => {
+      const plainData = {
+        userId: 1,
+        roomId: 2,
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: 2,
+        specialRequests: null
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(dtoObject.specialRequests).toBeNull();
+    });
+
+    it('should handle empty string values', () => {
+      const plainData = {
+        userId: 1,
+        roomId: 2,
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: 2,
+        specialRequests: ''
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(dtoObject.specialRequests).toBe('');
+    });
+
+    it('should handle date string conversion', () => {
+      const plainData = {
+        userId: 1,
+        roomId: 2,
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: 2
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(dtoObject.checkInDate).toBeInstanceOf(Date);
+      expect(dtoObject.checkOutDate).toBeInstanceOf(Date);
+      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
+      expect(dtoObject.checkOutDate).toEqual(new Date(plainData.checkOutDate));
+    });
+
+    it('should handle number conversion', () => {
+      const plainData = {
+        userId: '1',
+        roomId: '2',
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: '2'
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(typeof dtoObject.userId).toBe('number');
+      expect(typeof dtoObject.roomId).toBe('number');
+      expect(typeof dtoObject.numberOfGuests).toBe('number');
+    });
+
+    it('should ignore extra properties', () => {
+      const plainData = {
+        userId: 1,
+        roomId: 2,
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z',
+        numberOfGuests: 2,
+        extraField: 'extra value'
+      };
+
+      const dtoObject = plainToClass(CreateBookingDto, plainData);
+
+      expect(dtoObject).toBeInstanceOf(CreateBookingDto);
+      expect(dtoObject.userId).toBe(plainData.userId);
+      expect(dtoObject.roomId).toBe(plainData.roomId);
+      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
+      expect(dtoObject.checkOutDate).toEqual(new Date(plainData.checkOutDate));
+      expect(dtoObject.numberOfGuests).toBe(plainData.numberOfGuests);
+      // Extra properties are automatically ignored by class-transformer
+    });
+  });
 }); 

@@ -13,6 +13,7 @@ export class CreateBookingDto {
   @ApiProperty({ description: 'The ID of the user making the booking' })
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number)
     userId: number;
 
   /**
@@ -21,6 +22,7 @@ export class CreateBookingDto {
   @ApiProperty({ description: 'The ID of the room being booked' })
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number)
     roomId: number;
 
   /**
@@ -47,6 +49,7 @@ export class CreateBookingDto {
   @ApiProperty({ description: 'The number of guests for the booking' })
   @IsNotEmpty()
   @IsNumber()
+  @Type(() => Number)
     numberOfGuests: number;
 
   /**
