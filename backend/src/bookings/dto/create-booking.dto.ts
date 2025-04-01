@@ -1,6 +1,6 @@
 import { IsNotEmpty, IsNumber, IsDate, IsString, IsOptional } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
+import { Type, Transform } from 'class-transformer';
 
 /**
  * Data Transfer Object for creating a new booking
@@ -30,7 +30,7 @@ export class CreateBookingDto {
    */
   @ApiProperty({ description: 'The check-in date for the booking' })
   @IsNotEmpty()
-  @Type(() => Date)
+  @Transform(({ value }) => new Date(value))
   @IsDate()
     checkInDate: Date;
 
@@ -39,7 +39,7 @@ export class CreateBookingDto {
    */
   @ApiProperty({ description: 'The check-out date for the booking' })
   @IsNotEmpty()
-  @Type(() => Date)
+  @Transform(({ value }) => new Date(value))
   @IsDate()
     checkOutDate: Date;
 

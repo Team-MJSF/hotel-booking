@@ -156,11 +156,29 @@ describe('Payment Flow Integration Tests', () => {
 
       roomId = roomResponse.body.id;
 
+      // Verify room was created
+      const verifyRoomResponse = await request(app.getHttpServer())
+        .get(`/rooms/${roomId}`)
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(verifyRoomResponse.body).toBeDefined();
+      expect(verifyRoomResponse.body.id).toBe(roomId);
+
       // Step 4: Create a booking
       const tomorrow = new Date();
       tomorrow.setDate(tomorrow.getDate() + 1);
       const dayAfterTomorrow = new Date(tomorrow);
       dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
+
+      // Verify user exists before creating booking
+      const verifyUserResponse = await request(app.getHttpServer())
+        .get(`/users/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(verifyUserResponse.body).toBeDefined();
+      expect(verifyUserResponse.body.id).toBe(userId);
 
       const bookingResponse = await request(app.getHttpServer())
         .post('/bookings')
@@ -175,6 +193,15 @@ describe('Payment Flow Integration Tests', () => {
         .expect(201);
 
       bookingId = bookingResponse.body.bookingId;
+
+      // Verify booking was created
+      const verifyBookingResponse = await request(app.getHttpServer())
+        .get(`/bookings/${bookingId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
+
+      expect(verifyBookingResponse.body).toBeDefined();
+      expect(verifyBookingResponse.body.bookingId).toBe(bookingId);
 
       // Step 5: Create a payment for the booking
       const paymentResponse = await request(app.getHttpServer())

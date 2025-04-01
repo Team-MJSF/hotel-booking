@@ -5,6 +5,7 @@ import { Room, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import { SearchRoomsDto } from './dto/search-rooms.dto';
 
 @Injectable()
 export class RoomsService {
@@ -61,7 +62,10 @@ export class RoomsService {
         throw new ConflictException(`Room with number ${createRoomDto.roomNumber} already exists`);
       }
 
-      const room = this.roomsRepository.create(createRoomDto);
+      const room = this.roomsRepository.create({
+        ...createRoomDto,
+        amenities: createRoomDto.amenities || '[]',
+      });
       return await this.roomsRepository.save(room);
     } catch (error) {
       if (error instanceof ConflictException) {
@@ -80,7 +84,11 @@ export class RoomsService {
    */
   async update(id: number, updateRoomDto: UpdateRoomDto): Promise<Room> {
     try {
-      const result = await this.roomsRepository.update(id, updateRoomDto);
+      const updateData = {
+        ...updateRoomDto,
+        amenities: updateRoomDto.amenities || undefined,
+      };
+      const result = await this.roomsRepository.update(id, updateData);
       if (result.affected === 0) {
         throw new ResourceNotFoundException('Room', id);
       }
@@ -168,6 +176,75 @@ export class RoomsService {
 
       return await query.getMany();
     } catch (error) {
+      throw new DatabaseException('Failed to fetch available rooms', error);
+    }
+  }
+
+  async searchAvailableRooms(searchDto: SearchRoomsDto): Promise<Room[]> {
+    try {
+      console.log('Search DTO:', JSON.stringify(searchDto, null, 2));
+      
+      const query = this.roomsRepository
+        .createQueryBuilder('room')
+        // Join with bookings to check availability
+        .leftJoin('room.bookings', 'booking')
+        // Room must be in available status
+        .where('room.availabilityStatus = :status', { status: AvailabilityStatus.AVAILABLE });
+
+      // Apply room type filter
+      if (searchDto.roomType) {
+        query.andWhere('room.type = :type', { type: searchDto.roomType });
+      }
+
+      // Apply max guests filter
+      if (searchDto.maxGuests) {
+        query.andWhere('room.maxGuests >= :maxGuests', { maxGuests: searchDto.maxGuests });
+      }
+
+      // Apply price range filter
+      if (searchDto.minPrice !== undefined) {
+        query.andWhere('room.pricePerNight >= :minPrice', { minPrice: searchDto.minPrice });
+      }
+      if (searchDto.maxPrice !== undefined) {
+        query.andWhere('room.pricePerNight <= :maxPrice', { maxPrice: searchDto.maxPrice });
+      }
+
+      // Apply amenities filter
+      if (searchDto.amenities?.length) {
+        console.log('Amenities filter:', JSON.stringify(searchDto.amenities, null, 2));
+        searchDto.amenities.forEach((amenity, index) => {
+          console.log(`Adding amenity filter for ${amenity}`);
+          query.andWhere(`JSON_CONTAINS(room.amenities, :amenity${index})`, {
+            [`amenity${index}`]: JSON.stringify(amenity),
+          });
+        });
+      }
+
+      // Apply date range filter
+      if (searchDto.checkInDate && searchDto.checkOutDate) {
+        console.log('Date range:', {
+          checkIn: searchDto.checkInDate,
+          checkOut: searchDto.checkOutDate
+        });
+        query.andWhere(
+          '(booking.bookingId IS NULL OR NOT (' +
+          ':checkInDate < booking.checkOutDate AND ' +
+          ':checkOutDate > booking.checkInDate))',
+          {
+            checkInDate: searchDto.checkInDate,
+            checkOutDate: searchDto.checkOutDate,
+          }
+        );
+      }
+
+      // Ensure we don't get duplicate rooms
+      query.distinct(true);
+
+      const rooms = await query.getMany();
+      console.log('Found rooms:', JSON.stringify(rooms, null, 2));
+      return rooms;
+    } catch (error) {
+      console.error('Error in searchAvailableRooms:', error);
       throw new DatabaseException('Failed to fetch available rooms', error);
     }
   }

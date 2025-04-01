@@ -4,6 +4,7 @@ import { RoomsService } from './rooms.service';
 import { Room } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { SearchRoomsDto } from './dto/search-rooms.dto';
 
 @ApiTags('Rooms')
 @Controller('rooms')
@@ -17,48 +18,15 @@ export class RoomsController {
     return this.roomsService.findAll();
   }
 
-  @Get('available')
-  @ApiOperation({ summary: 'Find available rooms based on criteria' })
-  @ApiQuery({
-    name: 'checkInDate',
-    required: true,
-    description: 'Check-in date (YYYY-MM-DD)',
-  })
-  @ApiQuery({
-    name: 'checkOutDate',
-    required: true,
-    description: 'Check-out date (YYYY-MM-DD)',
-  })
-  @ApiQuery({ name: 'roomType', required: false, description: 'Type of room' })
-  @ApiQuery({
-    name: 'maxGuests',
-    required: false,
-    description: 'Maximum number of guests',
-  })
-  @ApiQuery({
-    name: 'maxPrice',
-    required: false,
-    description: 'Maximum price per night',
-  })
+  @Get('search')
+  @ApiOperation({ summary: 'Search for available rooms based on criteria' })
   @ApiResponse({
     status: 200,
-    description: 'Return available rooms',
+    description: 'Return available rooms matching the search criteria',
     type: [Room],
   })
-  findAvailableRooms(
-    @Query('checkInDate') checkInDate: string,
-    @Query('checkOutDate') checkOutDate: string,
-    @Query('roomType') roomType?: string,
-    @Query('maxGuests') maxGuests?: string,
-    @Query('maxPrice') maxPrice?: string,
-  ): Promise<Room[]> {
-    return this.roomsService.findAvailableRooms(
-      new Date(checkInDate),
-      new Date(checkOutDate),
-      roomType,
-      maxGuests ? parseInt(maxGuests) : undefined,
-      maxPrice ? parseFloat(maxPrice) : undefined,
-    );
+  searchRooms(@Query() searchDto: SearchRoomsDto): Promise<Room[]> {
+    return this.roomsService.searchAvailableRooms(searchDto);
   }
 
   @Get(':id')

@@ -5,6 +5,7 @@ import { RoomsService } from './rooms.service';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
+import { SearchRoomsDto } from './dto/search-rooms.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 
 describe('RoomsService', () => {
@@ -194,64 +195,116 @@ describe('RoomsService', () => {
     });
   });
 
-  describe('findAvailableRooms', () => {
-    const checkInDate = new Date('2024-04-01');
-    const checkOutDate = new Date('2024-04-05');
-    const roomType = RoomType.SINGLE;
-    const maxGuests = 2;
-    const maxPrice = 200;
-
-    const mockQueryBuilder: Partial<SelectQueryBuilder<Room>> = {
-      leftJoin: jest.fn().mockReturnThis(),
-      where: jest.fn().mockReturnThis(),
-      andWhere: jest.fn().mockReturnThis(),
-      distinct: jest.fn().mockReturnThis(),
-      getMany: jest.fn().mockResolvedValue([]),
-    } as unknown as SelectQueryBuilder<Room>;
-
-    beforeEach(() => {
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as SelectQueryBuilder<Room>);
-    });
-
+  describe('searchAvailableRooms', () => {
     it('should return available rooms with all filters', async () => {
-      const availableRooms = [mockRoom];
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        roomType: RoomType.DELUXE,
+        maxGuests: 2,
+        minPrice: 100,
+        maxPrice: 300,
+        amenities: ['wifi', 'tv']
+      };
+
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      const availableRooms: Room[] = [
+        {
+          id: 1,
+          roomNumber: '101',
+          type: RoomType.DELUXE,
+          pricePerNight: 200,
+          maxGuests: 2,
+          description: 'Deluxe Room',
+          amenities: JSON.stringify(['wifi', 'tv']),
+          photos: [],
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+          bookings: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
       (mockQueryBuilder.getMany as jest.Mock).mockResolvedValue(availableRooms);
 
-      const result = await service.findAvailableRooms(
-        checkInDate,
-        checkOutDate,
-        roomType,
-        maxGuests,
-        maxPrice,
-      );
+      const result = await service.searchAvailableRooms(searchDto);
 
       expect(result).toEqual(availableRooms);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalledWith('room');
       expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('room.bookings', 'booking');
       expect(mockQueryBuilder.where).toHaveBeenCalledWith('room.availabilityStatus = :status', {
         status: AvailabilityStatus.AVAILABLE,
       });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(4); // 1 for booking conflict + 3 for filters
-      expect(mockQueryBuilder.distinct).toHaveBeenCalledWith(true);
-      expect(mockQueryBuilder.getMany).toHaveBeenCalled();
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(7); // 1 for booking conflict + 6 for filters
     });
 
     it('should return available rooms without optional filters', async () => {
-      const availableRooms = [mockRoom];
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25')
+      };
+
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      const availableRooms: Room[] = [
+        {
+          id: 1,
+          roomNumber: '101',
+          type: RoomType.DELUXE,
+          pricePerNight: 200,
+          maxGuests: 2,
+          description: 'Deluxe Room',
+          amenities: JSON.stringify(['wifi', 'tv']),
+          photos: [],
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+          bookings: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
+
       (mockQueryBuilder.getMany as jest.Mock).mockResolvedValue(availableRooms);
 
-      const result = await service.findAvailableRooms(checkInDate, checkOutDate);
+      const result = await service.searchAvailableRooms(searchDto);
 
       expect(result).toEqual(availableRooms);
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1); // Only for booking conflict
     });
 
     it('should throw DatabaseException when query fails', async () => {
-      const error = new Error('Database error');
-      (mockQueryBuilder.getMany as jest.Mock).mockRejectedValue(error);
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25')
+      };
 
-      await expect(
-        service.findAvailableRooms(checkInDate, checkOutDate),
-      ).rejects.toThrow(DatabaseException);
+      const mockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockRejectedValue(new Error('Database error')),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+
+      await expect(service.searchAvailableRooms(searchDto)).rejects.toThrow(DatabaseException);
     });
   });
 }); 

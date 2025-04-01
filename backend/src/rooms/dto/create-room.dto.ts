@@ -5,6 +5,8 @@ import {
   IsEnum,
   IsOptional,
   IsJSON,
+  IsArray,
+  ValidateIf,
 } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { RoomType, AvailabilityStatus } from '../entities/room.entity';
@@ -73,10 +75,37 @@ export class CreateRoomDto {
   @IsString()
     description?: string;
 
-  @ApiProperty({ description: 'Room amenities', required: false })
+  @ApiProperty({ 
+    description: 'Room amenities', 
+    required: false,
+    type: 'string'
+  })
   @IsOptional()
+  @IsString()
+  @ValidateIf((o) => o.amenities !== '')
   @IsJSON()
-    amenities?: string;
+  @Transform(({ value }) => {
+    if (value === '') {
+      return '';
+    }
+    if (Array.isArray(value)) {
+      return JSON.stringify(value);
+    }
+    if (typeof value === 'string') {
+      try {
+        // If it's already a JSON string, validate it's an array
+        const parsed = JSON.parse(value);
+        if (!Array.isArray(parsed)) {
+          return value; // Let the validation decorators handle this
+        }
+        return value;
+      } catch {
+        return value; // Let the validation decorators handle this
+      }
+    }
+    return value;
+  })
+  public amenities?: string;
 
   @ApiProperty({
     description: 'Room availability status',

@@ -39,7 +39,7 @@ describe('Booking Flow Integration Tests', () => {
     maxGuests: 2,
     availabilityStatus: 'AVAILABLE',
     description: 'Test room',
-    amenities: JSON.stringify(['WiFi', 'TV']),
+    amenities: ['WiFi', 'TV'],
   };
 
   beforeAll(async () => {
@@ -162,11 +162,14 @@ describe('Booking Flow Integration Tests', () => {
       dayAfterTomorrow.setDate(dayAfterTomorrow.getDate() + 1);
 
       const searchResponse = await request(app.getHttpServer())
-        .get('/rooms/available')
+        .get('/rooms/search')
         .query({
           checkInDate: tomorrow.toISOString().split('T')[0],
           checkOutDate: dayAfterTomorrow.toISOString().split('T')[0],
-          maxGuests: '2',
+          maxGuests: 2,
+          minPrice: 0,
+          maxPrice: 1000,
+          amenities: ['WiFi', 'TV']
         })
         .expect(200);
 

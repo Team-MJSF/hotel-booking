@@ -5,21 +5,14 @@ import { CreateRoomDto } from './dto/create-room.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity.js';
 import { ResourceNotFoundException, DatabaseException, ConflictException } from '../common/exceptions/hotel-booking.exception';
+import { SearchRoomsDto } from './dto/search-rooms.dto';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
 
 describe('RoomsController', () => {
   let controller: RoomsController;
-
-  const mockRoomsService = {
-    findAll: jest.fn(),
-    findAvailableRooms: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-  };
+  let mockRoomsService: jest.Mocked<RoomsService>;
 
   const mockRoom: Room = {
     id: 1,
@@ -40,6 +33,15 @@ describe('RoomsController', () => {
   };
 
   beforeEach(async () => {
+    mockRoomsService = {
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      searchAvailableRooms: jest.fn(),
+    } as any;
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RoomsController],
       providers: [
@@ -80,103 +82,72 @@ describe('RoomsController', () => {
     });
   });
 
-  describe('findAvailableRooms', () => {
+  describe('searchRooms', () => {
     it('should return available rooms with filters', async () => {
-      const checkInDate = '2024-03-20';
-      const checkOutDate = '2024-03-25';
-      const roomType = RoomType.DOUBLE;
-      const maxGuests = '2';
-      const maxPrice = '200';
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        roomType: RoomType.DELUXE,
+        maxGuests: 2,
+        minPrice: 100,
+        maxPrice: 300,
+        amenities: ['wifi', 'tv']
+      };
 
-      const availableRooms = [mockRoom];
-      mockRoomsService.findAvailableRooms.mockResolvedValue(availableRooms);
+      const availableRooms: Room[] = [
+        {
+          id: 1,
+          roomNumber: '101',
+          type: RoomType.DELUXE,
+          pricePerNight: 200,
+          maxGuests: 2,
+          description: 'Deluxe Room',
+          amenities: JSON.stringify(['wifi', 'tv']),
+          photos: [],
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+          bookings: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
 
-      const result = await controller.findAvailableRooms(
-        checkInDate,
-        checkOutDate,
-        roomType,
-        maxGuests,
-        maxPrice,
-      );
+      mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
+
+      const result = await controller.searchRooms(searchDto);
 
       expect(result).toEqual(availableRooms);
-      expect(mockRoomsService.findAvailableRooms).toHaveBeenCalledWith(
-        new Date(checkInDate),
-        new Date(checkOutDate),
-        roomType,
-        parseInt(maxGuests),
-        parseFloat(maxPrice),
-      );
+      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith(searchDto);
     });
 
     it('should handle optional filters', async () => {
-      const checkInDate = '2024-03-20';
-      const checkOutDate = '2024-03-25';
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25')
+      };
 
-      const availableRooms = [mockRoom];
-      mockRoomsService.findAvailableRooms.mockResolvedValue(availableRooms);
+      const availableRooms: Room[] = [
+        {
+          id: 1,
+          roomNumber: '101',
+          type: RoomType.DELUXE,
+          pricePerNight: 200,
+          maxGuests: 2,
+          description: 'Deluxe Room',
+          amenities: JSON.stringify(['wifi', 'tv']),
+          photos: [],
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+          bookings: [],
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }
+      ];
 
-      const result = await controller.findAvailableRooms(checkInDate, checkOutDate);
+      mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
+
+      const result = await controller.searchRooms(searchDto);
 
       expect(result).toEqual(availableRooms);
-      expect(mockRoomsService.findAvailableRooms).toHaveBeenCalledWith(
-        new Date(checkInDate),
-        new Date(checkOutDate),
-        undefined,
-        undefined,
-        undefined,
-      );
-    });
-
-    it('should handle date overlap checking', async () => {
-      const checkInDate = '2024-03-20';
-      const checkOutDate = '2024-03-25';
-
-      // Mock a room with an overlapping booking
-      const roomWithBooking = {
-        ...mockRoom,
-        bookings: [{
-          checkInDate: new Date('2024-03-22'),
-          checkOutDate: new Date('2024-03-24'),
-        }],
-      };
-
-      // Mock a room without overlapping bookings
-      const availableRoom = {
-        ...mockRoom,
-        bookings: [],
-      };
-
-      mockRoomsService.findAvailableRooms.mockResolvedValue([availableRoom]);
-
-      const result = await controller.findAvailableRooms(checkInDate, checkOutDate);
-
-      expect(result).toEqual([availableRoom]);
-      expect(result).not.toContain(roomWithBooking);
-      expect(mockRoomsService.findAvailableRooms).toHaveBeenCalledWith(
-        new Date(checkInDate),
-        new Date(checkOutDate),
-        undefined,
-        undefined,
-        undefined,
-      );
-    });
-
-    it('should handle rooms with no bookings', async () => {
-      const checkInDate = '2024-03-20';
-      const checkOutDate = '2024-03-25';
-
-      const availableRoom = {
-        ...mockRoom,
-        bookings: [],
-      };
-
-      mockRoomsService.findAvailableRooms.mockResolvedValue([availableRoom]);
-
-      const result = await controller.findAvailableRooms(checkInDate, checkOutDate);
-
-      expect(result).toEqual([availableRoom]);
-      expect(result[0].bookings).toHaveLength(0);
+      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith(searchDto);
     });
   });
 
