@@ -10,7 +10,6 @@ const config: JestConfigWithTsJest = {
       {
         useESM: true,
         tsconfig: 'tsconfig.json',
-        isolatedModules: true,
         diagnostics: false,
       },
     ],
