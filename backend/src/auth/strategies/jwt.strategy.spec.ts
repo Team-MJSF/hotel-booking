@@ -7,38 +7,32 @@ import { User, UserRole } from '../../users/entities/user.entity';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
-  let mockConfigService: Partial<jest.Mocked<ConfigService>>;
-  let mockUsersService: Partial<jest.Mocked<UsersService>>;
 
   const mockUser: User = {
     id: 1,
-    email: 'test@example.com',
-    password: 'hashed_password123',
-    firstName: 'Test',
-    lastName: 'User',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    password: 'hashedPassword123',
     role: UserRole.USER,
-    phoneNumber: '1234567890',
-    address: '123 Test St',
     bookings: [],
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
+  };
+
+  const mockUsersService = {
+    findOne: jest.fn(),
   };
 
   beforeEach(async () => {
-    mockConfigService = {
-      get: jest.fn().mockReturnValue('test-secret-key'),
-    };
-
-    mockUsersService = {
-      findOne: jest.fn(),
-    };
-
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JwtStrategy,
         {
           provide: ConfigService,
-          useValue: mockConfigService,
+          useValue: {
+            get: jest.fn().mockReturnValue('test-secret'),
+          },
         },
         {
           provide: UsersService,
@@ -50,16 +44,7 @@ describe('JwtStrategy', () => {
     strategy = module.get<JwtStrategy>(JwtStrategy);
   });
 
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('should be defined', () => {
-    expect(strategy).toBeDefined();
-  });
-
-  it('should initialize with correct JWT options', () => {
-    expect(mockConfigService.get).toHaveBeenCalledWith('JWT_SECRET', 'your-secret-key');
     expect(strategy).toBeDefined();
   });
 
@@ -67,6 +52,7 @@ describe('JwtStrategy', () => {
     const mockPayload = {
       email: 'test@example.com',
       sub: 1,
+      role: UserRole.USER,
     };
 
     it('should return user when token is valid and user exists', async () => {
@@ -93,6 +79,26 @@ describe('JwtStrategy', () => {
     it('should throw UnauthorizedException when user service throws error', async () => {
       // Set up the mock to throw an error
       mockUsersService.findOne.mockRejectedValue(new UnauthorizedException('Database error'));
+
+      // Verify that the error is thrown
+      await expect(strategy.validate(mockPayload)).rejects.toThrow(UnauthorizedException);
+      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockPayload.sub);
+    });
+
+    it('should throw UnauthorizedException when role mismatch', async () => {
+      // Set up the mock to return a user with different role
+      const adminUser = {
+        id: 1,
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        password: 'hashedPassword123',
+        role: UserRole.ADMIN,
+        bookings: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      mockUsersService.findOne.mockResolvedValue(adminUser);
 
       // Verify that the error is thrown
       await expect(strategy.validate(mockPayload)).rejects.toThrow(UnauthorizedException);

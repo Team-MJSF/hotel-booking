@@ -37,7 +37,11 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-    const payload = { email: user.email, sub: user.id };
+    const payload = { 
+      email: user.email, 
+      sub: user.id, 
+      role: user.role 
+    };
     return {
       access_token: this.jwtService.sign(payload),
     };
@@ -57,7 +61,7 @@ export class AuthService {
     const user = await this.usersService.create({
       ...registerDto,
       password: hashedPassword,
-      role: UserRole.USER,
+      role: registerDto.role || UserRole.USER,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

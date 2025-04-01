@@ -121,29 +121,42 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    const loginDto: LoginDto = {
-      email: 'test@example.com',
-      password: 'password123'
-    };
-
     it('should return access token when credentials are valid', async () => {
-      const userWithoutPassword = { ...mockUser };
-      delete userWithoutPassword.password;
-      
-      jest.spyOn(service, 'validateUser').mockResolvedValueOnce(userWithoutPassword);
+      const loginDto: LoginDto = {
+        email: 'test@example.com',
+        password: 'password123',
+      };
+      const mockUser = {
+        id: 1,
+        email: 'test@example.com',
+        firstName: 'Test',
+        lastName: 'User',
+        role: UserRole.USER,
+        bookings: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+      const expectedResult = { access_token: 'test_token' };
+
+      jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser);
+      mockJwtService.sign.mockReturnValue('test_token');
 
       const result = await service.login(loginDto);
 
-      expect(result).toEqual({ access_token: 'test_token' });
+      expect(result).toEqual(expectedResult);
       expect(service.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
-      expect(mockJwtService.sign).toHaveBeenCalledWith({ sub: mockUser.id, email: mockUser.email });
+      expect(mockJwtService.sign).toHaveBeenCalledWith({ 
+        sub: mockUser.id, 
+        email: mockUser.email,
+        role: mockUser.role 
+      });
     });
 
     it('should throw UnauthorizedException when credentials are invalid', async () => {
       jest.spyOn(service, 'validateUser').mockResolvedValueOnce(null);
 
-      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
-      expect(service.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
+      await expect(service.login({ email: 'test@example.com', password: 'password123' })).rejects.toThrow(UnauthorizedException);
+      expect(service.validateUser).toHaveBeenCalledWith('test@example.com', 'password123');
       expect(mockJwtService.sign).not.toHaveBeenCalled();
     });
   });
