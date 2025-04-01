@@ -1,66 +1,72 @@
-import { IsOptional, IsNumber, IsArray, IsDate, Min, ValidateIf, IsEnum } from 'class-validator';
-import { Type, Transform } from 'class-transformer';
+import { IsOptional, IsDate, IsEnum, IsInt, IsNumber, IsArray, IsString, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomType } from '../entities/room.entity';
 
+export enum SortField {
+  PRICE = 'price',
+  TYPE = 'type',
+  MAX_GUESTS = 'maxGuests',
+  ROOM_NUMBER = 'roomNumber'
+}
+
+export enum SortOrder {
+  ASC = 'ASC',
+  DESC = 'DESC'
+}
+
 export class SearchRoomsDto {
-  @ApiProperty({ description: 'Check-in date for the booking' })
-  @Type(() => Date)
+  @ApiProperty({ required: false, description: 'Check-in date for the booking' })
+  @IsOptional()
   @IsDate()
-  @Transform(({ value }) => new Date(value))
-    checkInDate: Date;
-
-  @ApiProperty({ description: 'Check-out date for the booking' })
   @Type(() => Date)
-  @IsDate()
-  @Transform(({ value }) => new Date(value))
-  @ValidateIf((o) => o.checkInDate)
-    checkOutDate: Date;
+  checkInDate?: Date;
 
-  @ApiProperty({ description: 'Optional room type filter', enum: RoomType, required: false })
+  @ApiProperty({ required: false, description: 'Check-out date for the booking' })
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  checkOutDate?: Date;
+
+  @ApiProperty({ required: false, enum: RoomType, description: 'Type of room to search for' })
   @IsOptional()
   @IsEnum(RoomType)
-    roomType?: RoomType;
+  roomType?: RoomType;
 
-  @ApiProperty({ description: 'Optional maximum number of guests filter', required: false })
+  @ApiProperty({ required: false, description: 'Maximum number of guests the room should accommodate' })
   @IsOptional()
-  @Type(() => Number)
-  @IsNumber()
+  @IsInt()
   @Min(1)
-  @Transform(({ value }) => Number(value))
-    maxGuests?: number;
-
-  @ApiProperty({ description: 'Optional minimum price per night filter', required: false })
-  @IsOptional()
   @Type(() => Number)
+  maxGuests?: number;
+
+  @ApiProperty({ required: false, description: 'Minimum price per night' })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => Number(value))
-    minPrice?: number;
-
-  @ApiProperty({ description: 'Optional maximum price per night filter', required: false })
-  @IsOptional()
   @Type(() => Number)
+  minPrice?: number;
+
+  @ApiProperty({ required: false, description: 'Maximum price per night' })
+  @IsOptional()
   @IsNumber()
   @Min(0)
-  @Transform(({ value }) => Number(value))
-    maxPrice?: number;
+  @Type(() => Number)
+  maxPrice?: number;
 
-  @ApiProperty({ description: 'Optional array of required amenities', required: false })
+  @ApiProperty({ required: false, type: [String], description: 'List of amenities required' })
   @IsOptional()
-  @Transform(({ value }) => {
-    if (Array.isArray(value)) {
-      return value;
-    }
-    if (typeof value === 'string') {
-      try {
-        return JSON.parse(value);
-      } catch {
-        return value.split(',').map(item => item.trim());
-      }
-    }
-    return value;
-  })
   @IsArray()
-    amenities?: string[];
+  @IsString({ each: true })
+  amenities?: string[];
+
+  @ApiProperty({ required: false, enum: SortField, description: 'Field to sort results by' })
+  @IsOptional()
+  @IsEnum(SortField)
+  sortBy?: SortField;
+
+  @ApiProperty({ required: false, enum: SortOrder, description: 'Sort order (ascending or descending)' })
+  @IsOptional()
+  @IsEnum(SortOrder)
+  sortOrder?: SortOrder;
 } 

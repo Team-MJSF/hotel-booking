@@ -5,7 +5,7 @@ import { Room, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
-import { SearchRoomsDto } from './dto/search-rooms.dto';
+import { SearchRoomsDto, SortField, SortOrder } from './dto/search-rooms.dto';
 
 @Injectable()
 export class RoomsService {
@@ -227,6 +227,25 @@ export class RoomsService {
             checkOutDate: searchDto.checkOutDate,
           }
         );
+      }
+
+      // Apply sorting
+      if (searchDto.sortBy) {
+        const sortOrder = searchDto.sortOrder || SortOrder.ASC;
+        switch (searchDto.sortBy) {
+          case SortField.PRICE:
+            query.orderBy('room.pricePerNight', sortOrder);
+            break;
+          case SortField.TYPE:
+            query.orderBy('room.type', sortOrder);
+            break;
+          case SortField.MAX_GUESTS:
+            query.orderBy('room.maxGuests', sortOrder);
+            break;
+          case SortField.ROOM_NUMBER:
+            query.orderBy('room.roomNumber', sortOrder);
+            break;
+        }
       }
 
       // Ensure we don't get duplicate rooms

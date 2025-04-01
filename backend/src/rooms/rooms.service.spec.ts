@@ -5,7 +5,7 @@ import { RoomsService } from './rooms.service';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { SearchRoomsDto } from './dto/search-rooms.dto';
+import { SearchRoomsDto, SortField, SortOrder } from './dto/search-rooms.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 
 type MockQueryBuilder = {
@@ -13,6 +13,7 @@ type MockQueryBuilder = {
   where: jest.Mock;
   andWhere: jest.Mock;
   distinct: jest.Mock;
+  orderBy: jest.Mock;
   getMany: jest.Mock;
 };
 
@@ -220,6 +221,7 @@ describe('RoomsService', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
         getMany: jest.fn(),
       };
 
@@ -255,6 +257,86 @@ describe('RoomsService', () => {
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(7); // 1 for booking conflict + 6 for filters
     });
 
+    it('should sort rooms by price in ascending order', async () => {
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        sortBy: SortField.PRICE,
+        sortOrder: SortOrder.ASC
+      };
+
+      const mockQueryBuilder: MockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+
+      await service.searchAvailableRooms(searchDto);
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.pricePerNight', SortOrder.ASC);
+    });
+
+    it('should sort rooms by type in descending order', async () => {
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        sortBy: SortField.TYPE,
+        sortOrder: SortOrder.DESC
+      };
+
+      const mockQueryBuilder: MockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+
+      await service.searchAvailableRooms(searchDto);
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.type', SortOrder.DESC);
+    });
+
+    it('should use default ASC order when sortOrder is not specified', async () => {
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        sortBy: SortField.MAX_GUESTS
+      };
+
+      const mockQueryBuilder: MockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+
+      await service.searchAvailableRooms(searchDto);
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.maxGuests', SortOrder.ASC);
+    });
+
     it('should return available rooms without optional filters', async () => {
       const searchDto: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
@@ -266,6 +348,7 @@ describe('RoomsService', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
         getMany: jest.fn(),
       };
 
@@ -296,6 +379,7 @@ describe('RoomsService', () => {
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
         getMany: jest.fn(),
       };
 
@@ -305,6 +389,100 @@ describe('RoomsService', () => {
       mockQueryBuilder.getMany.mockRejectedValue(error);
 
       await expect(service.searchAvailableRooms(searchDto)).rejects.toThrow(DatabaseException);
+    });
+
+    it('should sort rooms by room number in ascending order', async () => {
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        sortBy: SortField.ROOM_NUMBER,
+        sortOrder: SortOrder.ASC
+      };
+
+      const mockQueryBuilder: MockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+
+      await service.searchAvailableRooms(searchDto);
+
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.roomNumber', SortOrder.ASC);
+    });
+
+    it('should apply sorting after all filters', async () => {
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        roomType: RoomType.DELUXE,
+        maxPrice: 300,
+        sortBy: SortField.PRICE,
+        sortOrder: SortOrder.DESC
+      };
+
+      const mockQueryBuilder: MockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+
+      await service.searchAvailableRooms(searchDto);
+
+      // Verify that filters are applied before sorting
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.type = :type', { type: RoomType.DELUXE });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.pricePerNight <= :maxPrice', { maxPrice: 300 });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.pricePerNight', SortOrder.DESC);
+    });
+
+    it('should handle sorting with amenities filter', async () => {
+      const searchDto: SearchRoomsDto = {
+        checkInDate: new Date('2024-03-20'),
+        checkOutDate: new Date('2024-03-25'),
+        amenities: ['wifi', 'tv'],
+        sortBy: SortField.MAX_GUESTS,
+        sortOrder: SortOrder.DESC
+      };
+
+      const mockQueryBuilder: MockQueryBuilder = {
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        getMany: jest.fn(),
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
+
+      await service.searchAvailableRooms(searchDto);
+
+      // Verify that amenities filter is applied before sorting
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('JSON_CONTAINS(room.amenities, :amenity0)', {
+        amenity0: JSON.stringify('wifi'),
+      });
+      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('JSON_CONTAINS(room.amenities, :amenity1)', {
+        amenity1: JSON.stringify('tv'),
+      });
+      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.maxGuests', SortOrder.DESC);
     });
   });
 }); 
