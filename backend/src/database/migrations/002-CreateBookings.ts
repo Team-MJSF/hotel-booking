@@ -37,6 +37,11 @@ export class CreateBookings1709913600002 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'special_requests',
+            type: 'text',
+            isNullable: true,
+          },
+          {
             name: 'status',
             type: 'enum',
             enum: ['pending', 'confirmed', 'cancelled', 'completed'],
