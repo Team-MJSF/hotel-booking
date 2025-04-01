@@ -12,7 +12,7 @@ jest.setTimeout(10000);
 
 describe('RoomsController', () => {
   let controller: RoomsController;
-  let mockRoomsService: jest.Mocked<RoomsService>;
+  let mockRoomsService: jest.Mocked<Pick<RoomsService, 'findAll' | 'findOne' | 'create' | 'update' | 'remove' | 'searchAvailableRooms' | 'findAvailableRooms'>>;
 
   const mockRoom: Room = {
     id: 1,
@@ -40,7 +40,8 @@ describe('RoomsController', () => {
       update: jest.fn(),
       remove: jest.fn(),
       searchAvailableRooms: jest.fn(),
-    } as any;
+      findAvailableRooms: jest.fn(),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [RoomsController],

@@ -1,12 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, SelectQueryBuilder } from 'typeorm';
+import { Repository } from 'typeorm';
 import { RoomsService } from './rooms.service';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import { SearchRoomsDto } from './dto/search-rooms.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+
+type MockQueryBuilder = {
+  leftJoin: jest.Mock;
+  where: jest.Mock;
+  andWhere: jest.Mock;
+  distinct: jest.Mock;
+  getMany: jest.Mock;
+};
 
 describe('RoomsService', () => {
   let service: RoomsService;
@@ -207,7 +215,7 @@ describe('RoomsService', () => {
         amenities: ['wifi', 'tv']
       };
 
-      const mockQueryBuilder = {
+      const mockQueryBuilder: MockQueryBuilder = {
         leftJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -215,7 +223,7 @@ describe('RoomsService', () => {
         getMany: jest.fn(),
       };
 
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
 
       const availableRooms: Room[] = [
         {
@@ -234,7 +242,7 @@ describe('RoomsService', () => {
         }
       ];
 
-      (mockQueryBuilder.getMany as jest.Mock).mockResolvedValue(availableRooms);
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
 
       const result = await service.searchAvailableRooms(searchDto);
 
@@ -250,10 +258,10 @@ describe('RoomsService', () => {
     it('should return available rooms without optional filters', async () => {
       const searchDto: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25')
+        checkOutDate: new Date('2024-03-25'),
       };
 
-      const mockQueryBuilder = {
+      const mockQueryBuilder: MockQueryBuilder = {
         leftJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
@@ -261,48 +269,40 @@ describe('RoomsService', () => {
         getMany: jest.fn(),
       };
 
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
 
-      const availableRooms: Room[] = [
-        {
-          id: 1,
-          roomNumber: '101',
-          type: RoomType.DELUXE,
-          pricePerNight: 200,
-          maxGuests: 2,
-          description: 'Deluxe Room',
-          amenities: JSON.stringify(['wifi', 'tv']),
-          photos: [],
-          availabilityStatus: AvailabilityStatus.AVAILABLE,
-          bookings: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-
-      (mockQueryBuilder.getMany as jest.Mock).mockResolvedValue(availableRooms);
+      const availableRooms: Room[] = [mockRoom];
+      mockQueryBuilder.getMany.mockResolvedValue(availableRooms);
 
       const result = await service.searchAvailableRooms(searchDto);
 
       expect(result).toEqual(availableRooms);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalledWith('room');
+      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('room.bookings', 'booking');
+      expect(mockQueryBuilder.where).toHaveBeenCalledWith('room.availabilityStatus = :status', {
+        status: AvailabilityStatus.AVAILABLE,
+      });
       expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1); // Only for booking conflict
     });
 
-    it('should throw DatabaseException when query fails', async () => {
+    it('should throw DatabaseException when repository fails', async () => {
       const searchDto: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25')
+        checkOutDate: new Date('2024-03-25'),
       };
 
-      const mockQueryBuilder = {
+      const mockQueryBuilder: MockQueryBuilder = {
         leftJoin: jest.fn().mockReturnThis(),
         where: jest.fn().mockReturnThis(),
         andWhere: jest.fn().mockReturnThis(),
         distinct: jest.fn().mockReturnThis(),
-        getMany: jest.fn().mockRejectedValue(new Error('Database error')),
+        getMany: jest.fn(),
       };
 
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as any);
+      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+      const error = new Error('Database error');
+      mockQueryBuilder.getMany.mockRejectedValue(error);
 
       await expect(service.searchAvailableRooms(searchDto)).rejects.toThrow(DatabaseException);
     });

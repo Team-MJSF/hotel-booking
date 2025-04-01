@@ -1,4 +1,4 @@
-import { IsOptional, IsNumber, IsArray, IsDate, Min, Max, ValidateIf, IsEnum } from 'class-validator';
+import { IsOptional, IsNumber, IsArray, IsDate, Min, ValidateIf, IsEnum } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomType } from '../entities/room.entity';
@@ -8,19 +8,19 @@ export class SearchRoomsDto {
   @Type(() => Date)
   @IsDate()
   @Transform(({ value }) => new Date(value))
-  checkInDate: Date;
+    checkInDate: Date;
 
   @ApiProperty({ description: 'Check-out date for the booking' })
   @Type(() => Date)
   @IsDate()
   @Transform(({ value }) => new Date(value))
   @ValidateIf((o) => o.checkInDate)
-  checkOutDate: Date;
+    checkOutDate: Date;
 
   @ApiProperty({ description: 'Optional room type filter', enum: RoomType, required: false })
   @IsOptional()
   @IsEnum(RoomType)
-  roomType?: RoomType;
+    roomType?: RoomType;
 
   @ApiProperty({ description: 'Optional maximum number of guests filter', required: false })
   @IsOptional()
@@ -28,7 +28,7 @@ export class SearchRoomsDto {
   @IsNumber()
   @Min(1)
   @Transform(({ value }) => Number(value))
-  maxGuests?: number;
+    maxGuests?: number;
 
   @ApiProperty({ description: 'Optional minimum price per night filter', required: false })
   @IsOptional()
@@ -36,7 +36,7 @@ export class SearchRoomsDto {
   @IsNumber()
   @Min(0)
   @Transform(({ value }) => Number(value))
-  minPrice?: number;
+    minPrice?: number;
 
   @ApiProperty({ description: 'Optional maximum price per night filter', required: false })
   @IsOptional()
@@ -44,7 +44,7 @@ export class SearchRoomsDto {
   @IsNumber()
   @Min(0)
   @Transform(({ value }) => Number(value))
-  maxPrice?: number;
+    maxPrice?: number;
 
   @ApiProperty({ description: 'Optional array of required amenities', required: false })
   @IsOptional()
@@ -62,5 +62,5 @@ export class SearchRoomsDto {
     return value;
   })
   @IsArray()
-  amenities?: string[];
+    amenities?: string[];
 } 

@@ -182,8 +182,6 @@ export class RoomsService {
 
   async searchAvailableRooms(searchDto: SearchRoomsDto): Promise<Room[]> {
     try {
-      console.log('Search DTO:', JSON.stringify(searchDto, null, 2));
-      
       const query = this.roomsRepository
         .createQueryBuilder('room')
         // Join with bookings to check availability
@@ -211,9 +209,7 @@ export class RoomsService {
 
       // Apply amenities filter
       if (searchDto.amenities?.length) {
-        console.log('Amenities filter:', JSON.stringify(searchDto.amenities, null, 2));
         searchDto.amenities.forEach((amenity, index) => {
-          console.log(`Adding amenity filter for ${amenity}`);
           query.andWhere(`JSON_CONTAINS(room.amenities, :amenity${index})`, {
             [`amenity${index}`]: JSON.stringify(amenity),
           });
@@ -222,10 +218,6 @@ export class RoomsService {
 
       // Apply date range filter
       if (searchDto.checkInDate && searchDto.checkOutDate) {
-        console.log('Date range:', {
-          checkIn: searchDto.checkInDate,
-          checkOut: searchDto.checkOutDate
-        });
         query.andWhere(
           '(booking.bookingId IS NULL OR NOT (' +
           ':checkInDate < booking.checkOutDate AND ' +
@@ -240,11 +232,8 @@ export class RoomsService {
       // Ensure we don't get duplicate rooms
       query.distinct(true);
 
-      const rooms = await query.getMany();
-      console.log('Found rooms:', JSON.stringify(rooms, null, 2));
-      return rooms;
+      return await query.getMany();
     } catch (error) {
-      console.error('Error in searchAvailableRooms:', error);
       throw new DatabaseException('Failed to fetch available rooms', error);
     }
   }
