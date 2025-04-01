@@ -18,7 +18,6 @@ import { Logger } from '@nestjs/common';
 describe('UsersService', () => {
   let service: UsersService;
   let repository: Repository<User>;
-  let mockLogger: jest.Mocked<Logger>;
 
   const mockRepository = {
     find: jest.fn(),
@@ -70,7 +69,6 @@ describe('UsersService', () => {
 
     service = module.get<UsersService>(UsersService);
     repository = module.get<Repository<User>>(getRepositoryToken(User));
-    mockLogger = module.get<Logger>(Logger) as jest.Mocked<Logger>;
   });
 
   afterEach(() => {
