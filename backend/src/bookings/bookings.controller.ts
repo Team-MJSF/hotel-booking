@@ -9,7 +9,7 @@ import { Booking } from './entities/booking.entity';
  * Controller for managing hotel bookings
  * Provides endpoints for CRUD operations on bookings
  */
-@ApiTags('bookings')
+@ApiTags('Bookings')
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}

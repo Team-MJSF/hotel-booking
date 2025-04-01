@@ -9,7 +9,7 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
  * Controller for managing payment operations
  * Provides endpoints for CRUD operations on payments and payment processing
  */
-@ApiTags('payments')
+@ApiTags('Payments')
 @Controller('payments')
 export class PaymentsController {
   constructor(private readonly paymentsService: PaymentsService) {}
