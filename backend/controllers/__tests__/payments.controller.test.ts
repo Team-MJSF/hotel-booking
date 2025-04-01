@@ -242,6 +242,107 @@ describe('Payments Controller - getPaymentById', () => {
     expect(res.json).toHaveBeenCalledWith({ message: 'Payment not found' });
   });
 });
+/**
+ * Tests for the createPayment controller function
+ */
+describe('Payments Controller - createPayment', () => {
+  let paymentsController: ReturnType<typeof createPaymentsController>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    paymentsController = createPaymentsController({
+      Payments: mockPaymentsModel as any,
+      Bookings: mockBookingsModel as any,
+      validator: mockValidator as any,
+      paymentSystem: mockPaymentSystem
+    });
+  });
+
+  test('should create a payment successfully', async () => {
+    const validMethod: PaymentMethod = 'Credit Card';
+    const validStatus: PaymentStatus = 'Pending';
+
+    const newPaymentData = {
+      bookingId: 1,
+      amount: 150.0,
+      paymentMethod: validMethod,
+      status: validStatus,
+      paymentDate: new Date()
+    };
+
+    const mockCreatedPayment: MockPayment = {
+      paymentId: 1,
+      ...newPaymentData
+    };
+
+    mockValidator.mockReturnValueOnce({
+      isEmpty: () => true,
+      array: () => []
+    });
+
+    mockPaymentsModel.create.mockResolvedValueOnce(mockCreatedPayment);
+
+    const req = { body: newPaymentData } as unknown as Request;
+    const res = mockResponse();
+
+    await paymentsController.createPayment(req, res as Response);
+
+    expect(mockPaymentsModel.create).toHaveBeenCalledWith(expect.objectContaining(newPaymentData));
+    expect(res.status).toHaveBeenCalledWith(201);
+    expect(res.json).toHaveBeenCalledWith(mockCreatedPayment);
+  });
+
+  test('should return 400 if validation fails', async () => {
+    const validationErrors = [{ msg: 'Amount must be positive' }];
+
+    mockValidator.mockReturnValueOnce({
+      isEmpty: () => false,
+      array: () => validationErrors
+    });
+
+    const req = {
+      body: { amount: -50 }
+    } as unknown as Request;
+    const res = mockResponse();
+
+    await paymentsController.createPayment(req, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ errors: validationErrors });
+  });
+
+  test('should return 500 if creation fails', async () => {
+    const validMethod: PaymentMethod = 'Credit Card';
+
+    const newPaymentData = {
+      bookingId: 1,
+      amount: 150.0,
+      paymentMethod: validMethod,
+      status: 'Pending' as PaymentStatus,
+      paymentDate: new Date()
+    };
+
+    const errorMessage = 'Database insert failed';
+
+    mockValidator.mockReturnValueOnce({
+      isEmpty: () => true,
+      array: () => []
+    });
+
+    mockPaymentsModel.create.mockRejectedValueOnce(new Error(errorMessage));
+
+    const req = { body: newPaymentData } as unknown as Request;
+    const res = mockResponse();
+
+    await paymentsController.createPayment(req, res as Response);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({
+      message: 'Error creating payment',
+      error: errorMessage
+    });
+  });
+});
 
 /**
  * Tests for the updatePayment controller function
