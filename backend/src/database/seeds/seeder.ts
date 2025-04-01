@@ -5,16 +5,17 @@ import { Room, RoomType, AvailabilityStatus } from '../../rooms/entities/room.en
 import { Booking, BookingStatus } from '../../bookings/entities/booking.entity';
 import { Payment, PaymentStatus, PaymentMethod, Currency } from '../../payments/entities/payment.entity';
 import * as bcrypt from 'bcrypt';
-import dataSource from '../../config/typeorm.config';
+import { AppDataSource } from '../../config/typeorm.config';
 
 export class Seeder {
   constructor(private readonly dataSource: DataSource) {}
 
   async seed() {
     try {
-      // Initialize the database connection
-      await this.dataSource.initialize();
-      console.log('Database connection initialized.');
+      // Initialize the data source if not already initialized
+      if (!this.dataSource.isInitialized) {
+        await this.dataSource.initialize();
+      }
 
       // Clear existing data
       await this.clearTables();
@@ -30,7 +31,10 @@ export class Seeder {
       console.error('Error during seeding:', error);
       throw error;
     } finally {
-      await this.dataSource.destroy();
+      // Close the connection when done
+      if (this.dataSource.isInitialized) {
+        await this.dataSource.destroy();
+      }
     }
   }
 
@@ -155,7 +159,7 @@ export class Seeder {
 }
 
 // Run the seeder
-const seeder = new Seeder(dataSource);
+const seeder = new Seeder(AppDataSource);
 seeder.seed()
   .then(() => {
     console.log('Seeding completed successfully!');

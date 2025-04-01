@@ -1,141 +1,89 @@
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
-import * as path from 'path';
+import { join } from 'path';
 import * as mysql from 'mysql2/promise';
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { Logger } from '@nestjs/common';
 
-// Load environment variables from the correct .env file based on NODE_ENV
-const env = process.env.NODE_ENV || 'development';
-config({ path: `.env.${env}` });
+// Load environment variables
+config();
 
 const configService = new ConfigService();
-const logger = new Logger('TypeOrmConfig');
 
+// Get environment
+const NODE_ENV = process.env.NODE_ENV || 'dev';
+
+// Map environment names
+const envMap: Record<string, string> = {
+  development: 'dev',
+  production: 'prod',
+  test: 'test'
+};
+
+// Get the correct environment name
+const env = envMap[NODE_ENV] || NODE_ENV;
+
+// Construct database name with environment
+const dbName = `hotel_booking_${env}`;
+
+// Create base configuration without database
+const baseConfig: DataSourceOptions = {
+  type: 'mysql',
+  host: configService.get('DB_HOST'),
+  port: configService.get('DB_PORT'),
+  username: configService.get('DB_USER'),
+  password: configService.get('DB_PASSWORD'),
+  entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
+  migrations: [join(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
+  synchronize: false,
+  logging: false,
+  migrationsRun: true, // Automatically run migrations
+  migrationsTableName: 'migrations',
+  dropSchema: false,
+};
+
+// Function to create database if it doesn't exist
 async function createDatabaseIfNotExists() {
-  const dbUser = configService.get('DB_USER');
-  const dbPassword = configService.get('DB_PASSWORD');
-  const dbHost = configService.get('DB_HOST');
-  const dbPort = configService.get('DB_PORT', '3306');
-  const dbName = configService.get('DB_NAME');
-  const isTest = configService.get('NODE_ENV') === 'test';
-  const finalDbName = isTest ? `${dbName}_test` : dbName;
+  const connection = await mysql.createConnection({
+    host: configService.get('DB_HOST'),
+    port: configService.get('DB_PORT'),
+    user: configService.get('DB_USER'),
+    password: configService.get('DB_PASSWORD'),
+  });
 
-  if (!dbUser || !dbPassword || !dbHost || !dbName) {
-    throw new Error('Missing required database configuration. Please check your .env file.');
-  }
-
-  let connection;
   try {
-    // First try to connect without database
-    connection = await mysql.createConnection({
-      host: dbHost,
-      port: parseInt(dbPort, 10),
-      user: dbUser,
-      password: dbPassword,
-      multipleStatements: true,
-      connectTimeout: 10000,
-    });
-
     // Check if database exists
-    const [rows] = await connection.query(`SHOW DATABASES LIKE '${finalDbName}'`);
+    const [rows] = await connection.query(`SHOW DATABASES LIKE '${dbName}'`);
     const databaseExists = Array.isArray(rows) && rows.length > 0;
 
     if (!databaseExists) {
-      // Create database only if it doesn't exist
-      await connection.query(`CREATE DATABASE IF NOT EXISTS ${finalDbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
-      logger.log(`Database ${finalDbName} created successfully`);
+      // Create database if it doesn't exist
+      await connection.query(`CREATE DATABASE ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      console.log(`[TypeOrmConfig] Database ${dbName} created successfully`);
     } else {
-      logger.log(`Database ${finalDbName} already exists`);
+      console.log(`[TypeOrmConfig] Database ${dbName} already exists`);
     }
-
-    // Close the connection
+  } finally {
     await connection.end();
-  } catch (error) {
-    logger.error('Database connection error:', error);
-    if (connection) {
-      try {
-        await connection.end();
-      } catch (closeError) {
-        logger.error('Error closing connection:', closeError);
-      }
-    }
-    throw error;
   }
 }
 
-// Create database if it doesn't exist
-createDatabaseIfNotExists().catch(error => {
-  logger.error('Error creating database:', error);
-  process.exit(1);
+// Create DataSource with database
+const AppDataSource = new DataSource({
+  ...baseConfig,
+  database: dbName
 });
 
-export const getTypeOrmConfig = async (
-  configService: ConfigService,
-): Promise<TypeOrmModuleOptions> => {
-  const logger = new Logger('TypeOrmConfig');
-  const isTest = configService.get('NODE_ENV') === 'test';
+// Only create database if this file is run directly
+if (require.main === module) {
+  createDatabaseIfNotExists()
+    .then(() => {
+      console.log('[TypeOrmConfig] Database setup completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.log('Error during database creation:', error);
+      process.exit(1);
+    });
+}
 
-  try {
-    const config: TypeOrmModuleOptions = {
-      type: 'mysql',
-      host: configService.get('DB_HOST'),
-      port: parseInt(configService.get('DB_PORT', '3306'), 10),
-      username: configService.get('DB_USER'),
-      password: configService.get('DB_PASSWORD'),
-      database: isTest ? configService.get('DB_NAME') + '_test' : configService.get('DB_NAME'),
-      entities: [
-        path.join(__dirname, '../users/entities/*.entity{.ts,.js}'),
-        path.join(__dirname, '../rooms/entities/*.entity{.ts,.js}'),
-        path.join(__dirname, '../bookings/entities/*.entity{.ts,.js}'),
-        path.join(__dirname, '../payments/entities/*.entity{.ts,.js}'),
-      ],
-      migrations: [path.join(__dirname, '../database/migrations/*{.ts,.js}')],
-      synchronize: isTest, // Enable synchronize only in test environment
-      logging: false, // Disable logging in test environment
-      dropSchema: isTest, // Drop schema in test environment
-      migrationsRun: !isTest, // Run migrations only in non-test environment
-      extra: {
-        connectionLimit: 10,
-        waitForConnections: true,
-        queueLimit: 0,
-        dateStrings: true,
-        timezone: 'local',
-        charset: 'utf8mb4',
-        collation: 'utf8mb4_unicode_ci'
-      }
-    };
-
-    logger.log(`Database configuration loaded successfully for ${isTest ? 'test' : 'development'} environment`);
-    
-    if (!config.host || !config.username || !config.password || !config.database) {
-      logger.error('Missing required database configuration');
-      throw new Error('Missing required database configuration');
-    }
-
-    return config;
-  } catch (error) {
-    logger.error(`Failed to load database configuration: ${error.message}`);
-    throw error;
-  }
-};
-
-export default new DataSource({
-  type: 'mysql',
-  host: configService.get('DB_HOST'),
-  port: parseInt(configService.get('DB_PORT', '3306'), 10),
-  username: configService.get('DB_USER'),
-  password: configService.get('DB_PASSWORD'),
-  database: configService.get('DB_NAME'),
-  entities: [path.join(__dirname, '../**/*.entity{.ts,.js}')],
-  migrations: [path.join(__dirname, '../database/migrations/*{.ts,.js}')],
-  synchronize: false,
-  logging: configService.get('NODE_ENV') === 'development',
-  driver: require('mysql2'),
-  extra: {
-    connectionLimit: 10,
-    waitForConnections: true,
-    queueLimit: 0
-  }
-});
+export { AppDataSource };
