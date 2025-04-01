@@ -1,171 +1,157 @@
-# Hotel Booking System Backend
+# Hotel Booking Backend
 
-A NestJS-based backend for a hotel booking system, designed for a school project with inexperienced developers.
+A NestJS backend for a hotel booking system with user authentication, room management, booking system, and payment processing.
 
 ## Features
 
-### Room Management
-- Create, read, update, and delete rooms
-- Room types: Single, Double, Suite, Deluxe
-- Room amenities support
-- Room availability tracking
-- Room search with advanced filtering and sorting:
-  - Date range filtering
-  - Room type filtering
-  - Maximum guests filtering
-  - Price range filtering
-  - Amenities filtering
-  - Sorting by:
-    - Price (lowest/highest)
-    - Room type
-    - Maximum guests
-    - Room number
-  - Sort order (ascending/descending)
+- User Authentication (JWT)
+- Room Management
+- Booking System
+- Payment Processing
+- Role-based Access Control
+- Environment-specific Configuration
+- Database Migrations and Seeding
 
-### Booking Management
-- Create, read, update, and delete bookings
-- Booking status tracking
-- Date conflict prevention
-- Guest information management
+## Prerequisites
 
-### User Management
-- User registration and authentication
-- Role-based access control (Admin, User)
-- User profile management
+- Node.js (v18 or higher)
+- MySQL (v8 or higher)
+- npm or yarn
 
-## API Endpoints
+## Environment Setup
 
-### Rooms
-- `GET /rooms` - Get all rooms
-- `GET /rooms/:id` - Get a specific room
-- `POST /rooms` - Create a new room
-- `PATCH /rooms/:id` - Update a room
-- `DELETE /rooms/:id` - Delete a room
-- `GET /rooms/search` - Search available rooms with filters and sorting
+1. Copy the appropriate environment file based on your environment:
+   ```bash
+   # For development
+   cp .env.example .env.development
 
-### Bookings
-- `GET /bookings` - Get all bookings
-- `GET /bookings/:id` - Get a specific booking
-- `POST /bookings` - Create a new booking
-- `PATCH /bookings/:id` - Update a booking
-- `DELETE /bookings/:id` - Delete a booking
+   # For production
+   cp .env.example .env.production
 
-### Users
-- `POST /users/register` - Register a new user
-- `POST /users/login` - Login user
-- `GET /users/profile` - Get user profile
-- `PATCH /users/profile` - Update user profile
+   # For testing
+   cp .env.example .env.test
+   ```
 
-## Search Parameters
+2. Update the environment variables in your chosen environment file (e.g., `.env.development`):
+   ```env
+   # Environment Configuration
+   NODE_ENV=development
 
-### Room Search
-- `checkInDate`: Date - Check-in date for the booking
-- `checkOutDate`: Date - Check-out date for the booking
-- `roomType`: RoomType - Type of room to search for
-- `maxGuests`: number - Maximum number of guests
-- `minPrice`: number - Minimum price per night
-- `maxPrice`: number - Maximum price per night
-- `amenities`: string[] - List of required amenities
-- `sortBy`: SortField - Field to sort results by
-- `sortOrder`: SortOrder - Sort order (ASC/DESC)
+   # Database Configuration
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=root
+   DB_PASSWORD=root
+   DB_NAME=hotel_booking_dev
 
-### Sort Fields
-- `price` - Sort by price per night
-- `type` - Sort by room type
-- `maxGuests` - Sort by maximum guests
-- `roomNumber` - Sort by room number
+   # Logging Configuration
+   LOG_LEVEL=debug
 
-### Sort Orders
-- `ASC` - Ascending order (default)
-- `DESC` - Descending order
+   # Feature Flags
+   ENABLE_SWAGGER=true
+   ENABLE_LOGGING=true
+   ```
 
-## Technologies Used
+The application will automatically load the correct environment file based on the `NODE_ENV` value:
+- Development: `.env.development`
+- Production: `.env.production`
+- Test: `.env.test`
 
-- NestJS - Web framework
-- TypeORM - Database ORM
-- PostgreSQL - Database
-- JWT - Authentication
-- Class Validator - Input validation
-- Swagger - API documentation
-
-## Getting Started
+## Installation
 
 1. Install dependencies:
    ```bash
    npm install
    ```
 
-2. Set up environment variables:
+2. Build the project:
    ```bash
-   cp .env.example .env
+   npm run build
    ```
 
-3. Update the `.env` file with your database credentials
+## Database Setup
 
-4. Run migrations:
+The project uses TypeORM with migrations for database management. The database will be automatically created if it doesn't exist.
+
+1. Run the development setup (creates database, runs migrations, and seeds data):
    ```bash
-   npm run migration:run
+   npm run dev:setup
    ```
 
-5. Start the development server:
+This will:
+- Create the database if it doesn't exist
+- Run all migrations to create tables
+- Seed the database with initial data
+
+## Available Scripts
+
+- `npm run build` - Build the project
+- `npm run start:dev` - Start the server in development mode with hot-reload
+- `npm run start:debug` - Start the server in debug mode
+- `npm run start:prod` - Start the server in production mode
+- `npm run dev:setup` - Set up the development environment (build, migrations, seeding)
+- `npm run db:migrate` - Run pending migrations
+- `npm run db:revert` - Revert the last migration
+- `npm run db:seed` - Seed the database
+- `npm run db:reset` - Reset the database (revert migrations, run migrations, seed)
+- `npm run db:fresh` - Fresh start (revert migrations, run migrations, seed)
+- `npm run db:status` - Show migration status
+- `npm run db:drop` - Drop the database schema
+- `npm run db:sync` - Sync the database schema with entities
+- `npm run dev:clean` - Clean start (drop schema, run setup)
+
+## Database Structure
+
+The database name is configured through the `DB_NAME` environment variable. By default:
+- Development: `hotel_booking_dev`
+- Production: `hotel_booking_prod`
+- Test: `hotel_booking_test`
+
+The database configuration is managed through environment variables and TypeORM configuration, ensuring proper separation between environments.
+
+## API Documentation
+
+When running in development mode, the API documentation is available at:
+```
+http://localhost:5000/api
+```
+
+## Development
+
+1. Start the development server:
    ```bash
    npm run start:dev
    ```
 
+2. The server will be available at `http://localhost:5000`
+
+3. API endpoints will be available at `http://localhost:5000/api`
+
 ## Testing
 
-Run all tests (unit tests in parallel, integration tests sequentially):
+Run the test suite:
 ```bash
 npm test
 ```
 
-Run only unit tests (in parallel):
-```bash
-npm run test:unit
-```
-
-Run only integration tests (sequentially):
-```bash
-npm run test:integration
-```
-
-Run tests with coverage:
-```bash
-npm run test:cov
-```
-
-Run tests in watch mode (useful during development):
+For development with watch mode:
 ```bash
 npm run test:watch
 ```
 
-Note: Integration tests run sequentially to prevent database conflicts, while unit tests run in parallel for faster execution.
+## Production Deployment
 
-## API Documentation
+1. Build the project:
+   ```bash
+   npm run build
+   ```
 
-Once the server is running, visit:
-```
-http://localhost:3000/api
-```
+2. Start the production server:
+   ```bash
+   npm run start:prod
+   ```
 
-## Project Structure
-
-```
-src/
-├── common/           # Common utilities and exceptions
-├── config/          # Configuration files
-├── rooms/           # Room-related modules
-├── bookings/        # Booking-related modules
-├── users/           # User-related modules
-└── main.ts          # Application entry point
-```
-
-## Contributing
-
-1. Create a new branch for your feature
-2. Make your changes
-3. Write/update tests
-4. Submit a pull request
+Make sure to set up the appropriate environment variables for production in `.env.production`.
 
 ## License
 

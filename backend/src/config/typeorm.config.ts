@@ -1,122 +1,95 @@
-import { DataSource } from 'typeorm';
+import { DataSource, DataSourceOptions } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
-import * as path from 'path';
+import { join } from 'path';
 import * as mysql from 'mysql2/promise';
-import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { Logger } from '@nestjs/common';
 
 // Load environment variables from the correct .env file based on NODE_ENV
 const env = process.env.NODE_ENV || 'development';
 config({ path: `.env.${env}` });
 
 const configService = new ConfigService();
-const logger = new Logger('TypeOrmConfig');
 
-async function createDatabaseIfNotExists() {
-  const dbUser = configService.get('DB_USER');
-  const dbPassword = configService.get('DB_PASSWORD');
-  const dbHost = configService.get('DB_HOST');
-  const dbPort = configService.get('DB_PORT', '3306');
-  const dbName = configService.get('DB_NAME');
-  const isTest = configService.get('NODE_ENV') === 'test';
-  const finalDbName = isTest ? `${dbName}_test` : dbName;
+// Get environment
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
-  if (!dbUser || !dbPassword || !dbHost || !dbName) {
-    throw new Error('Missing required database configuration. Please check your .env file.');
-  }
-
-  try {
-    const connection = await mysql.createConnection({
-      host: dbHost,
-      port: parseInt(dbPort, 10),
-      user: dbUser,
-      password: dbPassword,
-    });
-
-    if (isTest) {
-      // Drop test database if it exists
-      await connection.query(`DROP DATABASE IF EXISTS ${finalDbName}`);
-      logger.log(`Dropped test database ${finalDbName}`);
-    }
-
-    // Create fresh database
-    await connection.query(`CREATE DATABASE ${finalDbName}`);
-    await connection.end();
-    logger.log(`Database ${finalDbName} created successfully`);
-  } catch (error) {
-    logger.error('Database connection error:', error);
-    throw error;
-  }
-}
-
-// Create database if it doesn't exist
-createDatabaseIfNotExists().catch(error => {
-  logger.error('Error creating database:', error);
-  process.exit(1);
-});
-
-export const getTypeOrmConfig = async (
-  configService: ConfigService,
-): Promise<TypeOrmModuleOptions> => {
-  const logger = new Logger('TypeOrmConfig');
-  const isTest = configService.get('NODE_ENV') === 'test';
-
-  try {
-    const config: TypeOrmModuleOptions = {
-      type: 'mysql',
-      host: configService.get('DB_HOST'),
-      port: parseInt(configService.get('DB_PORT', '3306'), 10),
-      username: configService.get('DB_USER'),
-      password: configService.get('DB_PASSWORD'),
-      database: isTest ? configService.get('DB_NAME') + '_test' : configService.get('DB_NAME'),
-      entities: [
-        path.join(__dirname, '../users/entities/*.entity{.ts,.js}'),
-        path.join(__dirname, '../rooms/entities/*.entity{.ts,.js}'),
-        path.join(__dirname, '../bookings/entities/*.entity{.ts,.js}'),
-        path.join(__dirname, '../payments/entities/*.entity{.ts,.js}'),
-      ],
-      migrations: [path.join(__dirname, '../database/migrations/*{.ts,.js}')],
-      synchronize: isTest, // Enable synchronize only in test environment
-      logging: false, // Disable logging in test environment
-      dropSchema: isTest, // Drop schema in test environment
-      migrationsRun: !isTest, // Run migrations only in non-test environment
-      extra: {
-        connectionLimit: 10,
-        waitForConnections: true,
-        queueLimit: 0
-      }
-    };
-
-    logger.log(`Database configuration loaded successfully for ${isTest ? 'test' : 'development'} environment`);
-    
-    if (!config.host || !config.username || !config.password || !config.database) {
-      logger.error('Missing required database configuration');
-      throw new Error('Missing required database configuration');
-    }
-
-    return config;
-  } catch (error) {
-    logger.error(`Failed to load database configuration: ${error.message}`);
-    throw error;
-  }
+// Map environment names
+const envMap: Record<string, string> = {
+  development: 'dev',
+  production: 'prod',
+  test: 'test'
 };
 
-export default new DataSource({
+// Get the correct environment name
+const currentEnv = envMap[NODE_ENV] || NODE_ENV;
+
+// Use the database name from environment variables
+const dbName = configService.get('DB_NAME');
+
+// Create base configuration without database
+const baseConfig: DataSourceOptions = {
   type: 'mysql',
   host: configService.get('DB_HOST'),
   port: parseInt(configService.get('DB_PORT', '3306'), 10),
   username: configService.get('DB_USER'),
   password: configService.get('DB_PASSWORD'),
-  database: configService.get('DB_NAME'),
-  entities: [path.join(__dirname, '../**/*.entity{.ts,.js}')],
-  migrations: [path.join(__dirname, '../database/migrations/*{.ts,.js}')],
+  entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
+  migrations: [join(__dirname, '..', 'database', 'migrations', '*.{ts,js}')],
   synchronize: false,
-  logging: configService.get('NODE_ENV') === 'development',
-  driver: require('mysql2'),
-  extra: {
-    connectionLimit: 10,
-    waitForConnections: true,
-    queueLimit: 0
+  logging: false,
+  migrationsRun: true,
+  migrationsTableName: 'migrations',
+  dropSchema: false,
+};
+
+// Function to create database if it doesn't exist
+async function createDatabaseIfNotExists() {
+  const connection = await mysql.createConnection({
+    host: configService.get('DB_HOST'),
+    port: parseInt(configService.get('DB_PORT', '3306'), 10),
+    user: configService.get('DB_USER'),
+    password: configService.get('DB_PASSWORD'),
+    multipleStatements: true,
+    connectTimeout: 10000,
+  });
+
+  try {
+    // Check if database exists
+    const [rows] = await connection.query(`SHOW DATABASES LIKE '${dbName}'`);
+    const databaseExists = Array.isArray(rows) && rows.length > 0;
+
+    if (!databaseExists) {
+      // Create database if it doesn't exist
+      await connection.query(`CREATE DATABASE ${dbName} CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci`);
+      console.log(`[TypeOrmConfig] Database ${dbName} created successfully`);
+    } else {
+      console.log(`[TypeOrmConfig] Database ${dbName} already exists`);
+    }
+  } catch (error) {
+    console.error('Error during database creation:', error);
+    throw error;
+  } finally {
+    await connection.end();
   }
+}
+
+// Create DataSource with database
+const AppDataSource = new DataSource({
+  ...baseConfig,
+  database: dbName
 });
+
+// Only create database if this file is run directly
+if (require.main === module) {
+  createDatabaseIfNotExists()
+    .then(() => {
+      console.log('[TypeOrmConfig] Database setup completed');
+      process.exit(0);
+    })
+    .catch((error) => {
+      console.error('Error during database creation:', error);
+      process.exit(1);
+    });
+}
+
+export { AppDataSource };
