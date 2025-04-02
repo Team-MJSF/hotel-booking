@@ -4,12 +4,10 @@ import * as request from 'supertest';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppModule } from '../../app.module';
-import { User, UserRole } from '../../users/entities/user.entity';
-import { Room } from '../../rooms/entities/room.entity';
-import { Booking } from '../../bookings/entities/booking.entity';
-import { Payment } from '../../payments/entities/payment.entity';
+import { UserRole } from '../../users/entities/user.entity';
 import { DataSource } from 'typeorm';
 import * as path from 'path';
+import { getTypeOrmConfig } from '../../config/typeorm.config';
 
 describe('Auth Flow Integration Tests', () => {
   let app: INestApplication;
@@ -24,31 +22,15 @@ describe('Auth Flow Integration Tests', () => {
         }),
         TypeOrmModule.forRootAsync({
           imports: [ConfigModule],
-          useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => ({
-            type: 'mysql',
-            host: configService.get('DB_HOST'),
-            port: parseInt(configService.get('DB_PORT', '3306'), 10),
-            username: configService.get('DB_USER'),
-            password: configService.get('DB_PASSWORD'),
-            database: configService.get('DB_NAME'),
-            entities: [User, Room, Booking, Payment],
-            synchronize: true,
-            dropSchema: true,
-            logging: false,
-            driver: require('mysql2'),
-            extra: {
-              connectionLimit: 10,
-              waitForConnections: true,
-              queueLimit: 0,
-              dateStrings: true,
-              timezone: 'local',
-              charset: 'utf8mb4'
-            },
-            retryAttempts: 3,
-            retryDelay: 3000,
-            autoLoadEntities: true,
-            keepConnectionAlive: true
-          }),
+          useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
+            const config = await getTypeOrmConfig(configService);
+            return {
+              ...config,
+              synchronize: true,
+              dropSchema: true,
+              logging: false,
+            };
+          },
           inject: [ConfigService],
         }),
         AppModule,

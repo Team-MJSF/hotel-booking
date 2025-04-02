@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
 
 export class CreatePayments1709913600003 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -73,6 +73,23 @@ export class CreatePayments1709913600003 implements MigrationInterface {
       true,
     );
 
+    // Create indexes for payments
+    await queryRunner.createIndex(
+      'payments',
+      new TableIndex({
+        name: 'IDX_PAYMENTS_BOOKING',
+        columnNames: ['booking_id'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'payments',
+      new TableIndex({
+        name: 'IDX_PAYMENTS_STATUS',
+        columnNames: ['status'],
+      }),
+    );
+
     // Add foreign key constraint
     await queryRunner.query(
       'ALTER TABLE `payments` ADD CONSTRAINT `FK_231b42ff1bd554331c084a3617e` FOREIGN KEY (`booking_id`) REFERENCES `bookings`(`booking_id`) ON DELETE CASCADE',
@@ -80,6 +97,16 @@ export class CreatePayments1709913600003 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    const table = await queryRunner.getTable('payments');
+    if (table) {
+      const indices = table.indices.filter(
+        (index) => [
+          'IDX_PAYMENTS_BOOKING',
+          'IDX_PAYMENTS_STATUS'
+        ].includes(index.name),
+      );
+      await Promise.all(indices.map((index) => queryRunner.dropIndex('payments', index)));
+    }
     await queryRunner.query(
       'ALTER TABLE `payments` DROP FOREIGN KEY `FK_231b42ff1bd554331c084a3617e`',
     );
