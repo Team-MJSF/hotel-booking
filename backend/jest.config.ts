@@ -24,7 +24,7 @@ const config: JestConfigWithTsJest = {
     color: 'blue',
   },
   // Enable parallel test execution
-  maxWorkers: '50%',
+  maxWorkers: process.env.TEST_TYPE === 'integration' ? 1 : '50%',
   // Enable caching
   cache: true,
   cacheDirectory: '.jest-cache',
