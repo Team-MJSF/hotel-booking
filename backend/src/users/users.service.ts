@@ -146,7 +146,7 @@ export class UsersService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.usersRepository.delete(id);
+      const result = await this.usersRepository.softDelete(id);
       if (result.affected === 0) {
         throw new ResourceNotFoundException('User', id);
       }

@@ -63,6 +63,12 @@ export class CreateUsers1709913600000 implements MigrationInterface {
             default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
           {
+            name: 'deleted_at',
+            type: 'timestamp',
+            isNullable: true,
+            default: 'NULL',
+          },
+          {
             name: 'createdBy',
             type: 'int',
             isNullable: true,

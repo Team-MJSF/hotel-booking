@@ -25,7 +25,7 @@ describe('UsersService', () => {
     create: jest.fn(),
     save: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
+    softDelete: jest.fn(),
   };
 
   const mockUser: User = {
@@ -239,22 +239,22 @@ describe('UsersService', () => {
 
   describe('remove', () => {
     it('should remove a user', async () => {
-      mockRepository.delete.mockResolvedValue({ affected: 1 });
+      mockRepository.softDelete.mockResolvedValue({ affected: 1 });
 
       await service.remove(1);
 
-      expect(repository.delete).toHaveBeenCalledWith(1);
+      expect(repository.softDelete).toHaveBeenCalledWith(1);
     });
 
     it('should throw ResourceNotFoundException when user not found', async () => {
-      mockRepository.delete.mockResolvedValue({ affected: 0 });
+      mockRepository.softDelete.mockResolvedValue({ affected: 0 });
 
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
     });
 
     it('should throw DatabaseException when repository fails', async () => {
       const error = new Error('Database error');
-      mockRepository.delete.mockRejectedValue(error);
+      mockRepository.softDelete.mockRejectedValue(error);
 
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });

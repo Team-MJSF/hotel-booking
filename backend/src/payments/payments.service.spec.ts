@@ -22,6 +22,7 @@ describe('PaymentsService', () => {
     update: jest.fn(),
     delete: jest.fn(),
     merge: jest.fn(),
+    softDelete: jest.fn(),
   };
 
   const mockBookingsRepository = {
@@ -251,22 +252,22 @@ describe('PaymentsService', () => {
 
   describe('remove', () => {
     it('should remove a payment', async () => {
-      mockPaymentsRepository.delete.mockResolvedValue({ affected: 1 });
+      mockPaymentsRepository.softDelete.mockResolvedValue({ affected: 1 });
 
       await service.remove(1);
 
-      expect(paymentsRepository.delete).toHaveBeenCalledWith({ paymentId: 1 });
+      expect(paymentsRepository.softDelete).toHaveBeenCalledWith({ paymentId: 1 });
     });
 
     it('should throw ResourceNotFoundException when payment not found', async () => {
-      mockPaymentsRepository.delete.mockResolvedValue({ affected: 0 });
+      mockPaymentsRepository.softDelete.mockResolvedValue({ affected: 0 });
 
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
     });
 
     it('should throw DatabaseException when repository fails', async () => {
       const error = new Error('Database error');
-      mockPaymentsRepository.delete.mockRejectedValue(error);
+      mockPaymentsRepository.softDelete.mockRejectedValue(error);
 
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });

@@ -3,12 +3,12 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToOne,
-  CreateDateColumn,
-  UpdateDateColumn,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Booking } from '../../bookings/entities/booking.entity';
+import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum Currency {
   USD = 'USD',
@@ -30,7 +30,9 @@ export enum PaymentMethod {
 }
 
 @Entity('payments')
-export class Payment {
+@Index('IDX_PAYMENTS_BOOKING', ['booking'])
+@Index('IDX_PAYMENTS_STATUS', ['status'])
+export class Payment extends BaseEntity {
   @PrimaryGeneratedColumn({ name: 'payment_id' })
   @ApiProperty({ description: 'The unique identifier of the payment' })
     paymentId: number;
@@ -81,12 +83,4 @@ export class Payment {
   @Column({ name: 'refund_reason', nullable: true })
   @ApiProperty({ description: 'The reason for the refund if applicable', required: false })
     refundReason?: string;
-
-  @CreateDateColumn({ name: 'created_at' })
-  @ApiProperty({ description: 'The date when the payment was created' })
-    createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  @ApiProperty({ description: 'The date when the payment was last updated' })
-    updatedAt: Date;
 }
