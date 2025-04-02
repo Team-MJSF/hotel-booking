@@ -174,7 +174,7 @@ describe('Payment Flow Integration Tests', () => {
       // Verify user exists before creating booking
       const verifyUserResponse = await request(app.getHttpServer())
         .get(`/users/${userId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
       expect(verifyUserResponse.body).toBeDefined();
