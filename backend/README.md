@@ -83,10 +83,11 @@ A NestJS-based backend for a hotel booking system, designed for a school project
 
 - NestJS - Web framework
 - TypeORM - Database ORM
-- PostgreSQL - Database
+- MySQL - Database
 - JWT - Authentication
 - Class Validator - Input validation
 - Swagger - API documentation
+- Jest - Testing framework
 
 ## Getting Started
 
@@ -100,53 +101,74 @@ A NestJS-based backend for a hotel booking system, designed for a school project
    cp .env.example .env
    ```
 
-3. Update the `.env` file with your database credentials
-
-4. Run migrations:
-   ```bash
-   npm run migration:run
+3. Configure your environment variables in `.env`:
    ```
+   DB_HOST=localhost
+   DB_PORT=3306
+   DB_USER=your_username
+   DB_PASSWORD=your_password
+   DB_NAME=hotel_booking_dev
+   JWT_SECRET=your_jwt_secret
+   ```
+
+4. Set up the database and run migrations:
+   ```bash
+   npm run dev:setup
+   ```
+   This will:
+   - Create the database if it doesn't exist
+   - Run all migrations
+   - Seed the database with initial data
 
 5. Start the development server:
    ```bash
    npm run start:dev
    ```
 
-## Testing
+## Available Scripts
 
-Run all tests (unit tests in parallel, integration tests sequentially):
-```bash
-npm test
-```
+### Development
+- `npm run dev:setup` - Build the project, create database, run migrations, and seed data
+- `npm run dev:reset` - Reset the database (revert migrations, run migrations again, and seed data)
+- `npm run dev:clean` - Clean the database (revert all migrations)
+- `npm run start:dev` - Start the development server with hot-reload
 
-Run only unit tests (in parallel):
-```bash
-npm run test:unit
-```
+### Database Management
+- `npm run db:create` - Create the database if it doesn't exist
+- `npm run db:migrate` - Run pending migrations
+- `npm run db:revert` - Revert the last migration
+- `npm run db:seed` - Seed the database with initial data
+- `npm run db:reset` - Run migrations and seed data
+- `npm run db:fresh` - Revert all migrations, run migrations again, and seed data
 
-Run only integration tests (sequentially):
-```bash
-npm run test:integration
-```
+### Testing
+- `npm run test:setup` - Set up the test database
+- `npm run test:reset` - Reset the test database
+- `npm run test` - Run all tests
+- `npm run test:unit` - Run unit tests
+- `npm run test:integration` - Run integration tests
+- `npm run test:watch` - Run tests in watch mode
+- `npm run test:cov` - Run tests with coverage report
 
-Run tests with coverage:
-```bash
-npm run test:cov
-```
+### Staging
+- `npm run staging:setup` - Set up the staging database
+- `npm run staging:reset` - Reset the staging database
+- `npm run start:staging` - Start the staging server
 
-Run tests in watch mode (useful during development):
-```bash
-npm run test:watch
-```
+### Production
+- `npm run start:prod` - Start the production server
 
-Note: Integration tests run sequentially to prevent database conflicts, while unit tests run in parallel for faster execution.
+## Database Configuration
 
-## API Documentation
+The application uses MySQL as the database. The database configuration is managed through environment variables and TypeORM. The system supports different environments (development, test, staging, production) with separate database instances.
 
-Once the server is running, visit:
-```
-http://localhost:3000/api
-```
+### Database Features
+- Automatic database creation
+- Migration management
+- Seeding support
+- Environment-specific configurations
+- Connection pooling
+- Transaction support
 
 ## Project Structure
 

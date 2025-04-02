@@ -40,10 +40,10 @@ async function createDatabaseIfNotExists() {
       logger.log(`Dropped test database ${finalDbName}`);
     }
 
-    // Create fresh database
-    await connection.query(`CREATE DATABASE ${finalDbName}`);
+    // Create database if it doesn't exist
+    await connection.query(`CREATE DATABASE IF NOT EXISTS ${finalDbName}`);
     await connection.end();
-    logger.log(`Database ${finalDbName} created successfully`);
+    logger.log(`Database ${finalDbName} is ready`);
   } catch (error) {
     logger.error('Database connection error:', error);
     throw error;
