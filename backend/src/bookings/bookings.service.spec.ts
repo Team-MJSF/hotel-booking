@@ -21,7 +21,7 @@ describe('BookingsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     merge: jest.fn(),
-    delete: jest.fn(),
+    softDelete: jest.fn(),
   };
 
   const mockUserRepository = {
@@ -282,22 +282,22 @@ describe('BookingsService', () => {
 
   describe('remove', () => {
     it('should remove a booking', async () => {
-      mockBookingRepository.delete.mockResolvedValue({ affected: 1 });
+      mockBookingRepository.softDelete.mockResolvedValue({ affected: 1 });
 
       await service.remove(1);
 
-      expect(bookingRepository.delete).toHaveBeenCalledWith({ bookingId: 1 });
+      expect(bookingRepository.softDelete).toHaveBeenCalledWith({ bookingId: 1 });
     });
 
     it('should throw ResourceNotFoundException when booking not found', async () => {
-      mockBookingRepository.delete.mockResolvedValue({ affected: 0 });
+      mockBookingRepository.softDelete.mockResolvedValue({ affected: 0 });
 
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
     });
 
     it('should throw DatabaseException when repository fails', async () => {
       const error = new Error('Database error');
-      mockBookingRepository.delete.mockRejectedValue(error);
+      mockBookingRepository.softDelete.mockRejectedValue(error);
 
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });

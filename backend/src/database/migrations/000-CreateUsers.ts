@@ -63,6 +63,12 @@ export class CreateUsers1709913600000 implements MigrationInterface {
             default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
           {
+            name: 'deleted_at',
+            type: 'timestamp',
+            isNullable: true,
+            default: 'NULL',
+          },
+          {
             name: 'createdBy',
             type: 'int',
             isNullable: true,
@@ -81,6 +87,16 @@ export class CreateUsers1709913600000 implements MigrationInterface {
       }),
     );
 
+    // Create index for email
+    await queryRunner.createIndex(
+      'users',
+      new TableIndex({
+        name: 'IDX_USERS_EMAIL',
+        columnNames: ['email'],
+        isUnique: true,
+      }),
+    );
+
     await queryRunner.query(
       'ALTER TABLE `users` ADD CONSTRAINT `FK_Users_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `users`(`user_id`) ON DELETE SET NULL',
     );
@@ -90,7 +106,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
     const table = await queryRunner.getTable('users');
     if (table) {
       const indices = table.indices.filter(
-        (index) => index.name === 'IDX_USERS_ROLE',
+        (index) => index.name === 'IDX_USERS_ROLE' || index.name === 'IDX_USERS_EMAIL',
       );
       await Promise.all(indices.map((index) => queryRunner.dropIndex('users', index)));
     }

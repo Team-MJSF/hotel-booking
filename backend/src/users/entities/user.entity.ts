@@ -3,11 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -15,7 +15,8 @@ export enum UserRole {
 }
 
 @Entity('users')
-export class User {
+@Index('IDX_USERS_EMAIL', ['email'], { unique: true })
+export class User extends BaseEntity {
   @PrimaryGeneratedColumn({ name: 'user_id' })
   @ApiProperty({ description: 'The unique identifier of the user' })
     id: number;
@@ -51,12 +52,4 @@ export class User {
   @OneToMany(() => Booking, (booking) => booking.user)
   @ApiProperty({ description: 'The bookings made by the user' })
     bookings: Booking[];
-
-  @CreateDateColumn({ name: 'created_at' })
-  @ApiProperty({ description: 'The date when the user was created' })
-    createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  @ApiProperty({ description: 'The date when the user was last updated' })
-    updatedAt: Date;
 }

@@ -141,7 +141,7 @@ export class PaymentsService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.paymentsRepository.delete({ paymentId: id });
+      const result = await this.paymentsRepository.softDelete({ paymentId: id });
       if (result.affected === 0) {
         throw new ResourceNotFoundException('Payment', id);
       }

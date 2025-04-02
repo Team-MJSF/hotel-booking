@@ -27,7 +27,7 @@ describe('RoomsService', () => {
     create: jest.fn(),
     save: jest.fn(),
     update: jest.fn(),
-    delete: jest.fn(),
+    softDelete: jest.fn(),
     createQueryBuilder: jest.fn(),
   };
 
@@ -183,28 +183,135 @@ describe('RoomsService', () => {
 
   describe('remove', () => {
     it('should remove a room', async () => {
-      mockRoomsRepository.delete.mockResolvedValue({ affected: 1 });
+      mockRoomsRepository.softDelete.mockResolvedValue({ affected: 1 });
 
       await service.remove(1);
 
-      expect(roomsRepository.delete).toHaveBeenCalledWith(1);
+      expect(roomsRepository.softDelete).toHaveBeenCalledWith(1);
     });
 
     it('should throw ResourceNotFoundException when room not found', async () => {
-      mockRoomsRepository.delete.mockResolvedValue({ affected: 0 });
+      mockRoomsRepository.softDelete.mockResolvedValue({ affected: 0 });
 
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
     });
 
     it('should throw DatabaseException when repository fails', async () => {
       const error = new Error('Database error');
-      mockRoomsRepository.delete.mockRejectedValue(error);
+      mockRoomsRepository.softDelete.mockRejectedValue(error);
 
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('searchAvailableRooms', () => {
+    const mockRooms = [
+      { ...mockRoom, type: RoomType.DELUXE, pricePerNight: 200, availabilityStatus: AvailabilityStatus.AVAILABLE },
+      { ...mockRoom, type: RoomType.DELUXE, pricePerNight: 150, availabilityStatus: AvailabilityStatus.AVAILABLE },
+      { ...mockRoom, type: RoomType.SUITE, pricePerNight: 300, availabilityStatus: AvailabilityStatus.AVAILABLE },
+      { ...mockRoom, type: RoomType.DELUXE, pricePerNight: 250, availabilityStatus: AvailabilityStatus.OCCUPIED },
+    ];
+
+    it('should filter rooms by type and price range', async () => {
+      const searchDto: SearchRoomsDto = {
+        roomType: RoomType.DELUXE,
+        minPrice: 150,
+        maxPrice: 250,
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockRooms.filter(room => 
+          room.type === RoomType.DELUXE && 
+          room.pricePerNight >= 150 && 
+          room.pricePerNight <= 250 &&
+          room.availabilityStatus === AvailabilityStatus.AVAILABLE
+        )),
+      });
+
+      const result = await service.searchAvailableRooms(searchDto);
+
+      expect(result).toHaveLength(2);
+      expect(result.every(room => room.type === RoomType.DELUXE)).toBe(true);
+      expect(result.every(room => room.pricePerNight >= 150 && room.pricePerNight <= 250)).toBe(true);
+      expect(result.every(room => room.availabilityStatus === AvailabilityStatus.AVAILABLE)).toBe(true);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    it('should filter rooms by type and availability', async () => {
+      const searchDto: SearchRoomsDto = {
+        roomType: RoomType.DELUXE,
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(mockRooms.filter(room => 
+          room.type === RoomType.DELUXE && 
+          room.availabilityStatus === AvailabilityStatus.AVAILABLE
+        )),
+      });
+
+      const result = await service.searchAvailableRooms(searchDto);
+
+      expect(result).toHaveLength(2);
+      expect(result.every(room => room.type === RoomType.DELUXE)).toBe(true);
+      expect(result.every(room => room.availabilityStatus === AvailabilityStatus.AVAILABLE)).toBe(true);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    it('should sort rooms by price within type', async () => {
+      const searchDto: SearchRoomsDto = {
+        roomType: RoomType.DELUXE,
+        sortBy: SortField.PRICE,
+        sortOrder: SortOrder.ASC,
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(
+          mockRooms
+            .filter(room => room.type === RoomType.DELUXE && room.availabilityStatus === AvailabilityStatus.AVAILABLE)
+            .sort((a, b) => a.pricePerNight - b.pricePerNight)
+        ),
+      });
+
+      const result = await service.searchAvailableRooms(searchDto);
+
+      expect(result).toHaveLength(2);
+      expect(result[0].pricePerNight).toBe(150);
+      expect(result[1].pricePerNight).toBe(200);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    it('should throw DatabaseException when query fails', async () => {
+      const searchDto: SearchRoomsDto = {
+        roomType: RoomType.DELUXE,
+      };
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        leftJoin: jest.fn().mockReturnThis(),
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        orderBy: jest.fn().mockReturnThis(),
+        distinct: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockRejectedValue(new Error('Database error')),
+      });
+
+      await expect(service.searchAvailableRooms(searchDto)).rejects.toThrow(DatabaseException);
+    });
+
     it('should return available rooms with all filters', async () => {
       const searchDto: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
@@ -483,6 +590,181 @@ describe('RoomsService', () => {
         amenity1: JSON.stringify('tv'),
       });
       expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.maxGuests', SortOrder.DESC);
+    });
+  });
+
+  describe('findByRoomNumber', () => {
+    it('should find a room by room number', async () => {
+      const roomNumber = '101';
+      const mockRoomWithNumber = { ...mockRoom, roomNumber };
+
+      mockRoomsRepository.findOne.mockResolvedValue(mockRoomWithNumber);
+
+      const result = await service.findByRoomNumber(roomNumber);
+
+      expect(result).toEqual(mockRoomWithNumber);
+      expect(mockRoomsRepository.findOne).toHaveBeenCalledWith({
+        where: { roomNumber },
+      });
+    });
+
+    it('should return null when room is not found', async () => {
+      const roomNumber = '999';
+      mockRoomsRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.findByRoomNumber(roomNumber);
+
+      expect(result).toBeNull();
+      expect(mockRoomsRepository.findOne).toHaveBeenCalledWith({
+        where: { roomNumber },
+      });
+    });
+
+    it('should throw DatabaseException when query fails', async () => {
+      const roomNumber = '101';
+      mockRoomsRepository.findOne.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.findByRoomNumber(roomNumber)).rejects.toThrow(DatabaseException);
+    });
+  });
+
+  describe('searchRoomsByDescription', () => {
+    const mockRooms = [
+      { ...mockRoom, description: 'Luxury suite with ocean view' },
+      { ...mockRoom, description: 'Standard room with city view' },
+      { ...mockRoom, description: 'Deluxe room with mountain view' },
+    ];
+
+    it('should find rooms by description text', async () => {
+      const searchText = 'ocean';
+      const expectedRooms = mockRooms.filter(room => 
+        room.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedRooms),
+      });
+
+      const result = await service.searchRoomsByDescription(searchText);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].description).toContain('ocean');
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    it('should return empty array when no rooms match description', async () => {
+      const searchText = 'nonexistent';
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue([]),
+      });
+
+      const result = await service.searchRoomsByDescription(searchText);
+
+      expect(result).toHaveLength(0);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+
+    it('should throw DatabaseException when query fails', async () => {
+      const searchText = 'ocean';
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockRejectedValue(new Error('Database error')),
+      });
+
+      await expect(service.searchRoomsByDescription(searchText)).rejects.toThrow(DatabaseException);
+    });
+
+    it('should handle case-insensitive search', async () => {
+      const searchText = 'OCEAN';
+      const expectedRooms = mockRooms.filter(room => 
+        room.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedRooms),
+      });
+
+      const result = await service.searchRoomsByDescription(searchText);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].description).toContain('ocean');
+    });
+
+    it('should handle partial word matches', async () => {
+      const searchText = 'lux';
+      const expectedRooms = mockRooms.filter(room => 
+        room.description.toLowerCase().includes(searchText.toLowerCase())
+      );
+
+      mockRoomsRepository.createQueryBuilder.mockReturnValue({
+        where: jest.fn().mockReturnThis(),
+        andWhere: jest.fn().mockReturnThis(),
+        getMany: jest.fn().mockResolvedValue(expectedRooms),
+      });
+
+      const result = await service.searchRoomsByDescription(searchText);
+
+      expect(result).toHaveLength(2);
+      expect(result.some(room => room.description.includes('Luxury'))).toBe(true);
+      expect(result.some(room => room.description.includes('Deluxe'))).toBe(true);
+      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+    });
+  });
+
+  describe('findByRoomNumberAndAvailability', () => {
+    const mockRooms = [
+      { ...mockRoom, roomNumber: '101', availabilityStatus: AvailabilityStatus.AVAILABLE },
+      { ...mockRoom, roomNumber: '102', availabilityStatus: AvailabilityStatus.OCCUPIED },
+      { ...mockRoom, roomNumber: '103', availabilityStatus: AvailabilityStatus.AVAILABLE },
+    ];
+
+    it('should find available room by room number', async () => {
+      const roomNumber = '101';
+      const expectedRoom = mockRooms.find(room => 
+        room.roomNumber === roomNumber && 
+        room.availabilityStatus === AvailabilityStatus.AVAILABLE
+      );
+
+      mockRoomsRepository.findOne.mockResolvedValue(expectedRoom);
+
+      const result = await service.findByRoomNumberAndAvailability(roomNumber);
+
+      expect(result).toEqual(expectedRoom);
+      expect(mockRoomsRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          roomNumber,
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+        },
+      });
+    });
+
+    it('should return null when room is not available', async () => {
+      const roomNumber = '102';
+      mockRoomsRepository.findOne.mockResolvedValue(null);
+
+      const result = await service.findByRoomNumberAndAvailability(roomNumber);
+
+      expect(result).toBeNull();
+      expect(mockRoomsRepository.findOne).toHaveBeenCalledWith({
+        where: {
+          roomNumber,
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+        },
+      });
+    });
+
+    it('should throw DatabaseException when query fails', async () => {
+      const roomNumber = '101';
+      mockRoomsRepository.findOne.mockRejectedValue(new Error('Database error'));
+
+      await expect(service.findByRoomNumberAndAvailability(roomNumber)).rejects.toThrow(DatabaseException);
     });
   });
 }); 

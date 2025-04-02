@@ -109,7 +109,7 @@ export class RoomsService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.roomsRepository.delete(id);
+      const result = await this.roomsRepository.softDelete(id);
       if (result.affected === 0) {
         throw new ResourceNotFoundException('Room', id);
       }
@@ -254,6 +254,42 @@ export class RoomsService {
       return await query.getMany();
     } catch (error) {
       throw new DatabaseException('Failed to fetch available rooms', error);
+    }
+  }
+
+  async findByRoomNumber(roomNumber: string): Promise<Room | null> {
+    try {
+      return await this.roomsRepository.findOne({
+        where: { roomNumber },
+      });
+    } catch (error) {
+      throw new DatabaseException('Failed to find room by number');
+    }
+  }
+
+  async searchRoomsByDescription(searchText: string): Promise<Room[]> {
+    try {
+      return await this.roomsRepository
+        .createQueryBuilder('room')
+        .where('LOWER(room.description) LIKE LOWER(:searchText)', {
+          searchText: `%${searchText}%`,
+        })
+        .getMany();
+    } catch (error) {
+      throw new DatabaseException('Failed to search rooms by description');
+    }
+  }
+
+  async findByRoomNumberAndAvailability(roomNumber: string): Promise<Room | null> {
+    try {
+      return await this.roomsRepository.findOne({
+        where: {
+          roomNumber,
+          availabilityStatus: AvailabilityStatus.AVAILABLE,
+        },
+      });
+    } catch (error) {
+      throw new DatabaseException('Failed to find available room by number');
     }
   }
 }

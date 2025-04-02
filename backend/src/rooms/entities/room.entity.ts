@@ -3,11 +3,11 @@ import {
   PrimaryGeneratedColumn,
   Column,
   OneToMany,
-  CreateDateColumn,
-  UpdateDateColumn,
+  Index,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { ApiProperty } from '@nestjs/swagger';
+import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum RoomType {
   SINGLE = 'single',
@@ -37,7 +37,15 @@ export interface RoomPhoto {
 }
 
 @Entity('rooms')
-export class Room {
+@Index('IDX_ROOMS_TYPE', ['type'])
+@Index('IDX_ROOMS_PRICE', ['pricePerNight'])
+@Index('IDX_ROOMS_MAX_GUESTS', ['maxGuests'])
+@Index('IDX_ROOMS_AVAILABILITY', ['availabilityStatus'])
+@Index('IDX_ROOMS_TYPE_PRICE', ['type', 'pricePerNight'])
+@Index('IDX_ROOMS_TYPE_AVAILABILITY', ['type', 'availabilityStatus'])
+@Index('IDX_ROOMS_NUMBER', ['roomNumber'])
+@Index('IDX_ROOMS_DESCRIPTION', ['description'], { fulltext: true })
+export class Room extends BaseEntity {
   @PrimaryGeneratedColumn({ name: 'room_id' })
   @ApiProperty({ description: 'The unique identifier of the room' })
     id: number;
@@ -99,19 +107,11 @@ export class Room {
   })
   @ApiProperty({
     description: 'The current availability status of the room',
-    enum: AvailabilityStatus,
+    enum: AvailabilityStatus
   })
     availabilityStatus: AvailabilityStatus;
 
   @OneToMany(() => Booking, (booking) => booking.room)
   @ApiProperty({ description: 'The bookings associated with this room' })
     bookings: Booking[];
-
-  @CreateDateColumn({ name: 'created_at' })
-  @ApiProperty({ description: 'The date when the room was created' })
-    createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  @ApiProperty({ description: 'The date when the room was last updated' })
-    updatedAt: Date;
 }

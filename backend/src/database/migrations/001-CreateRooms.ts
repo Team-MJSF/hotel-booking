@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
 
 export class CreateRooms1709913600001 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -64,13 +64,100 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
           },
+          {
+            name: 'deleted_at',
+            type: 'timestamp',
+            isNullable: true,
+          },
         ],
       }),
       true,
     );
+
+    // Create indexes for rooms
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_TYPE',
+        columnNames: ['room_type'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_PRICE',
+        columnNames: ['price_per_night'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_MAX_GUESTS',
+        columnNames: ['max_guests'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_AVAILABILITY',
+        columnNames: ['availability_status'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_TYPE_PRICE',
+        columnNames: ['room_type', 'price_per_night'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_TYPE_AVAILABILITY',
+        columnNames: ['room_type', 'availability_status'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_NUMBER',
+        columnNames: ['room_number'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'rooms',
+      new TableIndex({
+        name: 'IDX_ROOMS_DESCRIPTION',
+        columnNames: ['description'],
+        isFulltext: true,
+      }),
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
+    const table = await queryRunner.getTable('rooms');
+    if (table) {
+      const indices = table.indices.filter(
+        (index) => [
+          'IDX_ROOMS_TYPE',
+          'IDX_ROOMS_PRICE',
+          'IDX_ROOMS_MAX_GUESTS',
+          'IDX_ROOMS_AVAILABILITY',
+          'IDX_ROOMS_TYPE_PRICE',
+          'IDX_ROOMS_TYPE_AVAILABILITY',
+          'IDX_ROOMS_NUMBER',
+          'IDX_ROOMS_DESCRIPTION'
+        ].includes(index.name),
+      );
+      await Promise.all(indices.map((index) => queryRunner.dropIndex('rooms', index)));
+    }
     await queryRunner.dropTable('rooms');
   }
 }

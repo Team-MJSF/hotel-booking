@@ -178,7 +178,7 @@ export class BookingsService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.bookingsRepository.delete({ bookingId: id });
+      const result = await this.bookingsRepository.softDelete({ bookingId: id });
       if (result.affected === 0) {
         throw new ResourceNotFoundException('Booking', id);
       }

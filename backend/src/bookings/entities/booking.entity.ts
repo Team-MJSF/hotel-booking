@@ -4,14 +4,14 @@ import {
   Column,
   ManyToOne,
   OneToOne,
-  CreateDateColumn,
-  UpdateDateColumn,
   JoinColumn,
+  Index,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { User } from '../../users/entities/user.entity';
 import { Room } from '../../rooms/entities/room.entity';
 import { Payment } from '../../payments/entities/payment.entity';
+import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum BookingStatus {
   PENDING = 'pending',
@@ -21,7 +21,12 @@ export enum BookingStatus {
 }
 
 @Entity('bookings')
-export class Booking {
+@Index('IDX_BOOKINGS_DATES', ['checkInDate', 'checkOutDate'])
+@Index('IDX_BOOKINGS_STATUS', ['status'])
+@Index('IDX_BOOKINGS_USER_STATUS', ['user', 'status'])
+@Index('IDX_BOOKINGS_ROOM_STATUS', ['room', 'status'])
+@Index('IDX_BOOKINGS_ACTIVE', ['status'])
+export class Booking extends BaseEntity {
   @ApiProperty({ description: 'The unique identifier of the booking' })
   @PrimaryGeneratedColumn({ name: 'booking_id' })
     bookingId: number;
@@ -68,12 +73,4 @@ export class Booking {
   @ApiProperty({ description: 'The payment associated with this booking' })
   @OneToOne(() => Payment, (payment) => payment.booking)
     payment: Payment;
-
-  @ApiProperty({ description: 'The date when the booking was created' })
-  @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
-
-  @ApiProperty({ description: 'The date when the booking was last updated' })
-  @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
 }
