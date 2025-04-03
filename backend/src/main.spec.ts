@@ -64,6 +64,7 @@ describe('Bootstrap', () => {
       useGlobalPipes: jest.fn().mockReturnThis(),
       useGlobalFilters: jest.fn().mockReturnThis(),
       listen: jest.fn().mockResolvedValue(undefined),
+      use: jest.fn().mockReturnThis(),
     };
 
     // Setup NestFactory mock
