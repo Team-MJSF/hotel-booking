@@ -9,6 +9,9 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import { BookingsService } from '../bookings/bookings.service';
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('PaymentsService', () => {
   let service: PaymentsService;
   let paymentsRepository: Repository<Payment>;
@@ -87,70 +90,69 @@ describe('PaymentsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of payments', async () => {
+    it('should handle all findAll scenarios', async () => {
+      // Test successful retrieval
       const expectedPayments = [mockPayment];
-      mockPaymentsRepository.find.mockResolvedValue(expectedPayments);
-
+      mockPaymentsRepository.find.mockResolvedValueOnce(expectedPayments);
       const result = await service.findAll();
-
       expect(result).toEqual(expectedPayments);
       expect(paymentsRepository.find).toHaveBeenCalledWith({
         relations: ['booking'],
       });
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test empty result
+      mockPaymentsRepository.find.mockResolvedValueOnce([]);
+      const emptyResult = await service.findAll();
+      expect(emptyResult).toEqual([]);
+      expect(paymentsRepository.find).toHaveBeenCalledWith({
+        relations: ['booking'],
+      });
+
+      // Test database error
       const error = new Error('Database error');
-      mockPaymentsRepository.find.mockRejectedValue(error);
-
+      mockPaymentsRepository.find.mockRejectedValueOnce(error);
       await expect(service.findAll()).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('findOne', () => {
-    it('should return a payment by id', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-
+    it('should handle all findOne scenarios', async () => {
+      // Test successful retrieval
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
       const result = await service.findOne(1);
-
       expect(result).toEqual(mockPayment);
       expect(paymentsRepository.findOne).toHaveBeenCalledWith({
         where: { paymentId: 1 },
         relations: ['booking'],
       });
-    });
 
-    it('should throw ResourceNotFoundException when payment not found', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(null);
-
+      // Test not found error
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.findOne(1)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test database error
       const error = new Error('Database error');
-      mockPaymentsRepository.findOne.mockRejectedValue(error);
-
+      mockPaymentsRepository.findOne.mockRejectedValueOnce(error);
       await expect(service.findOne(1)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('create', () => {
-    const createPaymentDto: CreatePaymentDto = {
-      bookingId: 1,
-      amount: 200,
-      currency: Currency.USD,
-      paymentMethod: PaymentMethod.CREDIT_CARD,
-      transactionId: 'txn_123',
-      status: PaymentStatus.PENDING,
-    };
+    it('should handle all create scenarios', async () => {
+      const createPaymentDto: CreatePaymentDto = {
+        bookingId: 1,
+        amount: 200,
+        currency: Currency.USD,
+        paymentMethod: PaymentMethod.CREDIT_CARD,
+        transactionId: 'txn_123',
+        status: PaymentStatus.PENDING,
+      };
 
-    it('should create a new payment', async () => {
-      mockBookingsRepository.findOne.mockResolvedValue(mockBooking);
-      mockPaymentsRepository.create.mockReturnValue(mockPayment);
-      mockPaymentsRepository.save.mockResolvedValue(mockPayment);
-
+      // Test successful creation
+      mockBookingsRepository.findOne.mockResolvedValueOnce(mockBooking);
+      mockPaymentsRepository.create.mockReturnValueOnce(mockPayment);
+      mockPaymentsRepository.save.mockResolvedValueOnce(mockPayment);
       const result = await service.create(createPaymentDto);
-
       expect(result).toEqual(mockPayment);
       expect(bookingsRepository.findOne).toHaveBeenCalledWith({
         where: { bookingId: createPaymentDto.bookingId },
@@ -161,52 +163,45 @@ describe('PaymentsService', () => {
         booking: mockBooking,
       });
       expect(paymentsRepository.save).toHaveBeenCalled();
-    });
 
-    it('should throw ResourceNotFoundException when booking not found', async () => {
-      mockBookingsRepository.findOne.mockResolvedValue(null);
-
+      // Test booking not found error
+      mockBookingsRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.create(createPaymentDto)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when payment already exists', async () => {
-      mockBookingsRepository.findOne.mockResolvedValue({
+      // Test payment already exists error
+      mockBookingsRepository.findOne.mockResolvedValueOnce({
         ...mockBooking,
         payment: mockPayment,
       });
-
       await expect(service.create(createPaymentDto)).rejects.toThrow(DatabaseException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test database error
       const error = new Error('Database error');
-      mockBookingsRepository.findOne.mockResolvedValue(mockBooking);
-      mockPaymentsRepository.create.mockReturnValue(mockPayment);
-      mockPaymentsRepository.save.mockRejectedValue(error);
-
+      mockBookingsRepository.findOne.mockResolvedValueOnce(mockBooking);
+      mockPaymentsRepository.create.mockReturnValueOnce(mockPayment);
+      mockPaymentsRepository.save.mockRejectedValueOnce(error);
       await expect(service.create(createPaymentDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('update', () => {
-    const updatePaymentDto: UpdatePaymentDto = {
-      amount: 250,
-      status: PaymentStatus.COMPLETED,
-    };
+    it('should handle all update scenarios', async () => {
+      const updatePaymentDto: UpdatePaymentDto = {
+        amount: 250,
+        status: PaymentStatus.COMPLETED,
+      };
 
-    it('should update a payment', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-      mockPaymentsRepository.merge.mockReturnValue({
+      // Test successful update
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockPaymentsRepository.merge.mockReturnValueOnce({
         ...mockPayment,
         ...updatePaymentDto,
       });
-      mockPaymentsRepository.save.mockResolvedValue({
+      mockPaymentsRepository.save.mockResolvedValueOnce({
         ...mockPayment,
         ...updatePaymentDto,
       });
-
       const result = await service.update(1, updatePaymentDto);
-
       expect(result).toEqual({
         ...mockPayment,
         ...updatePaymentDto,
@@ -217,102 +212,84 @@ describe('PaymentsService', () => {
       });
       expect(paymentsRepository.merge).toHaveBeenCalled();
       expect(paymentsRepository.save).toHaveBeenCalled();
-    });
 
-    it('should throw ResourceNotFoundException when payment not found', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(null);
-
+      // Test payment not found error
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.update(1, updatePaymentDto)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw ResourceNotFoundException when new booking not found', async () => {
+      // Test new booking not found error
       const updateWithNewBooking = {
         ...updatePaymentDto,
         bookingId: 2,
       };
-
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-      mockBookingsRepository.findOne.mockResolvedValue(null);
-
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockBookingsRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.update(1, updateWithNewBooking)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test database error
       const error = new Error('Database error');
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-      mockPaymentsRepository.merge.mockReturnValue({
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockPaymentsRepository.merge.mockReturnValueOnce({
         ...mockPayment,
         ...updatePaymentDto,
       });
-      mockPaymentsRepository.save.mockRejectedValue(error);
-
+      mockPaymentsRepository.save.mockRejectedValueOnce(error);
       await expect(service.update(1, updatePaymentDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('remove', () => {
-    it('should remove a payment', async () => {
-      mockPaymentsRepository.softDelete.mockResolvedValue({ affected: 1 });
-
+    it('should handle all remove scenarios', async () => {
+      // Test successful removal
+      mockPaymentsRepository.softDelete.mockResolvedValueOnce({ affected: 1 });
       await service.remove(1);
-
       expect(paymentsRepository.softDelete).toHaveBeenCalledWith({ paymentId: 1 });
-    });
 
-    it('should throw ResourceNotFoundException when payment not found', async () => {
-      mockPaymentsRepository.softDelete.mockResolvedValue({ affected: 0 });
-
+      // Test not found error
+      mockPaymentsRepository.softDelete.mockResolvedValueOnce({ affected: 0 });
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test database error
       const error = new Error('Database error');
-      mockPaymentsRepository.softDelete.mockRejectedValue(error);
-
+      mockPaymentsRepository.softDelete.mockRejectedValueOnce(error);
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('findByBookingId', () => {
-    it('should return a payment by booking id', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-
+    it('should handle all findByBookingId scenarios', async () => {
+      // Test successful retrieval
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
       const result = await service.findByBookingId(1);
-
       expect(result).toEqual(mockPayment);
       expect(paymentsRepository.findOne).toHaveBeenCalledWith({
         where: { booking: { bookingId: 1 } },
         relations: ['booking'],
       });
-    });
 
-    it('should throw ResourceNotFoundException when payment not found', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(null);
-
+      // Test not found error
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.findByBookingId(1)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test database error
       const error = new Error('Database error');
-      mockPaymentsRepository.findOne.mockRejectedValue(error);
-
+      mockPaymentsRepository.findOne.mockRejectedValueOnce(error);
       await expect(service.findByBookingId(1)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('processRefund', () => {
-    const refundReason = 'Customer requested refund';
+    it('should handle all processRefund scenarios', async () => {
+      const refundReason = 'Customer requested refund';
 
-    it('should process a refund', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-      mockPaymentsRepository.save.mockResolvedValue({
+      // Test successful refund
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockPaymentsRepository.save.mockResolvedValueOnce({
         ...mockPayment,
         status: PaymentStatus.REFUNDED,
         refundReason,
       });
-
       const result = await service.processRefund(1, refundReason);
-
       expect(result).toEqual({
         ...mockPayment,
         status: PaymentStatus.REFUNDED,
@@ -323,20 +300,47 @@ describe('PaymentsService', () => {
         relations: ['booking'],
       });
       expect(paymentsRepository.save).toHaveBeenCalled();
-    });
 
-    it('should throw ResourceNotFoundException when payment not found', async () => {
-      mockPaymentsRepository.findOne.mockResolvedValue(null);
-
+      // Test not found error
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.processRefund(1, refundReason)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Test database error
       const error = new Error('Database error');
-      mockPaymentsRepository.findOne.mockResolvedValue(mockPayment);
-      mockPaymentsRepository.save.mockRejectedValue(error);
-
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockPaymentsRepository.save.mockRejectedValueOnce(error);
       await expect(service.processRefund(1, refundReason)).rejects.toThrow(DatabaseException);
+    });
+  });
+
+  describe('updatePaymentStatus', () => {
+    it('should handle all updatePaymentStatus scenarios', async () => {
+      // Test successful status update
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockPaymentsRepository.save.mockResolvedValueOnce({
+        ...mockPayment,
+        status: PaymentStatus.COMPLETED,
+      });
+      const result = await service.updatePaymentStatus(1, PaymentStatus.COMPLETED);
+      expect(result).toEqual({
+        ...mockPayment,
+        status: PaymentStatus.COMPLETED,
+      });
+      expect(paymentsRepository.findOne).toHaveBeenCalledWith({
+        where: { paymentId: 1 },
+        relations: ['booking'],
+      });
+      expect(paymentsRepository.save).toHaveBeenCalled();
+
+      // Test not found error
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.updatePaymentStatus(1, PaymentStatus.COMPLETED)).rejects.toThrow(ResourceNotFoundException);
+
+      // Test database error
+      const error = new Error('Database error');
+      mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
+      mockPaymentsRepository.save.mockRejectedValueOnce(error);
+      await expect(service.updatePaymentStatus(1, PaymentStatus.COMPLETED)).rejects.toThrow(DatabaseException);
     });
   });
 }); 
