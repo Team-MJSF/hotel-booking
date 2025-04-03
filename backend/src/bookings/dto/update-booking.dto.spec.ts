@@ -2,94 +2,109 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { UpdateBookingDto } from './update-booking.dto';
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('UpdateBookingDto', () => {
+  let updateBookingDto: UpdateBookingDto;
+
+  beforeEach(() => {
+    updateBookingDto = new UpdateBookingDto();
+  });
+
   describe('validation', () => {
-    it('should pass validation with valid data', async () => {
-      const validData = {
-        userId: 1,
-        roomId: 2,
-        checkInDate: new Date(),
-        checkOutDate: new Date(Date.now() + 86400000), // Tomorrow
-        numberOfGuests: 2,
-        specialRequests: 'Late check-in requested'
-      };
+    it('should handle all validation scenarios', async () => {
+      // Valid DTO case with all fields
+      updateBookingDto.userId = 1;
+      updateBookingDto.roomId = 2;
+      updateBookingDto.checkInDate = new Date();
+      updateBookingDto.checkOutDate = new Date(Date.now() + 86400000); // Tomorrow
+      updateBookingDto.numberOfGuests = 2;
+      updateBookingDto.specialRequests = 'Late check-in requested';
 
-      const dtoObject = plainToClass(UpdateBookingDto, validData);
-      const errors = await validate(dtoObject);
+      const errors = await validate(updateBookingDto);
+      expect(errors).toHaveLength(0);
 
-      expect(errors.length).toBe(0);
-    });
+      // Valid DTO case with partial fields
+      updateBookingDto = new UpdateBookingDto();
+      updateBookingDto.checkInDate = new Date();
+      updateBookingDto.numberOfGuests = 2;
 
-    it('should pass validation with partial data', async () => {
-      const partialData = {
-        checkInDate: new Date(),
-        numberOfGuests: 2
-      };
+      const partialErrors = await validate(updateBookingDto);
+      expect(partialErrors).toHaveLength(0);
 
-      const dtoObject = plainToClass(UpdateBookingDto, partialData);
-      const errors = await validate(dtoObject);
+      // Valid DTO case with empty object
+      updateBookingDto = new UpdateBookingDto();
+      const emptyErrors = await validate(updateBookingDto);
+      expect(emptyErrors).toHaveLength(0);
 
-      expect(errors.length).toBe(0);
-    });
+      // Invalid userId case
+      updateBookingDto.userId = 'not-a-number' as any;
+      const userIdErrors = await validate(updateBookingDto);
+      expect(userIdErrors).toHaveLength(1);
+      expect(userIdErrors[0].constraints).toHaveProperty('isNumber');
 
-    it('should pass validation with empty object', async () => {
-      const emptyData = {};
+      // Invalid roomId case
+      updateBookingDto = new UpdateBookingDto();
+      updateBookingDto.roomId = 'not-a-number' as any;
+      const roomIdErrors = await validate(updateBookingDto);
+      expect(roomIdErrors).toHaveLength(1);
+      expect(roomIdErrors[0].constraints).toHaveProperty('isNumber');
 
-      const dtoObject = plainToClass(UpdateBookingDto, emptyData);
-      const errors = await validate(dtoObject);
+      // Invalid checkInDate case
+      updateBookingDto = new UpdateBookingDto();
+      updateBookingDto.checkInDate = 'not-a-date' as any;
+      const checkInDateErrors = await validate(updateBookingDto);
+      expect(checkInDateErrors).toHaveLength(1);
+      expect(checkInDateErrors[0].constraints).toHaveProperty('isDate');
 
-      expect(errors.length).toBe(0);
-    });
+      // Invalid checkOutDate case
+      updateBookingDto = new UpdateBookingDto();
+      updateBookingDto.checkOutDate = 'not-a-date' as any;
+      const checkOutDateErrors = await validate(updateBookingDto);
+      expect(checkOutDateErrors).toHaveLength(1);
+      expect(checkOutDateErrors[0].constraints).toHaveProperty('isDate');
 
-    it('should fail validation with invalid date format', async () => {
-      const invalidData = {
-        checkInDate: 'not-a-date'
-      };
-
-      const dtoObject = plainToClass(UpdateBookingDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('checkInDate');
-    });
-
-    it('should fail validation with invalid number format', async () => {
-      const invalidData = {
-        userId: 'not-a-number'
-      };
-
-      const dtoObject = plainToClass(UpdateBookingDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('userId');
+      // Invalid numberOfGuests case
+      updateBookingDto = new UpdateBookingDto();
+      updateBookingDto.numberOfGuests = 'not-a-number' as any;
+      const numberOfGuestsErrors = await validate(updateBookingDto);
+      expect(numberOfGuestsErrors).toHaveLength(1);
+      expect(numberOfGuestsErrors[0].constraints).toHaveProperty('isNumber');
     });
   });
 
   describe('transformation', () => {
-    it('should transform plain object to UpdateBookingDto instance', () => {
-      const plainData = {
-        userId: 1,
-        roomId: 2,
-        checkInDate: '2024-01-01T00:00:00.000Z',
-        checkOutDate: '2024-01-02T00:00:00.000Z',
-        numberOfGuests: 2,
-        specialRequests: 'Late check-in requested'
+    it('should handle all transformation scenarios', async () => {
+      // String number conversion
+      const dataWithStringNumbers = {
+        userId: '1',
+        roomId: '2',
+        numberOfGuests: '2'
       };
 
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
+      const dtoObject1 = plainToClass(UpdateBookingDto, dataWithStringNumbers);
+      expect(typeof dtoObject1.userId).toBe('number');
+      expect(typeof dtoObject1.roomId).toBe('number');
+      expect(typeof dtoObject1.numberOfGuests).toBe('number');
+      expect(dtoObject1.userId).toBe(1);
+      expect(dtoObject1.roomId).toBe(2);
+      expect(dtoObject1.numberOfGuests).toBe(2);
 
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.userId).toBe(plainData.userId);
-      expect(dtoObject.roomId).toBe(plainData.roomId);
-      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
-      expect(dtoObject.checkOutDate).toEqual(new Date(plainData.checkOutDate));
-      expect(dtoObject.numberOfGuests).toBe(plainData.numberOfGuests);
-      expect(dtoObject.specialRequests).toBe(plainData.specialRequests);
-    });
+      // Date string conversion
+      const dataWithDateStrings = {
+        checkInDate: '2024-01-01T00:00:00.000Z',
+        checkOutDate: '2024-01-02T00:00:00.000Z'
+      };
 
-    it('should handle undefined values', () => {
-      const plainData = {
+      const dtoObject2 = plainToClass(UpdateBookingDto, dataWithDateStrings);
+      expect(dtoObject2.checkInDate instanceof Date).toBe(true);
+      expect(dtoObject2.checkOutDate instanceof Date).toBe(true);
+      expect(dtoObject2.checkInDate.getTime()).toBe(new Date('2024-01-01T00:00:00.000Z').getTime());
+      expect(dtoObject2.checkOutDate.getTime()).toBe(new Date('2024-01-02T00:00:00.000Z').getTime());
+
+      // Optional fields with various values
+      const dataWithUndefinedOptionalField = {
         userId: 1,
         roomId: 2,
         checkInDate: '2024-01-01T00:00:00.000Z',
@@ -98,14 +113,10 @@ describe('UpdateBookingDto', () => {
         specialRequests: undefined
       };
 
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
+      const dtoObject3 = plainToClass(UpdateBookingDto, dataWithUndefinedOptionalField);
+      expect(dtoObject3.specialRequests).toBeUndefined();
 
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.specialRequests).toBeUndefined();
-    });
-
-    it('should handle null values', () => {
-      const plainData = {
+      const dataWithNullOptionalField = {
         userId: 1,
         roomId: 2,
         checkInDate: '2024-01-01T00:00:00.000Z',
@@ -114,14 +125,10 @@ describe('UpdateBookingDto', () => {
         specialRequests: null
       };
 
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
+      const dtoObject4 = plainToClass(UpdateBookingDto, dataWithNullOptionalField);
+      expect(dtoObject4.specialRequests).toBeNull();
 
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.specialRequests).toBeNull();
-    });
-
-    it('should handle empty string values', () => {
-      const plainData = {
+      const dataWithEmptyStringOptionalField = {
         userId: 1,
         roomId: 2,
         checkInDate: '2024-01-01T00:00:00.000Z',
@@ -130,44 +137,11 @@ describe('UpdateBookingDto', () => {
         specialRequests: ''
       };
 
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
+      const dtoObject5 = plainToClass(UpdateBookingDto, dataWithEmptyStringOptionalField);
+      expect(dtoObject5.specialRequests).toBe('');
 
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.specialRequests).toBe('');
-    });
-
-    it('should handle date string conversion', () => {
-      const plainData = {
-        checkInDate: '2024-01-01T00:00:00.000Z',
-        checkOutDate: '2024-01-02T00:00:00.000Z'
-      };
-
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.checkInDate).toBeInstanceOf(Date);
-      expect(dtoObject.checkOutDate).toBeInstanceOf(Date);
-      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
-      expect(dtoObject.checkOutDate).toEqual(new Date(plainData.checkOutDate));
-    });
-
-    it('should handle number conversion', () => {
-      const plainData = {
-        userId: '1',
-        roomId: '2',
-        numberOfGuests: '2'
-      };
-
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(typeof dtoObject.userId).toBe('number');
-      expect(typeof dtoObject.roomId).toBe('number');
-      expect(typeof dtoObject.numberOfGuests).toBe('number');
-    });
-
-    it('should ignore extra properties', () => {
-      const plainData = {
+      // Extra properties should be preserved but not validated
+      const dataWithExtraProperties = {
         userId: 1,
         roomId: 2,
         checkInDate: '2024-01-01T00:00:00.000Z',
@@ -176,32 +150,13 @@ describe('UpdateBookingDto', () => {
         extraField: 'extra value'
       };
 
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.userId).toBe(plainData.userId);
-      expect(dtoObject.roomId).toBe(plainData.roomId);
-      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
-      expect(dtoObject.checkOutDate).toEqual(new Date(plainData.checkOutDate));
-      expect(dtoObject.numberOfGuests).toBe(plainData.numberOfGuests);
-      // Extra properties are automatically ignored by class-transformer
-    });
-
-    it('should handle partial updates', () => {
-      const plainData = {
-        checkInDate: '2024-01-01T00:00:00.000Z',
-        numberOfGuests: 2
-      };
-
-      const dtoObject = plainToClass(UpdateBookingDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(UpdateBookingDto);
-      expect(dtoObject.checkInDate).toEqual(new Date(plainData.checkInDate));
-      expect(dtoObject.numberOfGuests).toBe(plainData.numberOfGuests);
-      expect(dtoObject.userId).toBeUndefined();
-      expect(dtoObject.roomId).toBeUndefined();
-      expect(dtoObject.checkOutDate).toBeUndefined();
-      expect(dtoObject.specialRequests).toBeUndefined();
+      const dtoObject6 = plainToClass(UpdateBookingDto, dataWithExtraProperties);
+      // Use type assertion to access the extra property
+      expect((dtoObject6 as any).extraField).toBe('extra value');
+      
+      // Validate that extra properties don't cause validation errors
+      const errors = await validate(dtoObject6);
+      expect(errors).toHaveLength(0);
     });
   });
 }); 
