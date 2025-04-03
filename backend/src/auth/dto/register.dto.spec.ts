@@ -4,295 +4,270 @@ import { RegisterDto } from './register.dto';
 
 describe('RegisterDto', () => {
   describe('validation', () => {
-    it('should pass validation with all valid fields', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should fail validation with missing required fields', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe'
-        // email, password, and confirmPassword are missing
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(error => error.property === 'email')).toBe(true);
-      expect(errors.some(error => error.property === 'password')).toBe(true);
-      expect(errors.some(error => error.property === 'confirmPassword')).toBe(true);
-    });
-
-    it('should fail validation with empty first name', async () => {
-      const invalidData = {
-        firstName: '',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('firstName');
-    });
-
-    it('should fail validation with empty last name', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: '',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('lastName');
-    });
-
-    it('should fail validation with invalid email format', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'not-an-email',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('email');
-    });
-
-    it('should fail validation with empty email', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: '',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('email');
-    });
-
-    it('should fail validation with password shorter than 8 characters', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'short',
-        confirmPassword: 'short'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(error => error.property === 'password')).toBe(true);
-      expect(errors.some(error => error.property === 'confirmPassword')).toBe(true);
-    });
-
-    it('should fail validation with mismatched passwords', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'differentpassword'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('confirmPassword');
-    });
-
-    it('should pass validation with valid email formats', async () => {
-      const validEmails = [
-        'user@example.com',
-        'user.name@example.com',
-        'user+tag@example.com',
-        'user@subdomain.example.com',
-        'user@example.co.uk',
-        'user@example.io'
+    it('should pass validation with valid data', async () => {
+      const testCases = [
+        {
+          description: 'all valid fields',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'password123'
+          }
+        },
+        {
+          description: 'valid email formats',
+          data: [
+            'user@example.com',
+            'user.name@example.com',
+            'user+tag@example.com',
+            'user@subdomain.example.com',
+            'user@example.co.uk',
+            'user@example.io'
+          ].map(email => ({
+            firstName: 'John',
+            lastName: 'Doe',
+            email,
+            password: 'password123',
+            confirmPassword: 'password123'
+          }))
+        },
+        {
+          description: 'valid password formats',
+          data: [
+            'password123',
+            'P@ssw0rd',
+            '12345678',
+            'verylongpassword',
+            'pass123word'
+          ].map(password => ({
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password,
+            confirmPassword: password
+          }))
+        },
+        {
+          description: 'valid name formats',
+          data: [
+            { firstName: 'John', lastName: 'Doe' },
+            { firstName: 'Mary-Jane', lastName: 'Smith-Jones' },
+            { firstName: 'Jean-Pierre', lastName: "O'Connor" },
+            { firstName: 'José', lastName: 'González' },
+            { firstName: 'Иван', lastName: 'Петров' }
+          ].map(({ firstName, lastName }) => ({
+            firstName,
+            lastName,
+            email: 'user@example.com',
+            password: 'password123',
+            confirmPassword: 'password123'
+          }))
+        }
       ];
 
-      for (const email of validEmails) {
-        const validData = {
-          firstName: 'John',
-          lastName: 'Doe',
-          email,
-          password: 'password123',
-          confirmPassword: 'password123'
-        };
-
-        const dtoObject = plainToClass(RegisterDto, validData);
-        const errors = await validate(dtoObject);
-
-        expect(errors.length).toBe(0);
+      for (const { description, data } of testCases) {
+        const dataArray = Array.isArray(data) ? data : [data];
+        for (const item of dataArray) {
+          const dtoObject = plainToClass(RegisterDto, item);
+          const errors = await validate(dtoObject);
+          const message = `Failed for case: ${description}`;
+          expect(errors.length).toBe(0);
+          if (errors.length > 0) {
+            console.error(message, errors);
+          }
+        }
       }
     });
 
-    it('should pass validation with valid password formats', async () => {
-      const validPasswords = [
-        'password123',
-        'P@ssw0rd',
-        '12345678',
-        'verylongpassword',
-        'pass123word'
+    it('should fail validation for invalid data', async () => {
+      const testCases = [
+        {
+          description: 'missing required fields',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe'
+          },
+          expectedErrors: ['email', 'password', 'confirmPassword']
+        },
+        {
+          description: 'empty first name',
+          data: {
+            firstName: '',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          expectedErrors: ['firstName']
+        },
+        {
+          description: 'empty last name',
+          data: {
+            firstName: 'John',
+            lastName: '',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          expectedErrors: ['lastName']
+        },
+        {
+          description: 'invalid email format',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'not-an-email',
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          expectedErrors: ['email']
+        },
+        {
+          description: 'empty email',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: '',
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          expectedErrors: ['email']
+        },
+        {
+          description: 'password too short',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'short',
+            confirmPassword: 'short'
+          },
+          expectedErrors: ['password', 'confirmPassword']
+        },
+        {
+          description: 'mismatched passwords',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'differentpassword'
+          },
+          expectedErrors: ['confirmPassword']
+        }
       ];
 
-      for (const password of validPasswords) {
-        const validData = {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
-          password,
-          confirmPassword: password
-        };
-
-        const dtoObject = plainToClass(RegisterDto, validData);
+      for (const { description, data, expectedErrors } of testCases) {
+        const dtoObject = plainToClass(RegisterDto, data);
         const errors = await validate(dtoObject);
-
-        expect(errors.length).toBe(0);
-      }
-    });
-
-    it('should pass validation with valid name formats', async () => {
-      const validNames = [
-        { firstName: 'John', lastName: 'Doe' },
-        { firstName: 'Mary-Jane', lastName: 'Smith-Jones' },
-        { firstName: 'Jean-Pierre', lastName: 'O\'Connor' },
-        { firstName: 'José', lastName: 'González' },
-        { firstName: 'Иван', lastName: 'Петров' }
-      ];
-
-      for (const { firstName, lastName } of validNames) {
-        const validData = {
-          firstName,
-          lastName,
-          email: 'user@example.com',
-          password: 'password123',
-          confirmPassword: 'password123'
-        };
-
-        const dtoObject = plainToClass(RegisterDto, validData);
-        const errors = await validate(dtoObject);
-
-        expect(errors.length).toBe(0);
+        const message = `No errors found for invalid case: ${description}`;
+        expect(errors.length).toBeGreaterThan(0);
+        if (errors.length === 0) {
+          console.error(message);
+        }
+        expectedErrors.forEach(property => {
+          const message = `Expected error for property ${property} in case: ${description}`;
+          const hasError = errors.some(error => error.property === property);
+          expect(hasError).toBe(true);
+          if (!hasError) {
+            console.error(message);
+          }
+        });
       }
     });
   });
 
   describe('transformation', () => {
-    it('should transform plain object to RegisterDto instance', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
+    it('should handle all transformation cases correctly', () => {
+      const testCases = [
+        {
+          description: 'basic transformation',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          assertions: (dto: RegisterDto) => {
+            expect(dto.firstName).toBe('John');
+            expect(dto.lastName).toBe('Doe');
+            expect(dto.email).toBe('john@example.com');
+            expect(dto.password).toBe('password123');
+            expect(dto.confirmPassword).toBe('password123');
+          }
+        },
+        {
+          description: 'undefined values',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: undefined,
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          assertions: (dto: RegisterDto) => {
+            expect(dto.email).toBeUndefined();
+          }
+        },
+        {
+          description: 'null values',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: null,
+            password: 'password123',
+            confirmPassword: 'password123'
+          },
+          assertions: (dto: RegisterDto) => {
+            expect(dto.email).toBeNull();
+          }
+        },
+        {
+          description: 'empty string values',
+          data: {
+            firstName: '',
+            lastName: '',
+            email: '',
+            password: '',
+            confirmPassword: ''
+          },
+          assertions: (dto: RegisterDto) => {
+            expect(dto.firstName).toBe('');
+            expect(dto.lastName).toBe('');
+            expect(dto.email).toBe('');
+            expect(dto.password).toBe('');
+            expect(dto.confirmPassword).toBe('');
+          }
+        },
+        {
+          description: 'extra properties',
+          data: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'password123',
+            extraField: 'extra value'
+          },
+          assertions: (dto: RegisterDto) => {
+            expect(dto).toHaveProperty('extraField');
+            expect((dto as any).extraField).toBe('extra value');
+          }
+        }
+      ];
 
-      const dtoObject = plainToClass(RegisterDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(RegisterDto);
-      expect(dtoObject.firstName).toBe(plainData.firstName);
-      expect(dtoObject.lastName).toBe(plainData.lastName);
-      expect(dtoObject.email).toBe(plainData.email);
-      expect(dtoObject.password).toBe(plainData.password);
-      expect(dtoObject.confirmPassword).toBe(plainData.confirmPassword);
-    });
-
-    it('should handle undefined values', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: undefined,
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(RegisterDto);
-      expect(dtoObject.email).toBeUndefined();
-    });
-
-    it('should handle null values', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: null,
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(RegisterDto);
-      expect(dtoObject.email).toBeNull();
-    });
-
-    it('should handle empty string values', () => {
-      const plainData = {
-        firstName: '',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(RegisterDto);
-      expect(dtoObject.firstName).toBe('');
-    });
-
-    it('should ignore extra properties', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-        extraField: 'extra value'
-      };
-
-      const dtoObject = plainToClass(RegisterDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(RegisterDto);
-      expect(dtoObject.firstName).toBe(plainData.firstName);
-      expect(dtoObject.lastName).toBe(plainData.lastName);
-      expect(dtoObject.email).toBe(plainData.email);
-      expect(dtoObject.password).toBe(plainData.password);
-      expect(dtoObject.confirmPassword).toBe(plainData.confirmPassword);
-      // Extra properties are automatically ignored by class-transformer
+      for (const { description, data, assertions } of testCases) {
+        const dtoObject = plainToClass(RegisterDto, data);
+        const message = `Failed instanceof check for: ${description}`;
+        expect(dtoObject).toBeInstanceOf(RegisterDto);
+        if (!(dtoObject instanceof RegisterDto)) {
+          console.error(message);
+        }
+        assertions(dtoObject);
+      }
     });
   });
 }); 

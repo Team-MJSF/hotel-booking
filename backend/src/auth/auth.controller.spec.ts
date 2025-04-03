@@ -37,65 +37,147 @@ describe('AuthController', () => {
   });
 
   describe('register', () => {
-    it('should register a new user', async () => {
-      const registerDto: RegisterDto = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-      };
-      const expectedResult = { id: 1, ...registerDto };
-      mockAuthService.register.mockResolvedValue(expectedResult);
+    it('should handle register operations correctly', async () => {
+      const testCases = [
+        {
+          description: 'register a new user',
+          registerDto: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'password123',
+          },
+          mockResult: { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+          mockError: null,
+          expectedError: null,
+          assertions: (result: any) => {
+            expect(result).toEqual({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' });
+            expect(authService.register).toHaveBeenCalledWith({
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+              password: 'password123',
+              confirmPassword: 'password123',
+            });
+          }
+        },
+        {
+          description: 'throw UnauthorizedException when passwords do not match',
+          registerDto: {
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            password: 'password123',
+            confirmPassword: 'different',
+          },
+          mockResult: null,
+          mockError: new UnauthorizedException('Passwords do not match'),
+          expectedError: UnauthorizedException,
+          assertions: () => {
+            expect(authService.register).toHaveBeenCalledWith({
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+              password: 'password123',
+              confirmPassword: 'different',
+            });
+          }
+        }
+      ];
 
-      const result = await controller.register(registerDto);
+      for (const { 
+        description, 
+        registerDto, 
+        mockResult, 
+        mockError, 
+        expectedError, 
+        assertions 
+      } of testCases) {
+        if (mockError) {
+          mockAuthService.register.mockRejectedValue(mockError);
+        } else {
+          mockAuthService.register.mockResolvedValue(mockResult);
+        }
 
-      expect(result).toEqual(expectedResult);
-      expect(authService.register).toHaveBeenCalledWith(registerDto);
-    });
-
-    it('should throw UnauthorizedException when passwords do not match', async () => {
-      const registerDto: RegisterDto = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        confirmPassword: 'different',
-      };
-      mockAuthService.register.mockRejectedValue(new UnauthorizedException('Passwords do not match'));
-
-      await expect(controller.register(registerDto)).rejects.toThrow(UnauthorizedException);
+        if (expectedError) {
+          await expect(controller.register(registerDto)).rejects.toThrow(expectedError);
+        } else {
+          const result = await controller.register(registerDto);
+          expect(result).toEqual(mockResult);
+        }
+        
+        assertions(mockResult);
+      }
     });
   });
 
   describe('login', () => {
-    it('should login a user and return access token', async () => {
-      const loginDto: LoginDto = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-      const expectedResult = { access_token: 'jwt-token' };
-      mockAuthService.login.mockResolvedValue(expectedResult);
+    it('should handle login operations correctly', async () => {
+      const testCases = [
+        {
+          description: 'login a user and return access token',
+          loginDto: {
+            email: 'test@example.com',
+            password: 'password123',
+          },
+          mockResult: { access_token: 'jwt-token' },
+          mockError: null,
+          expectedError: null,
+          assertions: (result: any) => {
+            expect(result).toEqual({ access_token: 'jwt-token' });
+            expect(authService.login).toHaveBeenCalledWith({
+              email: 'test@example.com',
+              password: 'password123',
+            });
+          }
+        },
+        {
+          description: 'throw UnauthorizedException for invalid credentials',
+          loginDto: {
+            email: 'test@example.com',
+            password: 'wrongpassword',
+          },
+          mockResult: null,
+          mockError: new UnauthorizedException('Invalid credentials'),
+          expectedError: UnauthorizedException,
+          assertions: () => {
+            expect(authService.login).toHaveBeenCalledWith({
+              email: 'test@example.com',
+              password: 'wrongpassword',
+            });
+          }
+        }
+      ];
 
-      const result = await controller.login(loginDto);
+      for (const { 
+        description, 
+        loginDto, 
+        mockResult, 
+        mockError, 
+        expectedError, 
+        assertions 
+      } of testCases) {
+        if (mockError) {
+          mockAuthService.login.mockRejectedValue(mockError);
+        } else {
+          mockAuthService.login.mockResolvedValue(mockResult);
+        }
 
-      expect(result).toEqual(expectedResult);
-      expect(authService.login).toHaveBeenCalledWith(loginDto);
-    });
-
-    it('should throw UnauthorizedException for invalid credentials', async () => {
-      const loginDto: LoginDto = {
-        email: 'test@example.com',
-        password: 'wrongpassword',
-      };
-      mockAuthService.login.mockRejectedValue(new UnauthorizedException('Invalid credentials'));
-
-      await expect(controller.login(loginDto)).rejects.toThrow(UnauthorizedException);
+        if (expectedError) {
+          await expect(controller.login(loginDto)).rejects.toThrow(expectedError);
+        } else {
+          const result = await controller.login(loginDto);
+          expect(result).toEqual(mockResult);
+        }
+        
+        assertions(mockResult);
+      }
     });
   });
 
   describe('getProfile', () => {
-    it('should return the current user profile', async () => {
+    it('should handle getProfile operations correctly', async () => {
       const mockUser = {
         id: 1,
         firstName: 'John',
@@ -116,12 +198,44 @@ describe('AuthController', () => {
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt,
       };
-      mockAuthService.getProfile.mockResolvedValue(expectedProfile);
 
-      const result = await controller.getProfile(mockUser);
+      const testCases = [
+        {
+          description: 'return the current user profile',
+          user: mockUser,
+          mockResult: expectedProfile,
+          mockError: null,
+          expectedError: null,
+          assertions: (result: any) => {
+            expect(result).toEqual(expectedProfile);
+            expect(authService.getProfile).toHaveBeenCalledWith(mockUser.id);
+          }
+        }
+      ];
 
-      expect(result).toEqual(expectedProfile);
-      expect(authService.getProfile).toHaveBeenCalledWith(mockUser.id);
+      for (const { 
+        description, 
+        user, 
+        mockResult, 
+        mockError, 
+        expectedError, 
+        assertions 
+      } of testCases) {
+        if (mockError) {
+          mockAuthService.getProfile.mockRejectedValue(mockError);
+        } else {
+          mockAuthService.getProfile.mockResolvedValue(mockResult);
+        }
+
+        if (expectedError) {
+          await expect(controller.getProfile(user)).rejects.toThrow(expectedError);
+        } else {
+          const result = await controller.getProfile(user);
+          expect(result).toEqual(mockResult);
+        }
+        
+        assertions(mockResult);
+      }
     });
   });
 }); 
