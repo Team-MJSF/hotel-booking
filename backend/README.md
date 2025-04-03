@@ -1,194 +1,151 @@
-# Hotel Booking System Backend
+# Hotel Booking System - Backend
 
-A NestJS-based backend for a hotel booking system, designed for a school project with inexperienced developers.
+A NestJS-based backend for a hotel booking system with authentication, room management, and booking functionality.
+
+## Prerequisites
+
+- Node.js (v16 or higher)
+- MySQL (v8.0 or higher)
+- npm or yarn
 
 ## Features
 
-### Room Management
-- Create, read, update, and delete rooms
-- Room types: Single, Double, Suite, Deluxe
-- Room amenities support
+- User authentication and authorization
+- Room management (CRUD operations)
 - Room availability tracking
-- Room search with advanced filtering and sorting:
-  - Date range filtering
-  - Room type filtering
-  - Maximum guests filtering
-  - Price range filtering
-  - Amenities filtering
-  - Sorting by:
-    - Price (lowest/highest)
-    - Room type
-    - Maximum guests
-    - Room number
-  - Sort order (ascending/descending)
-
-### Booking Management
-- Create, read, update, and delete bookings
-- Booking status tracking
-- Date conflict prevention
-- Guest information management
-
-### User Management
-- User registration and authentication
+- Booking management
+- Room search with filters (date, type, price, amenities)
 - Role-based access control (Admin, User)
-- User profile management
-
-## API Endpoints
-
-### Rooms
-- `GET /rooms` - Get all rooms
-- `GET /rooms/:id` - Get a specific room
-- `POST /rooms` - Create a new room
-- `PATCH /rooms/:id` - Update a room
-- `DELETE /rooms/:id` - Delete a room
-- `GET /rooms/search` - Search available rooms with filters and sorting
-
-### Bookings
-- `GET /bookings` - Get all bookings
-- `GET /bookings/:id` - Get a specific booking
-- `POST /bookings` - Create a new booking
-- `PATCH /bookings/:id` - Update a booking
-- `DELETE /bookings/:id` - Delete a booking
-
-### Users
-- `POST /users/register` - Register a new user
-- `POST /users/login` - Login user
-- `GET /users/profile` - Get user profile
-- `PATCH /users/profile` - Update user profile
-
-## Search Parameters
-
-### Room Search
-- `checkInDate`: Date - Check-in date for the booking
-- `checkOutDate`: Date - Check-out date for the booking
-- `roomType`: RoomType - Type of room to search for
-- `maxGuests`: number - Maximum number of guests
-- `minPrice`: number - Minimum price per night
-- `maxPrice`: number - Maximum price per night
-- `amenities`: string[] - List of required amenities
-- `sortBy`: SortField - Field to sort results by
-- `sortOrder`: SortOrder - Sort order (ASC/DESC)
-
-### Sort Fields
-- `price` - Sort by price per night
-- `type` - Sort by room type
-- `maxGuests` - Sort by maximum guests
-- `roomNumber` - Sort by room number
-
-### Sort Orders
-- `ASC` - Ascending order (default)
-- `DESC` - Descending order
 
 ## Technologies Used
 
+### Core
 - NestJS - Web framework
+- TypeScript - Programming language
 - TypeORM - Database ORM
 - MySQL - Database
 - JWT - Authentication
-- Class Validator - Input validation
-- Swagger - API documentation
+- Passport - Authentication middleware
+
+### Development Tools
 - Jest - Testing framework
+- Swagger - API documentation
+- ESLint - Code linting
+- Prettier - Code formatting
+- Class Validator - Input validation
+
+## API Endpoints
+
+### Authentication
+- `POST /auth/register` - Register new user
+- `POST /auth/login` - User login
+- `GET /auth/profile` - Get user profile
+
+### Rooms
+- `GET /rooms` - List all rooms
+- `GET /rooms/:id` - Get room details
+- `GET /rooms/search` - Search available rooms
+- `POST /rooms` - Create new room (Admin only)
+- `PATCH /rooms/:id` - Update room (Admin only)
+- `DELETE /rooms/:id` - Delete room (Admin only)
+
+### Bookings
+- `GET /bookings` - List user's bookings
+- `GET /bookings/:id` - Get booking details
+- `POST /bookings` - Create new booking
+- `PATCH /bookings/:id` - Update booking
+- `DELETE /bookings/:id` - Cancel booking
 
 ## Getting Started
 
-1. Install dependencies:
+1. Clone the repository
+2. Install dependencies:
    ```bash
    npm install
    ```
+3. Set up environment variables:
+   - Copy `.env.example` to `.env.development` for development
+   - Copy `.env.example` to `.env.test` for testing
+   - Update the variables with your configuration
 
-2. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-
-3. Configure your environment variables in `.env`:
-   ```
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=your_username
-   DB_PASSWORD=your_password
-   DB_NAME=hotel_booking_dev
-   JWT_SECRET=your_jwt_secret
-   ```
-
-4. Set up the database and run migrations:
+4. Initialize the development database:
    ```bash
    npm run dev:setup
-   ```
-   This will:
-   - Create the database if it doesn't exist
-   - Run all migrations
-   - Seed the database with initial data
-
-5. Start the development server:
-   ```bash
-   npm run start:dev
    ```
 
 ## Available Scripts
 
-### Development
-- `npm run dev:setup` - Build the project, create database, run migrations, and seed data
-- `npm run dev:reset` - Reset the database (revert migrations, run migrations again, and seed data)
-- `npm run dev:clean` - Clean the database (revert all migrations)
-- `npm run start:dev` - Start the development server with hot-reload
-
-### Database Management
-- `npm run db:create` - Create the database if it doesn't exist
-- `npm run db:migrate` - Run pending migrations
-- `npm run db:revert` - Revert the last migration
-- `npm run db:seed` - Seed the database with initial data
-- `npm run db:reset` - Run migrations and seed data
-- `npm run db:fresh` - Revert all migrations, run migrations again, and seed data
-
-### Testing
-- `npm run test:setup` - Set up the test database
-- `npm run test:reset` - Reset the test database
+- `npm run dev` - Start development server with hot reload
+- `npm run build` - Build the application
+- `npm run start:prod` - Start production server
 - `npm run test` - Run all tests
-- `npm run test:unit` - Run unit tests
-- `npm run test:integration` - Run integration tests
 - `npm run test:watch` - Run tests in watch mode
 - `npm run test:cov` - Run tests with coverage report
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
 
-### Staging
-- `npm run staging:setup` - Set up the staging database
-- `npm run staging:reset` - Reset the staging database
-- `npm run start:staging` - Start the staging server
+## Database Management
 
-### Production
-- `npm run start:prod` - Start the production server
+- `npm run db:migrate` - Run database migrations
+- `npm run db:revert` - Revert last migration
+- `npm run db:seed` - Seed the database
+- `npm run db:fresh` - Reset database and run migrations
 
-## Database Configuration
+## Environment Variables
 
-The application uses MySQL as the database. The database configuration is managed through environment variables and TypeORM. The system supports different environments (development, test, staging, production) with separate database instances.
+Create `.env.development` or `.env.test` based on `.env.example`:
 
-### Database Features
-- Automatic database creation
-- Migration management
-- Seeding support
-- Environment-specific configurations
-- Connection pooling
-- Transaction support
+```env
+# Server Configuration
+PORT=5000
+NODE_ENV=development
+
+# Database Configuration
+DB_HOST=localhost
+DB_USER=your_db_user
+DB_PASSWORD=your_db_password
+DB_NAME=hotel_booking_dev
+
+# Logging Configuration
+LOG_LEVEL=debug
+
+# Feature Flags
+ENABLE_SWAGGER=true
+ENABLE_LOGGING=true
+```
+
+## API Documentation
+
+Once the server is running, access the Swagger documentation at:
+```
+http://localhost:5000/api
+```
 
 ## Project Structure
 
 ```
 src/
-├── common/           # Common utilities and exceptions
-├── config/          # Configuration files
-├── rooms/           # Room-related modules
-├── bookings/        # Booking-related modules
-├── users/           # User-related modules
-└── main.ts          # Application entry point
+├── config/         # Configuration files
+├── controllers/    # Route controllers
+├── services/       # Business logic
+├── entities/       # Database models
+├── dto/           # Data transfer objects
+├── middleware/     # Custom middleware
+└── common/         # Shared utilities
 ```
+
+## Testing
+
+The project uses Jest for testing. Tests are organized into:
+- Unit tests
+- Integration tests
+- E2E tests
+
+Run `npm run test:setup` before running tests to set up the test database.
 
 ## Contributing
 
-1. Create a new branch for your feature
+1. Create a new branch
 2. Make your changes
-3. Write/update tests
+3. Run tests and linting
 4. Submit a pull request
-
-## License
-
-This project is licensed under the MIT License.
