@@ -26,7 +26,7 @@ import { Payment } from './payments/entities/payment.entity';
       database: process.env.DB_NAME || 'hotel_booking_dev',
       entities: [User, Room, Booking, Payment],
       synchronize: false,
-      logging: process.env.NODE_ENV !== 'production',
+      logging: process.env.NODE_ENV !== 'test',
       dropSchema: false,
       driver: require('mysql2'),
       extra: {

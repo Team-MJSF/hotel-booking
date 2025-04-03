@@ -27,7 +27,7 @@ export async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Hotel Booking API')
-    .setDescription('The Hotel Booking API description')
+    .setDescription('This is the API for the Hotel Booking App. It is used to manage the hotel bookings and reservations. It is built with NestJS and uses MySQL as the database. It is currently in development and is not ready for production.')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
