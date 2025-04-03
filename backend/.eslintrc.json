@@ -30,6 +30,16 @@
       "rules": {
         "quotes": "off"
       }
+    },
+    {
+      "files": ["**/*.spec.ts"],
+      "rules": {
+        "@typescript-eslint/no-unused-vars": ["warn", { 
+          "varsIgnorePattern": "^description$",
+          "argsIgnorePattern": "^description$"
+        }],
+        "no-console": "off"
+      }
     }
   ]
 }
