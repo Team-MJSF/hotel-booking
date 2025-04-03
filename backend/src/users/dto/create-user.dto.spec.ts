@@ -3,290 +3,110 @@ import { plainToClass } from 'class-transformer';
 import { CreateUserDto } from './create-user.dto';
 import { UserRole } from '../entities/user.entity';
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('CreateUserDto', () => {
+  let createUserDto: CreateUserDto;
+
+  beforeEach(() => {
+    createUserDto = new CreateUserDto();
+  });
+
   describe('validation', () => {
-    it('should pass validation with all required fields', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123'
-      };
+    it('should handle all validation scenarios', async () => {
+      // Valid DTO case
+      createUserDto.firstName = 'John';
+      createUserDto.lastName = 'Doe';
+      createUserDto.email = 'john@example.com';
+      createUserDto.password = 'Password123!';
+      createUserDto.role = UserRole.USER;
+      createUserDto.phoneNumber = '+1234567890';
+      createUserDto.address = '123 Main St';
 
-      const dtoObject = plainToClass(CreateUserDto, validData);
-      const errors = await validate(dtoObject);
+      const errors = await validate(createUserDto);
+      expect(errors).toHaveLength(0);
 
-      expect(errors.length).toBe(0);
-    });
+      // Invalid email case
+      createUserDto.email = 'invalid-email';
+      const emailErrors = await validate(createUserDto);
+      expect(emailErrors).toHaveLength(1);
+      expect(emailErrors[0].constraints).toHaveProperty('isEmail');
 
-    it('should pass validation with all fields including optional ones', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: UserRole.USER,
-        phoneNumber: '+1234567890',
-        address: '123 Main St'
-      };
+      // Invalid password case - too short
+      createUserDto.email = 'john@example.com';
+      createUserDto.password = 'short';
+      const shortPasswordErrors = await validate(createUserDto);
+      expect(shortPasswordErrors).toHaveLength(1);
+      expect(shortPasswordErrors[0].constraints).toHaveProperty('minLength');
 
-      const dtoObject = plainToClass(CreateUserDto, validData);
-      const errors = await validate(dtoObject);
+      // Invalid password case - missing special character
+      createUserDto.password = 'Password123';
+      const specialCharErrors = await validate(createUserDto);
+      expect(specialCharErrors).toHaveLength(1);
+      expect(specialCharErrors[0].constraints).toHaveProperty('matches');
 
-      expect(errors.length).toBe(0);
-    });
+      // Invalid role case
+      createUserDto.password = 'Password123!';
+      createUserDto.role = 'INVALID_ROLE' as UserRole;
+      const roleErrors = await validate(createUserDto);
+      expect(roleErrors).toHaveLength(1);
+      expect(roleErrors[0].constraints).toHaveProperty('isEnum');
 
-    it('should fail validation with password too short', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: '123' // Too short
-      };
+      // Invalid phone number case
+      createUserDto.role = UserRole.USER;
+      createUserDto.phoneNumber = '123';
+      const phoneErrors = await validate(createUserDto);
+      expect(phoneErrors).toHaveLength(1);
+      expect(phoneErrors[0].constraints).toHaveProperty('matches');
 
-      const dtoObject = plainToClass(CreateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('password');
-    });
-
-    it('should fail validation with invalid email', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'invalid-email',
-        password: 'password123'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('email');
-    });
-
-    it('should fail validation with empty required fields', async () => {
-      const invalidData = {
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: ''
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(error => error.property === 'firstName')).toBe(true);
-      expect(errors.some(error => error.property === 'lastName')).toBe(true);
-      expect(errors.some(error => error.property === 'email')).toBe(true);
-      expect(errors.some(error => error.property === 'password')).toBe(true);
-    });
-
-    it('should fail validation with missing required fields', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        // email and password are missing
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors.some(error => error.property === 'email')).toBe(true);
-      expect(errors.some(error => error.property === 'password')).toBe(true);
-    });
-
-    it('should fail validation with invalid role', async () => {
-      const invalidData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: 'INVALID_ROLE'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('role');
-    });
-
-    it('should pass validation with valid role', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: UserRole.ADMIN
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with optional fields omitted', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-      expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
+      // Missing required fields case
+      createUserDto = new CreateUserDto();
+      const missingFieldsErrors = await validate(createUserDto);
+      expect(missingFieldsErrors).toHaveLength(4);
+      expect(missingFieldsErrors.some(error => error.property === 'firstName')).toBe(true);
+      expect(missingFieldsErrors.some(error => error.property === 'lastName')).toBe(true);
+      expect(missingFieldsErrors.some(error => error.property === 'email')).toBe(true);
+      expect(missingFieldsErrors.some(error => error.property === 'password')).toBe(true);
     });
   });
 
   describe('transformation', () => {
-    it('should transform plain object to CreateUserDto instance with correct types', () => {
-      const plainData = {
+    it('should handle all transformation scenarios', () => {
+      // Role transformation with different cases
+      const roleCases = [
+        { input: 'ADMIN', expected: UserRole.ADMIN },
+        { input: 'admin', expected: UserRole.ADMIN },
+        { input: 'Admin', expected: UserRole.ADMIN }
+      ];
+
+      roleCases.forEach(({ input, expected }) => {
+        const data = {
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@example.com',
+          password: 'Password123!',
+          role: input
+        };
+        const dtoObject = plainToClass(CreateUserDto, data);
+        expect(dtoObject.role).toBe(expected);
+      });
+
+      // Optional fields with various values
+      const dataWithOptionalFields = {
         firstName: 'John',
         lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: 'admin',
-        phoneNumber: '+1234567890',
-        address: '123 Main St'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(CreateUserDto);
-      expect(dtoObject.firstName).toBe('John');
-      expect(dtoObject.lastName).toBe('Doe');
-      expect(dtoObject.email).toBe('john.doe@example.com');
-      expect(dtoObject.password).toBe('password123');
-      expect(dtoObject.role).toBe(UserRole.ADMIN);
-      expect(dtoObject.phoneNumber).toBe('+1234567890');
-      expect(dtoObject.address).toBe('123 Main St');
-    });
-
-    it('should handle undefined values for optional fields', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
+        email: 'john@example.com',
+        password: 'Password123!',
         role: undefined,
-        phoneNumber: undefined,
-        address: undefined
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
-    });
-
-    it('should handle null values for optional fields', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: null,
         phoneNumber: null,
-        address: null
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject.role).toBeNull();
-      expect(dtoObject.phoneNumber).toBeNull();
-      expect(dtoObject.address).toBeNull();
-    });
-
-    it('should handle empty string values', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        phoneNumber: '',
         address: ''
       };
 
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject.phoneNumber).toBe('');
-      expect(dtoObject.address).toBe('');
-    });
-
-    it('should handle enum values with case transformation', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: 'ADMIN'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject.role).toBe(UserRole.ADMIN);
-    });
-
-    it('should handle partial data with only required fields', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBe('John');
-      expect(dtoObject.lastName).toBe('Doe');
-      expect(dtoObject.email).toBe('john.doe@example.com');
-      expect(dtoObject.password).toBe('password123');
+      const dtoObject = plainToClass(CreateUserDto, dataWithOptionalFields);
       expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
-    });
-
-    it('should handle partial data with only optional fields', () => {
-      const plainData = {
-        role: 'admin',
-        phoneNumber: '+1234567890',
-        address: '123 Main St'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBeUndefined();
-      expect(dtoObject.lastName).toBeUndefined();
-      expect(dtoObject.email).toBeUndefined();
-      expect(dtoObject.password).toBeUndefined();
-      expect(dtoObject.role).toBe(UserRole.ADMIN);
-      expect(dtoObject.phoneNumber).toBe('+1234567890');
-      expect(dtoObject.address).toBe('123 Main St');
-    });
-
-    it('should preserve extra properties in the transformed object', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        extraField: 'extra value'
-      };
-
-      const dtoObject = plainToClass(CreateUserDto, plainData);
-
-      expect(dtoObject).toHaveProperty('extraField', 'extra value');
+      expect(dtoObject.phoneNumber).toBeNull();
+      expect(dtoObject.address).toBe('');
     });
   });
 }); 

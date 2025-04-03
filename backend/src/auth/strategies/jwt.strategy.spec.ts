@@ -7,6 +7,7 @@ import { User, UserRole } from '../../users/entities/user.entity';
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
+  let mockUsersService: jest.Mocked<UsersService>;
 
   const mockUser: User = {
     id: 1,
@@ -20,11 +21,17 @@ describe('JwtStrategy', () => {
     updatedAt: new Date(),
   };
 
-  const mockUsersService = {
-    findOne: jest.fn(),
+  const mockPayload = {
+    email: 'test@example.com',
+    sub: 1,
+    role: UserRole.USER,
   };
 
   beforeEach(async () => {
+    mockUsersService = {
+      findOne: jest.fn(),
+    } as unknown as jest.Mocked<UsersService>;
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         JwtStrategy,
@@ -48,61 +55,56 @@ describe('JwtStrategy', () => {
     expect(strategy).toBeDefined();
   });
 
-  describe('validate', () => {
-    const mockPayload = {
-      email: 'test@example.com',
-      sub: 1,
-      role: UserRole.USER,
-    };
+  it('should handle all JWT validation scenarios', async () => {
+    const testCases = [
+      {
+        description: 'valid token and user exists',
+        setup: () => mockUsersService.findOne.mockResolvedValue(mockUser),
+        expectedResult: mockUser,
+        shouldThrow: false,
+      },
+      {
+        description: 'user not found',
+        setup: () => mockUsersService.findOne.mockResolvedValue(null),
+        expectedResult: null,
+        shouldThrow: true,
+        expectedError: UnauthorizedException,
+      },
+      {
+        description: 'user service throws error',
+        setup: () => mockUsersService.findOne.mockRejectedValue(new UnauthorizedException('Database error')),
+        expectedResult: null,
+        shouldThrow: true,
+        expectedError: UnauthorizedException,
+      },
+      {
+        description: 'role mismatch',
+        setup: () => mockUsersService.findOne.mockResolvedValue({
+          ...mockUser,
+          role: UserRole.ADMIN,
+        }),
+        expectedResult: null,
+        shouldThrow: true,
+        expectedError: UnauthorizedException,
+      },
+    ];
 
-    it('should return user when token is valid and user exists', async () => {
-      // Set up the mock to return a user
-      mockUsersService.findOne.mockResolvedValue(mockUser);
+    for (const { description, setup, expectedResult, shouldThrow, expectedError } of testCases) {
+      // Reset mock before each test case
+      mockUsersService.findOne.mockReset();
+      
+      // Set up the specific test scenario
+      setup();
 
-      // Call validate
-      const result = await strategy.validate(mockPayload);
+      if (shouldThrow) {
+        await expect(strategy.validate(mockPayload)).rejects.toThrow(expectedError);
+      } else {
+        const result = await strategy.validate(mockPayload);
+        expect(result).toEqual(expectedResult);
+      }
 
-      // Verify the result
-      expect(result).toEqual(mockUser);
+      // Verify the service was called with correct parameters
       expect(mockUsersService.findOne).toHaveBeenCalledWith(mockPayload.sub);
-    });
-
-    it('should throw UnauthorizedException when user not found', async () => {
-      // Set up the mock to return null (user not found)
-      mockUsersService.findOne.mockResolvedValue(null);
-
-      // Verify that the error is thrown
-      await expect(strategy.validate(mockPayload)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockPayload.sub);
-    });
-
-    it('should throw UnauthorizedException when user service throws error', async () => {
-      // Set up the mock to throw an error
-      mockUsersService.findOne.mockRejectedValue(new UnauthorizedException('Database error'));
-
-      // Verify that the error is thrown
-      await expect(strategy.validate(mockPayload)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockPayload.sub);
-    });
-
-    it('should throw UnauthorizedException when role mismatch', async () => {
-      // Set up the mock to return a user with different role
-      const adminUser = {
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'hashedPassword123',
-        role: UserRole.ADMIN,
-        bookings: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      mockUsersService.findOne.mockResolvedValue(adminUser);
-
-      // Verify that the error is thrown
-      await expect(strategy.validate(mockPayload)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockPayload.sub);
-    });
+    }
   });
 }); 

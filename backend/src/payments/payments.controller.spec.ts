@@ -13,17 +13,7 @@ jest.setTimeout(10000);
 
 describe('PaymentsController', () => {
   let controller: PaymentsController;
-
-  const mockPaymentsService = {
-    findAll: jest.fn(),
-    findOne: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    remove: jest.fn(),
-    findByBookingId: jest.fn(),
-    processRefund: jest.fn(),
-    updatePaymentStatus: jest.fn(),
-  };
+  let mockPaymentsService: jest.Mocked<Pick<PaymentsService, 'findAll' | 'findOne' | 'create' | 'update' | 'remove' | 'findByBookingId' | 'processRefund' | 'updatePaymentStatus'>>;
 
   const mockRoom: Room = {
     id: 1,
@@ -79,6 +69,17 @@ describe('PaymentsController', () => {
   };
 
   beforeEach(async () => {
+    mockPaymentsService = {
+      findAll: jest.fn(),
+      findOne: jest.fn(),
+      create: jest.fn(),
+      update: jest.fn(),
+      remove: jest.fn(),
+      findByBookingId: jest.fn(),
+      processRefund: jest.fn(),
+      updatePaymentStatus: jest.fn(),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       controllers: [PaymentsController],
       providers: [
@@ -92,53 +93,51 @@ describe('PaymentsController', () => {
     controller = module.get<PaymentsController>(PaymentsController);
   });
 
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('should be defined', () => {
     expect(controller).toBeDefined();
   });
 
   describe('findAll', () => {
-    it('should return an array of payments', async () => {
+    it('should handle all findAll scenarios', async () => {
+      // Test successful retrieval
       const payments = [mockPayment];
-      mockPaymentsService.findAll.mockResolvedValue(payments);
-
+      mockPaymentsService.findAll.mockResolvedValueOnce(payments);
       const result = await controller.findAll();
       expect(result).toEqual(payments);
       expect(mockPaymentsService.findAll).toHaveBeenCalled();
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
+      // Test error handling
       const error = new DatabaseException('Failed to fetch payments', new Error('Database error'));
-      mockPaymentsService.findAll.mockRejectedValue(error);
-
+      mockPaymentsService.findAll.mockRejectedValueOnce(error);
       await expect(controller.findAll()).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('findOne', () => {
-    it('should return a single payment', async () => {
-      mockPaymentsService.findOne.mockResolvedValue(mockPayment);
-
+    it('should handle all findOne scenarios', async () => {
+      // Test successful retrieval
+      mockPaymentsService.findOne.mockResolvedValueOnce(mockPayment);
       const result = await controller.findOne('1');
       expect(result).toEqual(mockPayment);
       expect(mockPaymentsService.findOne).toHaveBeenCalledWith(1);
-    });
 
-    it('should throw ResourceNotFoundException when payment is not found', async () => {
-      mockPaymentsService.findOne.mockRejectedValue(new ResourceNotFoundException('Payment', 1));
-
+      // Test not found error
+      mockPaymentsService.findOne.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
       await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
+      // Test database error
       const error = new DatabaseException('Failed to fetch payment', new Error('Database error'));
-      mockPaymentsService.findOne.mockRejectedValue(error);
-
+      mockPaymentsService.findOne.mockRejectedValueOnce(error);
       await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('create', () => {
-    it('should create a new payment', async () => {
+    it('should handle all create scenarios', async () => {
       const createPaymentDto: CreatePaymentDto = {
         bookingId: 1,
         amount: 100.00,
@@ -147,31 +146,21 @@ describe('PaymentsController', () => {
         status: PaymentStatus.PENDING,
       };
 
-      mockPaymentsService.create.mockResolvedValue(mockPayment);
-
+      // Test successful creation
+      mockPaymentsService.create.mockResolvedValueOnce(mockPayment);
       const result = await controller.create(createPaymentDto);
       expect(result).toEqual(mockPayment);
       expect(mockPaymentsService.create).toHaveBeenCalledWith(createPaymentDto);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
-      const createPaymentDto: CreatePaymentDto = {
-        bookingId: 1,
-        amount: 100.00,
-        paymentMethod: PaymentMethod.CREDIT_CARD,
-        currency: Currency.USD,
-        status: PaymentStatus.PENDING,
-      };
-
+      // Test database error
       const error = new DatabaseException('Failed to create payment', new Error('Database error'));
-      mockPaymentsService.create.mockRejectedValue(error);
-
+      mockPaymentsService.create.mockRejectedValueOnce(error);
       await expect(controller.create(createPaymentDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('update', () => {
-    it('should update a payment', async () => {
+    it('should handle all update scenarios', async () => {
       const updatePaymentDto: CreatePaymentDto = {
         bookingId: 1,
         amount: 150.00,
@@ -180,112 +169,102 @@ describe('PaymentsController', () => {
         currency: Currency.USD,
       };
 
+      // Test successful update
       const updatedPayment = { ...mockPayment, ...updatePaymentDto };
-      mockPaymentsService.update.mockResolvedValue(updatedPayment);
-
+      mockPaymentsService.update.mockResolvedValueOnce(updatedPayment);
       const result = await controller.update('1', updatePaymentDto);
       expect(result).toEqual(updatedPayment);
       expect(mockPaymentsService.update).toHaveBeenCalledWith(1, updatePaymentDto);
-    });
 
-    it('should throw ResourceNotFoundException when payment is not found', async () => {
-      const updatePaymentDto: CreatePaymentDto = {
-        bookingId: 1,
-        amount: 150.00,
-        paymentMethod: PaymentMethod.CREDIT_CARD,
-        status: PaymentStatus.COMPLETED,
-        currency: Currency.USD,
-      };
-
-      mockPaymentsService.update.mockRejectedValue(new ResourceNotFoundException('Payment', 1));
-
+      // Test not found error
+      mockPaymentsService.update.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
       await expect(controller.update('1', updatePaymentDto)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
-      const updatePaymentDto: CreatePaymentDto = {
-        bookingId: 1,
-        amount: 150.00,
-        paymentMethod: PaymentMethod.CREDIT_CARD,
-        status: PaymentStatus.COMPLETED,
-        currency: Currency.USD,
-      };
-
+      // Test database error
       const error = new DatabaseException('Failed to update payment', new Error('Database error'));
-      mockPaymentsService.update.mockRejectedValue(error);
-
+      mockPaymentsService.update.mockRejectedValueOnce(error);
       await expect(controller.update('1', updatePaymentDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('remove', () => {
-    it('should remove a payment', async () => {
-      mockPaymentsService.remove.mockResolvedValue(undefined);
-
+    it('should handle all remove scenarios', async () => {
+      // Test successful removal
+      mockPaymentsService.remove.mockResolvedValueOnce(undefined);
       await controller.remove('1');
       expect(mockPaymentsService.remove).toHaveBeenCalledWith(1);
-    });
 
-    it('should throw ResourceNotFoundException when payment is not found', async () => {
-      mockPaymentsService.remove.mockRejectedValue(new ResourceNotFoundException('Payment', 1));
-
+      // Test not found error
+      mockPaymentsService.remove.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
       await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
+      // Test database error
       const error = new DatabaseException('Failed to delete payment', new Error('Database error'));
-      mockPaymentsService.remove.mockRejectedValue(error);
-
+      mockPaymentsService.remove.mockRejectedValueOnce(error);
       await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('findByBookingId', () => {
-    it('should return payment for a booking', async () => {
-      mockPaymentsService.findByBookingId.mockResolvedValue(mockPayment);
-
+    it('should handle all findByBookingId scenarios', async () => {
+      // Test successful retrieval
+      mockPaymentsService.findByBookingId.mockResolvedValueOnce(mockPayment);
       const result = await controller.findByBookingId('1');
       expect(result).toEqual(mockPayment);
       expect(mockPaymentsService.findByBookingId).toHaveBeenCalledWith(1);
+
+      // Test not found error
+      mockPaymentsService.findByBookingId.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
+      await expect(controller.findByBookingId('1')).rejects.toThrow(ResourceNotFoundException);
+
+      // Test database error
+      const error = new DatabaseException('Failed to fetch payment', new Error('Database error'));
+      mockPaymentsService.findByBookingId.mockRejectedValueOnce(error);
+      await expect(controller.findByBookingId('1')).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('processRefund', () => {
-    it('should process a refund', async () => {
+    it('should handle all processRefund scenarios', async () => {
       const refundReason = 'Customer request';
-      const refundedPayment = { ...mockPayment, status: PaymentStatus.REFUNDED, refundReason };
-      mockPaymentsService.processRefund.mockResolvedValue(refundedPayment);
 
+      // Test successful refund
+      const refundedPayment = { ...mockPayment, status: PaymentStatus.REFUNDED };
+      mockPaymentsService.processRefund.mockResolvedValueOnce(refundedPayment);
       const result = await controller.processRefund('1', refundReason);
       expect(result).toEqual(refundedPayment);
       expect(mockPaymentsService.processRefund).toHaveBeenCalledWith(1, refundReason);
-    });
 
-    it('should throw ResourceNotFoundException when payment is not found', async () => {
-      const refundReason = 'Customer request';
-      mockPaymentsService.processRefund.mockRejectedValue(new ResourceNotFoundException('Payment', 1));
-
+      // Test not found error
+      mockPaymentsService.processRefund.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
       await expect(controller.processRefund('1', refundReason)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
-      const refundReason = 'Customer request';
+      // Test database error
       const error = new DatabaseException('Failed to process refund', new Error('Database error'));
-      mockPaymentsService.processRefund.mockRejectedValue(error);
-
+      mockPaymentsService.processRefund.mockRejectedValueOnce(error);
       await expect(controller.processRefund('1', refundReason)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('updatePaymentStatus', () => {
-    it('should update payment status', async () => {
+    it('should handle all updatePaymentStatus scenarios', async () => {
       const newStatus = PaymentStatus.COMPLETED;
-      const updatedPayment = { ...mockPayment, status: newStatus };
-      mockPaymentsService.updatePaymentStatus.mockResolvedValue(updatedPayment);
 
+      // Test successful status update
+      const updatedPayment = { ...mockPayment, status: newStatus };
+      mockPaymentsService.updatePaymentStatus.mockResolvedValueOnce(updatedPayment);
       const result = await controller.updatePaymentStatus('1', newStatus);
       expect(result).toEqual(updatedPayment);
       expect(mockPaymentsService.updatePaymentStatus).toHaveBeenCalledWith(1, newStatus);
+
+      // Test not found error
+      mockPaymentsService.updatePaymentStatus.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
+      await expect(controller.updatePaymentStatus('1', newStatus)).rejects.toThrow(ResourceNotFoundException);
+
+      // Test database error
+      const error = new DatabaseException('Failed to update payment status', new Error('Database error'));
+      mockPaymentsService.updatePaymentStatus.mockRejectedValueOnce(error);
+      await expect(controller.updatePaymentStatus('1', newStatus)).rejects.toThrow(DatabaseException);
     });
   });
 });

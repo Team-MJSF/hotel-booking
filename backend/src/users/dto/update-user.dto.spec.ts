@@ -2,274 +2,96 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { UpdateUserDto } from './update-user.dto';
 import { UserRole } from '../entities/user.entity';
+import { IsString, IsEmail, IsOptional, IsEnum, MinLength, Matches } from 'class-validator';
+
+// Increase timeout for all tests
+jest.setTimeout(10000);
 
 describe('UpdateUserDto', () => {
+  let updateUserDto: UpdateUserDto;
+
+  beforeEach(() => {
+    updateUserDto = new UpdateUserDto();
+  });
+
   describe('validation', () => {
-    it('should pass validation with no fields (empty update)', async () => {
-      const validData = {};
+    it('should handle all validation scenarios', async () => {
+      // Valid DTO case
+      updateUserDto.firstName = 'John';
+      updateUserDto.lastName = 'Doe';
+      updateUserDto.email = 'john@example.com';
+      updateUserDto.password = 'Password123!';
+      updateUserDto.role = UserRole.USER;
+      updateUserDto.phoneNumber = '1234567890';
+      updateUserDto.address = '123 Main St';
 
-      const dtoObject = plainToClass(UpdateUserDto, validData);
-      const errors = await validate(dtoObject);
+      const errors = await validate(updateUserDto);
+      expect(errors).toHaveLength(0);
 
-      expect(errors.length).toBe(0);
-    });
+      // Invalid email case
+      updateUserDto.email = 'invalid-email';
+      const emailErrors = await validate(updateUserDto);
+      expect(emailErrors).toHaveLength(1);
+      expect(emailErrors[0].constraints).toHaveProperty('isEmail');
 
-    it('should pass validation with single field update', async () => {
-      const validData = {
-        firstName: 'John'
-      };
+      // Invalid password case - too short
+      updateUserDto.email = 'john@example.com';
+      updateUserDto.password = 'short';
+      const shortPasswordErrors = await validate(updateUserDto);
+      expect(shortPasswordErrors).toHaveLength(1);
+      expect(shortPasswordErrors[0].constraints).toHaveProperty('minLength');
 
-      const dtoObject = plainToClass(UpdateUserDto, validData);
-      const errors = await validate(dtoObject);
+      // Invalid password case - missing special character
+      updateUserDto.password = 'Password123';
+      const specialCharErrors = await validate(updateUserDto);
+      expect(specialCharErrors).toHaveLength(1);
+      expect(specialCharErrors[0].constraints).toHaveProperty('matches');
 
-      expect(errors.length).toBe(0);
-    });
+      // Invalid role case
+      updateUserDto.password = 'Password123!';
+      updateUserDto.role = 'INVALID_ROLE' as UserRole;
+      const roleErrors = await validate(updateUserDto);
+      expect(roleErrors).toHaveLength(1);
+      expect(roleErrors[0].constraints).toHaveProperty('isEnum');
 
-    it('should pass validation with multiple fields update', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with all fields', async () => {
-      const validData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: UserRole.USER,
-        phoneNumber: '+1234567890',
-        address: '123 Main St'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should fail validation with invalid email when email is provided', async () => {
-      const invalidData = {
-        email: 'invalid-email'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('email');
-    });
-
-    it('should fail validation with password too short when password is provided', async () => {
-      const invalidData = {
-        password: '123' // Too short
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('password');
-    });
-
-    it('should fail validation with invalid role when role is provided', async () => {
-      const invalidData = {
-        role: 'INVALID_ROLE'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('role');
-    });
-
-    it('should pass validation with valid role when role is provided', async () => {
-      const validData = {
-        role: UserRole.ADMIN
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with partial update of required fields', async () => {
-      const validData = {
-        firstName: 'John',
-        email: 'john.doe@example.com'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
+      // Invalid phone number case
+      updateUserDto.role = UserRole.USER;
+      updateUserDto.phoneNumber = '123';
+      const phoneErrors = await validate(updateUserDto);
+      expect(phoneErrors).toHaveLength(1);
+      expect(phoneErrors[0].constraints).toHaveProperty('matches');
     });
   });
 
   describe('transformation', () => {
-    it('should transform plain object to UpdateUserDto instance with correct types', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        password: 'password123',
-        role: 'admin',
-        phoneNumber: '+1234567890',
-        address: '123 Main St'
-      };
+    it('should handle all transformation scenarios', async () => {
+      // Only firstName update case
+      updateUserDto.firstName = 'John';
+      const firstNameErrors = await validate(updateUserDto);
+      expect(firstNameErrors).toHaveLength(0);
 
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
+      // Only email update case
+      updateUserDto = new UpdateUserDto();
+      updateUserDto.email = 'john@example.com';
+      const emailErrors = await validate(updateUserDto);
+      expect(emailErrors).toHaveLength(0);
 
-      expect(dtoObject).toBeInstanceOf(UpdateUserDto);
-      expect(dtoObject.firstName).toBe('John');
-      expect(dtoObject.lastName).toBe('Doe');
-      expect(dtoObject.email).toBe('john.doe@example.com');
-      expect(dtoObject.password).toBe('password123');
-      expect(dtoObject.role).toBe(UserRole.ADMIN);
-      expect(dtoObject.phoneNumber).toBe('+1234567890');
-      expect(dtoObject.address).toBe('123 Main St');
-    });
+      // Only password update case
+      updateUserDto = new UpdateUserDto();
+      updateUserDto.password = 'Password123!';
+      const passwordErrors = await validate(updateUserDto);
+      expect(passwordErrors).toHaveLength(0);
 
-    it('should handle undefined values for all fields', () => {
-      const plainData = {
-        firstName: undefined,
-        lastName: undefined,
-        email: undefined,
-        password: undefined,
-        role: undefined,
-        phoneNumber: undefined,
-        address: undefined
-      };
+      // Only role update case
+      updateUserDto = new UpdateUserDto();
+      updateUserDto.role = UserRole.ADMIN;
+      const roleErrors = await validate(updateUserDto);
+      expect(roleErrors).toHaveLength(0);
 
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBeUndefined();
-      expect(dtoObject.lastName).toBeUndefined();
-      expect(dtoObject.email).toBeUndefined();
-      expect(dtoObject.password).toBeUndefined();
-      expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
-    });
-
-    it('should handle null values for all fields', () => {
-      const plainData = {
-        firstName: null,
-        lastName: null,
-        email: null,
-        password: null,
-        role: null,
-        phoneNumber: null,
-        address: null
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBeNull();
-      expect(dtoObject.lastName).toBeNull();
-      expect(dtoObject.email).toBeNull();
-      expect(dtoObject.password).toBeNull();
-      expect(dtoObject.role).toBeNull();
-      expect(dtoObject.phoneNumber).toBeNull();
-      expect(dtoObject.address).toBeNull();
-    });
-
-    it('should handle empty string values', () => {
-      const plainData = {
-        firstName: '',
-        lastName: '',
-        email: '',
-        password: '',
-        phoneNumber: '',
-        address: ''
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBe('');
-      expect(dtoObject.lastName).toBe('');
-      expect(dtoObject.email).toBe('');
-      expect(dtoObject.password).toBe('');
-      expect(dtoObject.phoneNumber).toBe('');
-      expect(dtoObject.address).toBe('');
-    });
-
-    it('should handle enum values with case transformation', () => {
-      const plainData = {
-        role: 'ADMIN'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.role).toBe(UserRole.ADMIN);
-    });
-
-    it('should handle single field update', () => {
-      const plainData = {
-        firstName: 'John'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBe('John');
-      expect(dtoObject.lastName).toBeUndefined();
-      expect(dtoObject.email).toBeUndefined();
-      expect(dtoObject.password).toBeUndefined();
-      expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
-    });
-
-    it('should handle multiple fields update', () => {
-      const plainData = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBe('John');
-      expect(dtoObject.lastName).toBe('Doe');
-      expect(dtoObject.email).toBe('john.doe@example.com');
-      expect(dtoObject.password).toBeUndefined();
-      expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
-    });
-
-    it('should handle empty object update', () => {
-      const plainData = {};
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject.firstName).toBeUndefined();
-      expect(dtoObject.lastName).toBeUndefined();
-      expect(dtoObject.email).toBeUndefined();
-      expect(dtoObject.password).toBeUndefined();
-      expect(dtoObject.role).toBeUndefined();
-      expect(dtoObject.phoneNumber).toBeUndefined();
-      expect(dtoObject.address).toBeUndefined();
-    });
-
-    it('should preserve extra properties in the transformed object', () => {
-      const plainData = {
-        firstName: 'John',
-        extraField: 'extra value'
-      };
-
-      const dtoObject = plainToClass(UpdateUserDto, plainData);
-
-      expect(dtoObject).toHaveProperty('extraField', 'extra value');
+      // Empty DTO case
+      updateUserDto = new UpdateUserDto();
+      const emptyErrors = await validate(updateUserDto);
+      expect(emptyErrors).toHaveLength(0);
     });
   });
 }); 

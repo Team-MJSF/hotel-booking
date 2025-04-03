@@ -13,6 +13,23 @@ describe('Auth Flow Integration Tests', () => {
   let app: INestApplication;
   let dataSource: DataSource;
 
+  const testUser = {
+    email: 'test@example.com',
+    password: 'password123',
+    confirmPassword: 'password123',
+    firstName: 'Test',
+    lastName: 'User',
+  };
+
+  const testAdmin = {
+    email: 'admin@example.com',
+    password: 'admin123',
+    confirmPassword: 'admin123',
+    firstName: 'Admin',
+    lastName: 'User',
+    role: UserRole.ADMIN,
+  };
+
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [
@@ -53,120 +70,107 @@ describe('Auth Flow Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Disable foreign key checks
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 0');
-    
-    // Truncate tables in correct order
     await dataSource.query('TRUNCATE TABLE payments');
     await dataSource.query('TRUNCATE TABLE bookings');
     await dataSource.query('TRUNCATE TABLE rooms');
     await dataSource.query('TRUNCATE TABLE users');
-    
-    // Re-enable foreign key checks
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
   });
 
   describe('Registration Flow', () => {
-    it('should register a new user successfully', () => {
-      return request(app.getHttpServer())
+    it('should handle complete registration scenarios', async () => {
+      // Test successful registration
+      const registerResponse = await request(app.getHttpServer())
         .post('/auth/register')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Test',
-          lastName: 'User',
-        })
-        .expect(201)
-        .expect(res => {
-          expect(res.body).toHaveProperty('id');
-          expect(res.body.email).toBe('test@example.com');
-          expect(res.body.firstName).toBe('Test');
-          expect(res.body.lastName).toBe('User');
-          expect(res.body.role).toBe(UserRole.USER);
-          expect(res.body).not.toHaveProperty('password');
-        });
-    });
+        .send(testUser)
+        .expect(201);
 
-    it('should not register with mismatched passwords', () => {
-      return request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'different',
-          firstName: 'Test',
-          lastName: 'User',
-        })
-        .expect(401);
-    });
+      expect(registerResponse.body).toMatchObject({
+        email: testUser.email,
+        firstName: testUser.firstName,
+        lastName: testUser.lastName,
+        role: UserRole.USER,
+      });
+      expect(registerResponse.body).not.toHaveProperty('password');
 
-    it('should not register with existing email', async () => {
-      // First registration
+      // Test registration with mismatched passwords
       await request(app.getHttpServer())
         .post('/auth/register')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Test',
-          lastName: 'User',
-        });
-
-      // Second registration with same email
-      return request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Test',
-          lastName: 'User',
+          ...testUser,
+          email: 'test2@example.com',
+          confirmPassword: 'different',
         })
         .expect(401);
+
+      // Test registration with existing email
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testUser)
+        .expect(401);
+
+      // Test admin registration
+      const adminRegisterResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testAdmin)
+        .expect(201);
+
+      expect(adminRegisterResponse.body).toMatchObject({
+        email: testAdmin.email,
+        firstName: testAdmin.firstName,
+        lastName: testAdmin.lastName,
+        role: UserRole.ADMIN,
+      });
     });
   });
 
   describe('Login Flow', () => {
-    beforeEach(async () => {
-      // Register a user for login tests
+    it('should handle complete login scenarios', async () => {
+      // Register users for testing
       await request(app.getHttpServer())
         .post('/auth/register')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Test',
-          lastName: 'User',
-        });
-    });
+        .send(testUser);
 
-    it('should login successfully with correct credentials', () => {
-      return request(app.getHttpServer())
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testAdmin);
+
+      // Test successful user login
+      const userLoginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
+          email: testUser.email,
+          password: testUser.password,
         })
-        .expect(201)
-        .expect(res => {
-          expect(res.body).toHaveProperty('access_token');
-          expect(typeof res.body.access_token).toBe('string');
-        });
-    });
+        .expect(201);
 
-    it('should not login with incorrect password', () => {
-      return request(app.getHttpServer())
+      expect(userLoginResponse.body).toHaveProperty('access_token');
+      expect(typeof userLoginResponse.body.access_token).toBe('string');
+
+      // Test successful admin login
+      const adminLoginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'test@example.com',
+          email: testAdmin.email,
+          password: testAdmin.password,
+        })
+        .expect(201);
+
+      expect(adminLoginResponse.body).toHaveProperty('access_token');
+      expect(typeof adminLoginResponse.body.access_token).toBe('string');
+
+      // Test login with incorrect password
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
           password: 'wrongpassword',
         })
         .expect(401);
-    });
 
-    it('should not login with non-existent email', () => {
-      return request(app.getHttpServer())
+      // Test login with non-existent email
+      await request(app.getHttpServer())
         .post('/auth/login')
         .send({
           email: 'nonexistent@example.com',
@@ -177,124 +181,106 @@ describe('Auth Flow Integration Tests', () => {
   });
 
   describe('Profile Access Flow', () => {
-    let accessToken: string;
-
-    beforeEach(async () => {
+    it('should handle complete profile access scenarios', async () => {
       // Register and login a user
       await request(app.getHttpServer())
         .post('/auth/register')
-        .send({
-          email: 'test@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Test',
-          lastName: 'User',
-        });
+        .send(testUser);
 
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'test@example.com',
-          password: 'password123',
+          email: testUser.email,
+          password: testUser.password,
         });
 
-      accessToken = loginResponse.body.access_token;
-    });
+      const accessToken = loginResponse.body.access_token;
 
-    it('should access profile with valid token', () => {
-      return request(app.getHttpServer())
+      // Test profile access with valid token
+      const profileResponse = await request(app.getHttpServer())
         .get('/auth/profile')
         .set('Authorization', `Bearer ${accessToken}`)
-        .expect(200)
-        .expect(res => {
-          expect(res.body).toHaveProperty('id');
-          expect(res.body.email).toBe('test@example.com');
-          expect(res.body.firstName).toBe('Test');
-          expect(res.body.lastName).toBe('User');
-          expect(res.body.role).toBe(UserRole.USER);
-          expect(res.body).not.toHaveProperty('password');
-        });
-    });
+        .expect(200);
 
-    it('should not access profile with invalid token', () => {
-      return request(app.getHttpServer())
+      expect(profileResponse.body).toMatchObject({
+        email: testUser.email,
+        firstName: testUser.firstName,
+        lastName: testUser.lastName,
+        role: UserRole.USER,
+      });
+      expect(profileResponse.body).not.toHaveProperty('password');
+
+      // Test profile access with invalid token
+      await request(app.getHttpServer())
         .get('/auth/profile')
         .set('Authorization', 'Bearer invalid-token')
         .expect(401);
-    });
 
-    it('should not access profile without token', () => {
-      return request(app.getHttpServer())
+      // Test profile access without token
+      await request(app.getHttpServer())
         .get('/auth/profile')
         .expect(401);
     });
   });
 
   describe('Role-Based Access Flow', () => {
-    let adminToken: string;
-    let userToken: string;
-
-    beforeEach(async () => {
-      // Register and login an admin user
+    it('should handle complete role-based access scenarios', async () => {
+      // Register and login both user types
       await request(app.getHttpServer())
         .post('/auth/register')
+        .send(testUser);
+
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testAdmin);
+
+      const userLoginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
         .send({
-          email: 'admin@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Admin',
-          lastName: 'User',
-          role: UserRole.ADMIN,
+          email: testUser.email,
+          password: testUser.password,
         });
 
       const adminLoginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
-          email: 'admin@example.com',
-          password: 'password123',
+          email: testAdmin.email,
+          password: testAdmin.password,
         });
 
-      adminToken = adminLoginResponse.body.access_token;
+      const userToken = userLoginResponse.body.access_token;
+      const adminToken = adminLoginResponse.body.access_token;
 
-      // Register and login a regular user
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send({
-          email: 'user@example.com',
-          password: 'password123',
-          confirmPassword: 'password123',
-          firstName: 'Regular',
-          lastName: 'User',
-        });
-
-      const userLoginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: 'user@example.com',
-          password: 'password123',
-        });
-
-      userToken = userLoginResponse.body.access_token;
-    });
-
-    it('should allow admin to access profile', () => {
-      return request(app.getHttpServer())
-        .get('/auth/profile')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .expect(200)
-        .expect(res => {
-          expect(res.body.role).toBe(UserRole.ADMIN);
-        });
-    });
-
-    it('should allow regular user to access profile', () => {
-      return request(app.getHttpServer())
+      // Test user profile access
+      const userProfileResponse = await request(app.getHttpServer())
         .get('/auth/profile')
         .set('Authorization', `Bearer ${userToken}`)
-        .expect(200)
-        .expect(res => {
-          expect(res.body.role).toBe(UserRole.USER);
-        });
+        .expect(200);
+
+      expect(userProfileResponse.body.role).toBe(UserRole.USER);
+
+      // Test admin profile access
+      const adminProfileResponse = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(adminProfileResponse.body.role).toBe(UserRole.ADMIN);
+
+      // Test user attempting to access admin-only endpoint
+      await request(app.getHttpServer())
+        .get('/users')
+        .set('Authorization', `Bearer ${userToken}`)
+        .expect(403);
+
+      // Test admin accessing admin-only endpoint
+      const adminUsersResponse = await request(app.getHttpServer())
+        .get('/users')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(Array.isArray(adminUsersResponse.body)).toBe(true);
+      expect(adminUsersResponse.body.length).toBeGreaterThan(0);
     });
   });
 }); 

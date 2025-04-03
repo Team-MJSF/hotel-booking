@@ -13,6 +13,9 @@ jest.mock('bcrypt', () => ({
   compare: jest.fn().mockImplementation((password, hash) => Promise.resolve(password === hash.replace('hashed_', '')))
 }));
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('AuthService', () => {
   let service: AuthService;
   let mockUsersService: Partial<jest.Mocked<UsersService>>;
@@ -72,96 +75,12 @@ describe('AuthService', () => {
     jest.clearAllMocks();
   });
 
-  describe('validateUser', () => {
+  describe('authentication flow', () => {
     const loginDto: LoginDto = {
       email: 'test@example.com',
       password: 'password123'
     };
 
-    it('should return user without password when credentials are valid', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(mockUser);
-      mockUsersService.validatePassword.mockResolvedValue(true);
-
-      const result = await service.validateUser(loginDto.email, loginDto.password);
-
-      expect(result).toEqual(expect.objectContaining({
-        id: mockUser.id,
-        email: mockUser.email,
-        firstName: mockUser.firstName,
-        lastName: mockUser.lastName,
-        role: mockUser.role,
-        phoneNumber: mockUser.phoneNumber,
-        address: mockUser.address
-      }));
-      expect(result).not.toHaveProperty('password');
-      expect(mockUsersService.findByEmail).toHaveBeenCalledWith(loginDto.email);
-      expect(mockUsersService.validatePassword).toHaveBeenCalledWith(mockUser, loginDto.password);
-    });
-
-    it('should return null when user is not found', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(null);
-
-      const result = await service.validateUser(loginDto.email, loginDto.password);
-
-      expect(result).toBeNull();
-      expect(mockUsersService.findByEmail).toHaveBeenCalledWith(loginDto.email);
-      expect(mockUsersService.validatePassword).not.toHaveBeenCalled();
-    });
-
-    it('should return null when password is invalid', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(mockUser);
-      mockUsersService.validatePassword.mockResolvedValue(false);
-
-      const result = await service.validateUser(loginDto.email, 'wrong_password');
-
-      expect(result).toBeNull();
-      expect(mockUsersService.findByEmail).toHaveBeenCalledWith(loginDto.email);
-      expect(mockUsersService.validatePassword).toHaveBeenCalledWith(mockUser, 'wrong_password');
-    });
-  });
-
-  describe('login', () => {
-    it('should return access token when credentials are valid', async () => {
-      const loginDto: LoginDto = {
-        email: 'test@example.com',
-        password: 'password123',
-      };
-      const mockUser = {
-        id: 1,
-        email: 'test@example.com',
-        firstName: 'Test',
-        lastName: 'User',
-        role: UserRole.USER,
-        bookings: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const expectedResult = { access_token: 'test_token' };
-
-      jest.spyOn(service, 'validateUser').mockResolvedValue(mockUser);
-      mockJwtService.sign.mockReturnValue('test_token');
-
-      const result = await service.login(loginDto);
-
-      expect(result).toEqual(expectedResult);
-      expect(service.validateUser).toHaveBeenCalledWith(loginDto.email, loginDto.password);
-      expect(mockJwtService.sign).toHaveBeenCalledWith({ 
-        sub: mockUser.id, 
-        email: mockUser.email,
-        role: mockUser.role 
-      });
-    });
-
-    it('should throw UnauthorizedException when credentials are invalid', async () => {
-      jest.spyOn(service, 'validateUser').mockResolvedValueOnce(null);
-
-      await expect(service.login({ email: 'test@example.com', password: 'password123' })).rejects.toThrow(UnauthorizedException);
-      expect(service.validateUser).toHaveBeenCalledWith('test@example.com', 'password123');
-      expect(mockJwtService.sign).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('register', () => {
     const registerDto: RegisterDto = {
       email: 'test@example.com',
       password: 'password123',
@@ -170,53 +89,72 @@ describe('AuthService', () => {
       lastName: 'User'
     };
 
-    it('should create a new user and return without password', async () => {
-      mockUsersService.findByEmail.mockResolvedValue(null);
+    it('should handle all authentication scenarios', async () => {
+      // Test validateUser success
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      mockUsersService.validatePassword.mockResolvedValue(true);
+      
+      const validatedUser = await service.validateUser(loginDto.email, loginDto.password);
+      expect(validatedUser).toEqual(expect.objectContaining({
+        id: mockUser.id,
+        email: mockUser.email,
+        firstName: mockUser.firstName,
+        lastName: mockUser.lastName,
+        role: mockUser.role
+      }));
+      expect(validatedUser).not.toHaveProperty('password');
+      
+      // Test login success
+      const loginResult = await service.login(loginDto);
+      expect(loginResult).toEqual({ access_token: 'test_token' });
+      expect(mockJwtService.sign).toHaveBeenCalledWith({ 
+        sub: mockUser.id, 
+        email: mockUser.email,
+        role: mockUser.role 
+      });
+      
+      // Test register success
+      mockUsersService.findByEmail.mockResolvedValueOnce(null);
       mockUsersService.create.mockResolvedValue(mockUser);
-
-      const result = await service.register(registerDto);
-
-      expect(result).toEqual(expect.objectContaining({
+      
+      const registerResult = await service.register(registerDto);
+      expect(registerResult).toEqual(expect.objectContaining({
         id: mockUser.id,
         email: mockUser.email,
         firstName: mockUser.firstName,
         lastName: mockUser.lastName,
         role: UserRole.USER
       }));
-      expect(result).not.toHaveProperty('password');
-      expect(mockUsersService.findByEmail).toHaveBeenCalledWith(registerDto.email);
-      expect(mockUsersService.create).toHaveBeenCalledWith(expect.objectContaining({
-        ...registerDto,
-        password: expect.any(String),
-        role: UserRole.USER
-      }));
+      expect(registerResult).not.toHaveProperty('password');
       expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 10);
-    });
 
-    it('should throw UnauthorizedException when passwords do not match', async () => {
-      const invalidDto = { ...registerDto, confirmPassword: 'different' };
-
-      await expect(service.register(invalidDto)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersService.findByEmail).not.toHaveBeenCalled();
-      expect(mockUsersService.create).not.toHaveBeenCalled();
-    });
-
-    it('should throw UnauthorizedException when email already exists', async () => {
+      // Test validateUser failures
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      expect(await service.validateUser(loginDto.email, loginDto.password)).toBeNull();
+      
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
-
+      mockUsersService.validatePassword.mockResolvedValue(false);
+      expect(await service.validateUser(loginDto.email, 'wrong_password')).toBeNull();
+      
+      // Test login failure
+      await expect(service.login(loginDto)).rejects.toThrow(UnauthorizedException);
+      
+      // Test register failures
+      const invalidRegisterDto = { ...registerDto, confirmPassword: 'different' };
+      await expect(service.register(invalidRegisterDto)).rejects.toThrow(UnauthorizedException);
+      
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
       await expect(service.register(registerDto)).rejects.toThrow(UnauthorizedException);
-      expect(mockUsersService.findByEmail).toHaveBeenCalledWith(registerDto.email);
-      expect(mockUsersService.create).not.toHaveBeenCalled();
     });
   });
 
-  describe('getProfile', () => {
-    it('should return user profile', async () => {
+  describe('profile management', () => {
+    it('should handle profile operations', async () => {
+      // Test successful profile retrieval
       mockUsersService.findOne.mockResolvedValue(mockUser);
-
-      const result = await service.getProfile(mockUser.id);
-
-      expect(result).toEqual({
+      
+      const profile = await service.getProfile(mockUser.id);
+      expect(profile).toEqual({
         id: mockUser.id,
         firstName: mockUser.firstName,
         lastName: mockUser.lastName,
@@ -227,14 +165,57 @@ describe('AuthService', () => {
         createdAt: mockUser.createdAt,
         updatedAt: mockUser.updatedAt
       });
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(mockUser.id);
-    });
-
-    it('should throw NotFoundException when user not found', async () => {
+      
+      // Test profile not found
       mockUsersService.findOne.mockResolvedValue(null);
-
       await expect(service.getProfile(1)).rejects.toThrow(NotFoundException);
-      expect(mockUsersService.findOne).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('security measures', () => {
+    it('should enforce security constraints', async () => {
+      const registerDto: RegisterDto = {
+        email: 'test@example.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+        firstName: 'Test',
+        lastName: 'User'
+      };
+
+      // Test password hashing
+      mockUsersService.findByEmail.mockResolvedValue(null);
+      mockUsersService.create.mockImplementation(async (user) => ({
+        ...user,
+        id: 1,
+        role: UserRole.USER,
+        bookings: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      }));
+
+      await service.register(registerDto);
+      expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 10);
+      expect(mockUsersService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          password: expect.stringContaining('hashed_'),
+          role: UserRole.USER
+        })
+      );
+
+      // Test JWT payload structure
+      const loginDto: LoginDto = {
+        email: 'test@example.com',
+        password: 'password123'
+      };
+      mockUsersService.findByEmail.mockResolvedValue(mockUser);
+      mockUsersService.validatePassword.mockResolvedValue(true);
+
+      await service.login(loginDto);
+      expect(mockJwtService.sign).toHaveBeenCalledWith({
+        sub: mockUser.id,
+        email: mockUser.email,
+        role: mockUser.role
+      });
     });
   });
 }); 

@@ -101,204 +101,182 @@ describe('BookingsService', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of bookings', async () => {
+    it('should handle all findAll scenarios', async () => {
+      // Success case
       const bookings = [mockBooking];
-      mockBookingRepository.find.mockResolvedValue(bookings);
-
+      mockBookingRepository.find.mockResolvedValueOnce(bookings);
       const result = await service.findAll();
-
       expect(result).toEqual(bookings);
       expect(bookingRepository.find).toHaveBeenCalledWith({
         relations: ['user', 'room', 'payment'],
       });
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Error case
       const error = new Error('Database error');
-      mockBookingRepository.find.mockRejectedValue(error);
-
+      mockBookingRepository.find.mockRejectedValueOnce(error);
       await expect(service.findAll()).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('findOne', () => {
-    it('should return a booking by id', async () => {
-      mockBookingRepository.findOne.mockResolvedValue(mockBooking);
-
+    it('should handle all findOne scenarios', async () => {
+      // Success case
+      mockBookingRepository.findOne.mockResolvedValueOnce(mockBooking);
       const result = await service.findOne(1);
-
       expect(result).toEqual(mockBooking);
       expect(bookingRepository.findOne).toHaveBeenCalledWith({
         where: { bookingId: 1 },
         relations: ['user', 'room', 'payment'],
       });
-    });
 
-    it('should throw ResourceNotFoundException when booking not found', async () => {
-      mockBookingRepository.findOne.mockResolvedValue(null);
-
+      // Not found case
+      mockBookingRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.findOne(1)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Error case
       const error = new Error('Database error');
-      mockBookingRepository.findOne.mockRejectedValue(error);
-
+      mockBookingRepository.findOne.mockRejectedValueOnce(error);
       await expect(service.findOne(1)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('create', () => {
-    const createBookingDto: CreateBookingDto = {
-      userId: 1,
-      roomId: 1,
-      checkInDate: new Date('2024-04-01'),
-      checkOutDate: new Date('2024-04-05'),
-      numberOfGuests: 2,
-    };
+    it('should handle all create scenarios', async () => {
+      const validBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date('2024-04-01'),
+        checkOutDate: new Date('2024-04-05'),
+        numberOfGuests: 2,
+      };
 
-    it('should create a new booking', async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockUser);
-      mockRoomRepository.findOne.mockResolvedValue(mockRoom);
-      mockBookingRepository.create.mockReturnValue(mockBooking);
-      mockBookingRepository.save.mockResolvedValue(mockBooking);
+      const invalidBookingDto: CreateBookingDto = {
+        userId: 1,
+        roomId: 1,
+        checkInDate: new Date('2024-04-05'),
+        checkOutDate: new Date('2024-04-01'),
+        numberOfGuests: 2,
+      };
 
-      const result = await service.create(createBookingDto);
-
+      // Success case
+      mockUserRepository.findOne.mockResolvedValueOnce(mockUser);
+      mockRoomRepository.findOne.mockResolvedValueOnce(mockRoom);
+      mockBookingRepository.create.mockReturnValueOnce(mockBooking);
+      mockBookingRepository.save.mockResolvedValueOnce(mockBooking);
+      const result = await service.create(validBookingDto);
       expect(result).toEqual(mockBooking);
-      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: createBookingDto.userId } });
-      expect(roomRepository.findOne).toHaveBeenCalledWith({ where: { id: createBookingDto.roomId } });
+      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: validBookingDto.userId } });
+      expect(roomRepository.findOne).toHaveBeenCalledWith({ where: { id: validBookingDto.roomId } });
       expect(bookingRepository.create).toHaveBeenCalledWith({
-        ...createBookingDto,
+        ...validBookingDto,
         user: mockUser,
         room: mockRoom,
       });
       expect(bookingRepository.save).toHaveBeenCalled();
-    });
 
-    it('should throw BookingValidationException when check-in date is after check-out date', async () => {
-      const invalidDto = {
-        ...createBookingDto,
-        checkInDate: new Date('2024-04-05'),
-        checkOutDate: new Date('2024-04-01'),
-      };
+      // Validation error case
+      await expect(service.create(invalidBookingDto)).rejects.toThrow(BookingValidationException);
 
-      await expect(service.create(invalidDto)).rejects.toThrow(BookingValidationException);
-    });
+      // User not found case
+      mockUserRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.create(validBookingDto)).rejects.toThrow(ResourceNotFoundException);
 
-    it('should throw ResourceNotFoundException when user not found', async () => {
-      mockUserRepository.findOne.mockResolvedValue(null);
+      // Room not found case
+      mockUserRepository.findOne.mockResolvedValueOnce(mockUser);
+      mockRoomRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.create(validBookingDto)).rejects.toThrow(ResourceNotFoundException);
 
-      await expect(service.create(createBookingDto)).rejects.toThrow(ResourceNotFoundException);
-    });
-
-    it('should throw ResourceNotFoundException when room not found', async () => {
-      mockUserRepository.findOne.mockResolvedValue(mockUser);
-      mockRoomRepository.findOne.mockResolvedValue(null);
-
-      await expect(service.create(createBookingDto)).rejects.toThrow(ResourceNotFoundException);
-    });
-
-    it('should throw DatabaseException when repository fails', async () => {
+      // Database error case
       const error = new Error('Database error');
-      mockUserRepository.findOne.mockResolvedValue(mockUser);
-      mockRoomRepository.findOne.mockResolvedValue(mockRoom);
-      mockBookingRepository.create.mockReturnValue(mockBooking);
-      mockBookingRepository.save.mockRejectedValue(error);
-
-      await expect(service.create(createBookingDto)).rejects.toThrow(DatabaseException);
+      mockUserRepository.findOne.mockResolvedValueOnce(mockUser);
+      mockRoomRepository.findOne.mockResolvedValueOnce(mockRoom);
+      mockBookingRepository.create.mockReturnValueOnce(mockBooking);
+      mockBookingRepository.save.mockRejectedValueOnce(error);
+      await expect(service.create(validBookingDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('update', () => {
-    const updateBookingDto: UpdateBookingDto = {
-      checkInDate: new Date('2024-04-02'),
-      checkOutDate: new Date('2024-04-06'),
-      numberOfGuests: 3,
-    };
-
-    it('should update a booking', async () => {
-      const updatedBooking = {
-        ...mockBooking,
-        ...updateBookingDto,
+    it('should handle all update scenarios', async () => {
+      const validUpdateDto: UpdateBookingDto = {
+        checkInDate: new Date('2024-04-02'),
+        checkOutDate: new Date('2024-04-06'),
+        numberOfGuests: 3,
       };
 
-      mockBookingRepository.findOne.mockResolvedValue(mockBooking);
-      mockBookingRepository.merge.mockReturnValue(updatedBooking);
-      mockBookingRepository.save.mockResolvedValue(updatedBooking);
+      const invalidUpdateDto: UpdateBookingDto = {
+        checkInDate: new Date('2024-04-06'),
+        checkOutDate: new Date('2024-04-02'),
+        numberOfGuests: 3,
+      };
 
-      const result = await service.update(1, updateBookingDto);
+      const dtoWithNewUser: UpdateBookingDto = {
+        ...validUpdateDto,
+        userId: 2,
+      };
 
+      const dtoWithNewRoom: UpdateBookingDto = {
+        ...validUpdateDto,
+        roomId: 2,
+      };
+
+      // Success case
+      const updatedBooking = {
+        ...mockBooking,
+        ...validUpdateDto,
+      };
+      mockBookingRepository.findOne.mockResolvedValueOnce(mockBooking);
+      mockBookingRepository.merge.mockReturnValueOnce(updatedBooking);
+      mockBookingRepository.save.mockResolvedValueOnce(updatedBooking);
+      const result = await service.update(1, validUpdateDto);
       expect(result).toEqual(updatedBooking);
       expect(bookingRepository.merge).toHaveBeenCalledWith(mockBooking, {
-        ...updateBookingDto,
+        ...validUpdateDto,
         user: mockBooking.user,
         room: mockBooking.room,
       });
-    });
 
-    it('should throw ResourceNotFoundException when booking not found', async () => {
-      mockBookingRepository.findOne.mockResolvedValue(null);
+      // Not found case
+      mockBookingRepository.findOne.mockResolvedValueOnce(null);
+      await expect(service.update(1, validUpdateDto)).rejects.toThrow(ResourceNotFoundException);
 
-      await expect(service.update(1, updateBookingDto)).rejects.toThrow(ResourceNotFoundException);
-    });
+      // Validation error case
+      mockBookingRepository.findOne.mockResolvedValueOnce(mockBooking);
+      await expect(service.update(1, invalidUpdateDto)).rejects.toThrow(BookingValidationException);
 
-    it('should throw BookingValidationException when check-in date is after check-out date', async () => {
-      const invalidDto = {
-        checkInDate: new Date('2024-04-06'),
-        checkOutDate: new Date('2024-04-02'),
-      };
-
-      mockBookingRepository.findOne.mockResolvedValue(mockBooking);
-
-      await expect(service.update(1, invalidDto)).rejects.toThrow(BookingValidationException);
-    });
-
-    it('should throw ResourceNotFoundException when new user not found', async () => {
-      const dtoWithNewUser = { ...updateBookingDto, userId: 2 };
-      mockBookingRepository.findOne.mockResolvedValue(mockBooking);
-      mockUserRepository.findOne.mockResolvedValue(null);
-
+      // New user not found case
+      mockBookingRepository.findOne.mockResolvedValueOnce(mockBooking);
+      mockUserRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.update(1, dtoWithNewUser)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw ResourceNotFoundException when new room not found', async () => {
-      const dtoWithNewRoom = { ...updateBookingDto, roomId: 2 };
-      mockBookingRepository.findOne.mockResolvedValue(mockBooking);
-      mockRoomRepository.findOne.mockResolvedValue(null);
-
+      // New room not found case
+      mockBookingRepository.findOne.mockResolvedValueOnce(mockBooking);
+      mockRoomRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.update(1, dtoWithNewRoom)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Database error case
       const error = new Error('Database error');
-      mockBookingRepository.findOne.mockResolvedValue(mockBooking);
-      mockBookingRepository.merge.mockReturnValue(mockBooking);
-      mockBookingRepository.save.mockRejectedValue(error);
-
-      await expect(service.update(1, updateBookingDto)).rejects.toThrow(DatabaseException);
+      mockBookingRepository.findOne.mockResolvedValueOnce(mockBooking);
+      mockBookingRepository.merge.mockReturnValueOnce(mockBooking);
+      mockBookingRepository.save.mockRejectedValueOnce(error);
+      await expect(service.update(1, validUpdateDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('remove', () => {
-    it('should remove a booking', async () => {
-      mockBookingRepository.softDelete.mockResolvedValue({ affected: 1 });
-
+    it('should handle all remove scenarios', async () => {
+      // Success case
+      mockBookingRepository.softDelete.mockResolvedValueOnce({ affected: 1 });
       await service.remove(1);
-
       expect(bookingRepository.softDelete).toHaveBeenCalledWith({ bookingId: 1 });
-    });
 
-    it('should throw ResourceNotFoundException when booking not found', async () => {
-      mockBookingRepository.softDelete.mockResolvedValue({ affected: 0 });
-
+      // Not found case
+      mockBookingRepository.softDelete.mockResolvedValueOnce({ affected: 0 });
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when repository fails', async () => {
+      // Database error case
       const error = new Error('Database error');
-      mockBookingRepository.softDelete.mockRejectedValue(error);
-
+      mockBookingRepository.softDelete.mockRejectedValueOnce(error);
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });
   });

@@ -65,27 +65,25 @@ describe('RoomsController', () => {
   });
 
   describe('findAll', () => {
-    it('should return an array of rooms', async () => {
+    it('should handle all findAll scenarios', async () => {
+      // Test successful retrieval
       const rooms = [mockRoom];
       mockRoomsService.findAll.mockResolvedValue(rooms);
-
       const result = await controller.findAll();
-
       expect(result).toEqual(rooms);
       expect(mockRoomsService.findAll).toHaveBeenCalled();
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
+      // Test error handling
       const error = new DatabaseException('Failed to fetch rooms', new Error('Database error'));
       mockRoomsService.findAll.mockRejectedValue(error);
-
       await expect(controller.findAll()).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('searchRooms', () => {
-    it('should return available rooms with filters', async () => {
-      const searchDto: SearchRoomsDto = {
+    it('should handle all searchRooms scenarios', async () => {
+      // Test with all filters
+      const searchDtoWithFilters: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
         checkOutDate: new Date('2024-03-25'),
         roomType: RoomType.DELUXE,
@@ -113,47 +111,49 @@ describe('RoomsController', () => {
       ];
 
       mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
+      const resultWithFilters = await controller.searchRooms(searchDtoWithFilters);
+      expect(resultWithFilters).toEqual(availableRooms);
+      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith(searchDtoWithFilters);
 
-      const result = await controller.searchRooms(searchDto);
-
-      expect(result).toEqual(availableRooms);
-      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith(searchDto);
-    });
-
-    it('should handle optional filters', async () => {
-      const searchDto: SearchRoomsDto = {
+      // Test with minimal filters
+      const searchDtoMinimal: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
         checkOutDate: new Date('2024-03-25')
       };
 
-      const availableRooms: Room[] = [
-        {
-          id: 1,
-          roomNumber: '101',
-          type: RoomType.DELUXE,
-          pricePerNight: 200,
-          maxGuests: 2,
-          description: 'Deluxe Room',
-          amenities: JSON.stringify(['wifi', 'tv']),
-          photos: [],
-          availabilityStatus: AvailabilityStatus.AVAILABLE,
-          bookings: [],
-          createdAt: new Date(),
-          updatedAt: new Date()
-        }
-      ];
-
       mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
+      const resultMinimal = await controller.searchRooms(searchDtoMinimal);
+      expect(resultMinimal).toEqual(availableRooms);
+      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith(searchDtoMinimal);
 
-      const result = await controller.searchRooms(searchDto);
+      // Test error handling
+      const error = new DatabaseException('Failed to search rooms', new Error('Database error'));
+      mockRoomsService.searchAvailableRooms.mockRejectedValue(error);
+      await expect(controller.searchRooms(searchDtoMinimal)).rejects.toThrow(DatabaseException);
+    });
+  });
 
-      expect(result).toEqual(availableRooms);
-      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith(searchDto);
+  describe('findOne', () => {
+    it('should handle all findOne scenarios', async () => {
+      // Test successful retrieval
+      mockRoomsService.findOne.mockResolvedValue(mockRoom);
+      const result = await controller.findOne('1');
+      expect(result).toEqual(mockRoom);
+      expect(mockRoomsService.findOne).toHaveBeenCalledWith(1);
+
+      // Test not found error
+      mockRoomsService.findOne.mockRejectedValue(new ResourceNotFoundException('Room', 1));
+      await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
+
+      // Test database error
+      const error = new DatabaseException('Failed to fetch room', new Error('Database error'));
+      mockRoomsService.findOne.mockRejectedValue(error);
+      await expect(controller.findOne('1')).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('create', () => {
-    it('should create a new room', async () => {
+    it('should handle all create scenarios', async () => {
       const createRoomDto: CreateRoomDto = {
         roomNumber: '101',
         type: RoomType.DOUBLE,
@@ -168,115 +168,64 @@ describe('RoomsController', () => {
         availabilityStatus: AvailabilityStatus.AVAILABLE,
       };
 
+      // Test successful creation
       mockRoomsService.create.mockResolvedValue(mockRoom);
-
       const result = await controller.create(createRoomDto);
-
       expect(result).toEqual(mockRoom);
       expect(mockRoomsService.create).toHaveBeenCalledWith(createRoomDto);
-    });
 
-    it('should throw ConflictException when room number already exists', async () => {
-      const createRoomDto: CreateRoomDto = {
-        roomNumber: '101',
-        type: RoomType.DOUBLE,
-        pricePerNight: 100,
-        maxGuests: 2,
-        description: 'A comfortable double room',
-        amenities: JSON.stringify({
-          wifi: true,
-          tv: true,
-          airConditioning: true,
-        }),
-        availabilityStatus: AvailabilityStatus.AVAILABLE,
-      };
-
+      // Test conflict error
       mockRoomsService.create.mockRejectedValue(
         new ConflictException('Room with number 101 already exists'),
       );
-
       await expect(controller.create(createRoomDto)).rejects.toThrow(ConflictException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
-      const createRoomDto: CreateRoomDto = {
-        roomNumber: '101',
-        type: RoomType.DOUBLE,
-        pricePerNight: 100,
-        maxGuests: 2,
-        description: 'A comfortable double room',
-        amenities: JSON.stringify({
-          wifi: true,
-          tv: true,
-          airConditioning: true,
-        }),
-        availabilityStatus: AvailabilityStatus.AVAILABLE,
-      };
-
+      // Test database error
       const error = new DatabaseException('Failed to create room', new Error('Database error'));
       mockRoomsService.create.mockRejectedValue(error);
-
       await expect(controller.create(createRoomDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('update', () => {
-    it('should update a room', async () => {
+    it('should handle all update scenarios', async () => {
       const updateRoomDto: UpdateRoomDto = {
         pricePerNight: 150,
         availabilityStatus: AvailabilityStatus.MAINTENANCE,
       };
 
+      // Test successful update
       const updatedRoom = { ...mockRoom, ...updateRoomDto };
       mockRoomsService.update.mockResolvedValue(updatedRoom);
-
       const result = await controller.update('1', updateRoomDto);
-
       expect(result).toEqual(updatedRoom);
       expect(mockRoomsService.update).toHaveBeenCalledWith(1, updateRoomDto);
-    });
 
-    it('should throw ResourceNotFoundException when room is not found', async () => {
-      const updateRoomDto: UpdateRoomDto = {
-        pricePerNight: 150,
-      };
-
+      // Test not found error
       mockRoomsService.update.mockRejectedValue(new ResourceNotFoundException('Room', 1));
-
       await expect(controller.update('1', updateRoomDto)).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
-      const updateRoomDto: UpdateRoomDto = {
-        pricePerNight: 150,
-      };
-
+      // Test database error
       const error = new DatabaseException('Failed to update room', new Error('Database error'));
       mockRoomsService.update.mockRejectedValue(error);
-
       await expect(controller.update('1', updateRoomDto)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('remove', () => {
-    it('should remove a room', async () => {
+    it('should handle all remove scenarios', async () => {
+      // Test successful removal
       mockRoomsService.remove.mockResolvedValue(undefined);
-
       await controller.remove('1');
-
       expect(mockRoomsService.remove).toHaveBeenCalledWith(1);
-    });
 
-    it('should throw ResourceNotFoundException when room is not found', async () => {
+      // Test not found error
       mockRoomsService.remove.mockRejectedValue(new ResourceNotFoundException('Room', 1));
-
       await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
-    });
 
-    it('should throw DatabaseException when service fails', async () => {
+      // Test database error
       const error = new DatabaseException('Failed to delete room', new Error('Database error'));
       mockRoomsService.remove.mockRejectedValue(error);
-
       await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });

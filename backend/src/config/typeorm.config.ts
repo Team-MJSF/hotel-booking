@@ -29,7 +29,7 @@ interface DatabaseConfig {
 function getDatabaseConfig(configService: ConfigService): DatabaseConfig {
   const host = configService.get('DB_HOST');
   const port = configService.get('DB_PORT');
-  const username = configService.get('DB_USER');
+  const username = configService.get('DB_USERNAME');
   const password = configService.get('DB_PASSWORD');
   const dbName = configService.get('DB_NAME');
   const isTest = process.env.NODE_ENV === 'test';
