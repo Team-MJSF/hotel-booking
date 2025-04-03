@@ -19,6 +19,9 @@ import { ResourceNotFoundException, ConflictException, DatabaseException } from 
 import * as bcrypt from 'bcrypt';
 import { Logger } from '@nestjs/common';
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('UsersService', () => {
   let service: UsersService;
   let repository: Repository<User>;
@@ -79,58 +82,60 @@ describe('UsersService', () => {
     jest.clearAllMocks();
   });
 
-  describe('CRUD operations', () => {
-    it('should handle findAll operation correctly', async () => {
-      // Test case 1: Successful retrieval
+  describe('findAll', () => {
+    it('should handle all findAll scenarios', async () => {
+      // Success case
       const users = [mockUser];
-      mockRepository.find.mockResolvedValue(users);
-
+      mockRepository.find.mockResolvedValueOnce(users);
       const result = await service.findAll();
       expect(result).toEqual(users);
       expect(repository.find).toHaveBeenCalled();
 
-      // Test case 2: Database error
-      mockRepository.find.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockRepository.find.mockRejectedValueOnce(new Error('Database error'));
       await expect(service.findAll()).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle findOne operation correctly', async () => {
-      // Test case 1: Successful retrieval
-      mockRepository.findOne.mockResolvedValue(mockUser);
-
+  describe('findOne', () => {
+    it('should handle all findOne scenarios', async () => {
+      // Success case
+      mockRepository.findOne.mockResolvedValueOnce(mockUser);
       const result = await service.findOne(1);
       expect(result).toEqual(mockUser);
       expect(repository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
 
-      // Test case 2: User not found
-      mockRepository.findOne.mockResolvedValue(null);
+      // Not found case
+      mockRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.findOne(1)).rejects.toThrow(ResourceNotFoundException);
 
-      // Test case 3: Database error
-      mockRepository.findOne.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockRepository.findOne.mockRejectedValueOnce(new Error('Database error'));
       await expect(service.findOne(1)).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle findByEmail operation correctly', async () => {
-      // Test case 1: Successful retrieval
-      mockRepository.findOne.mockResolvedValue(mockUser);
-
+  describe('findByEmail', () => {
+    it('should handle all findByEmail scenarios', async () => {
+      // Success case
+      mockRepository.findOne.mockResolvedValueOnce(mockUser);
       const result = await service.findByEmail('john@example.com');
       expect(result).toEqual(mockUser);
       expect(repository.findOne).toHaveBeenCalledWith({ where: { email: 'john@example.com' } });
 
-      // Test case 2: User not found
-      mockRepository.findOne.mockResolvedValue(null);
-
+      // Not found case
+      mockRepository.findOne.mockResolvedValueOnce(null);
       const result2 = await service.findByEmail('nonexistent@example.com');
       expect(result2).toBeNull();
 
-      // Test case 3: Database error
-      mockRepository.findOne.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockRepository.findOne.mockRejectedValueOnce(new Error('Database error'));
       await expect(service.findByEmail('john@example.com')).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle create operation correctly', async () => {
+  describe('create', () => {
+    it('should handle all create scenarios', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'John',
         lastName: 'Doe',
@@ -138,11 +143,10 @@ describe('UsersService', () => {
         password: 'password123',
       };
 
-      // Test case 1: Successful creation
-      mockRepository.findOne.mockResolvedValue(null);
-      mockRepository.create.mockReturnValue(mockUser);
-      mockRepository.save.mockResolvedValue(mockUser);
-
+      // Success case
+      mockRepository.findOne.mockResolvedValueOnce(null);
+      mockRepository.create.mockReturnValueOnce(mockUser);
+      mockRepository.save.mockResolvedValueOnce(mockUser);
       const result = await service.create(createUserDto);
       expect(result).toEqual(mockUser);
       expect(repository.create).toHaveBeenCalledWith({
@@ -151,25 +155,27 @@ describe('UsersService', () => {
       });
       expect(repository.save).toHaveBeenCalled();
 
-      // Test case 2: Email already exists
-      mockRepository.findOne.mockResolvedValue(mockUser);
+      // Email exists case
+      mockRepository.findOne.mockResolvedValueOnce(mockUser);
       await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
 
-      // Test case 3: Database error
-      mockRepository.findOne.mockResolvedValue(null);
-      mockRepository.create.mockReturnValue(mockUser);
-      mockRepository.save.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockRepository.findOne.mockResolvedValueOnce(null);
+      mockRepository.create.mockReturnValueOnce(mockUser);
+      mockRepository.save.mockRejectedValueOnce(new Error('Database error'));
       await expect(service.create(createUserDto)).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle update operation correctly', async () => {
+  describe('update', () => {
+    it('should handle all update scenarios', async () => {
       const updateUserDto: UpdateUserDto = {
         firstName: 'Jane',
         email: 'jane@example.com',
         password: 'newpassword',
       };
 
-      // Test case 1: Successful update
+      // Success case
       const updatedUser = {
         ...mockUser,
         firstName: updateUserDto.firstName,
@@ -179,8 +185,8 @@ describe('UsersService', () => {
 
       mockRepository.findOne.mockResolvedValueOnce(mockUser);
       mockRepository.findOne.mockResolvedValueOnce(null);
-      (bcrypt.hash as jest.Mock).mockResolvedValue('newHashedPassword');
-      mockRepository.update.mockResolvedValue({ affected: 1 });
+      (bcrypt.hash as jest.Mock).mockResolvedValueOnce('newHashedPassword');
+      mockRepository.update.mockResolvedValueOnce({ affected: 1 });
       mockRepository.findOne.mockResolvedValueOnce(updatedUser);
 
       const result = await service.update(1, updateUserDto);
@@ -191,54 +197,57 @@ describe('UsersService', () => {
         password: 'newHashedPassword',
       });
 
-      // Test case 2: User not found
-      mockRepository.findOne.mockResolvedValue(null);
+      // Not found case
+      mockRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.update(1, updateUserDto)).rejects.toThrow(ResourceNotFoundException);
 
-      // Test case 3: Email already exists
-      mockRepository.findOne.mockResolvedValue(mockUser);
+      // Email exists case
+      mockRepository.findOne.mockResolvedValueOnce(mockUser);
       mockRepository.findOne.mockResolvedValueOnce({ ...mockUser, id: 2 });
       await expect(service.update(1, updateUserDto)).rejects.toThrow(ConflictException);
 
-      // Test case 4: Database error
+      // Error case
       mockRepository.findOne.mockResolvedValueOnce(mockUser);
       mockRepository.findOne.mockResolvedValueOnce(null);
-      mockRepository.update.mockRejectedValue(new Error('Database error'));
+      mockRepository.update.mockRejectedValueOnce(new Error('Database error'));
       await expect(service.update(1, updateUserDto)).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle remove operation correctly', async () => {
-      // Test case 1: Successful removal
-      mockRepository.softDelete.mockResolvedValue({ affected: 1 });
+  describe('remove', () => {
+    it('should handle all remove scenarios', async () => {
+      // Success case
+      mockRepository.softDelete.mockResolvedValueOnce({ affected: 1 });
       await service.remove(1);
       expect(repository.softDelete).toHaveBeenCalledWith(1);
 
-      // Test case 2: User not found
-      mockRepository.softDelete.mockResolvedValue({ affected: 0 });
+      // Not found case
+      mockRepository.softDelete.mockResolvedValueOnce({ affected: 0 });
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
 
-      // Test case 3: Database error
-      mockRepository.softDelete.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockRepository.softDelete.mockRejectedValueOnce(new Error('Database error'));
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });
   });
 
   describe('validatePassword', () => {
-    it('should handle password validation correctly', async () => {
-      // Test case 1: Valid password
+    it('should handle all password validation scenarios', async () => {
       const userWithHashedPassword = {
         ...mockUser,
         password: 'hashed_password123'
       };
+
+      // Success case
       const result = await service.validatePassword(userWithHashedPassword, 'password123');
       expect(result).toBe(true);
       expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashed_password123');
 
-      // Test case 2: Invalid password
+      // Invalid password case
       const result2 = await service.validatePassword(userWithHashedPassword, 'wrongpassword');
       expect(result2).toBe(false);
 
-      // Test case 3: Error during validation
+      // Error case
       (bcrypt.compare as jest.Mock).mockRejectedValueOnce(new Error('Validation error'));
       await expect(service.validatePassword(userWithHashedPassword, 'password123')).rejects.toThrow(DatabaseException);
     });

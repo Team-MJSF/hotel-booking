@@ -59,54 +59,55 @@ describe('UsersController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('CRUD operations', () => {
-    it('should handle findAll operation correctly', async () => {
-      // Test case 1: Successful retrieval
+  describe('findAll', () => {
+    it('should handle all findAll scenarios', async () => {
+      // Success case
       const expectedUsers = [
         { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
         { id: 2, firstName: 'Jane', lastName: 'Doe', email: 'jane@example.com' },
       ];
-      mockUsersService.findAll.mockResolvedValue(expectedUsers);
-
+      mockUsersService.findAll.mockResolvedValueOnce(expectedUsers);
       const result = await controller.findAll();
       expect(result).toEqual(expectedUsers);
       expect(usersService.findAll).toHaveBeenCalled();
 
-      // Test case 2: Database error
-      mockUsersService.findAll.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockUsersService.findAll.mockRejectedValueOnce(new Error('Database error'));
       await expect(controller.findAll()).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle findOne operation correctly', async () => {
-      // Test case 1: Admin accessing any user
+  describe('findOne', () => {
+    it('should handle all findOne scenarios', async () => {
+      // Admin accessing any user case
       const adminUser = { ...mockUser, role: UserRole.ADMIN };
-      mockUsersService.findOne.mockResolvedValue(mockUser);
-
+      mockUsersService.findOne.mockResolvedValueOnce(mockUser);
       const result = await controller.findOne('1', adminUser);
       expect(result).toEqual(mockUser);
       expect(usersService.findOne).toHaveBeenCalledWith(1);
 
-      // Test case 2: User accessing own profile
+      // User accessing own profile case
       const regularUser = { ...mockUser, id: 1 };
-      mockUsersService.findOne.mockResolvedValue(mockUser);
-
+      mockUsersService.findOne.mockResolvedValueOnce(mockUser);
       const result2 = await controller.findOne('1', regularUser);
       expect(result2).toEqual(mockUser);
 
-      // Test case 3: User trying to access another user's profile
+      // User trying to access another user's profile case
       const otherUser = { ...mockUser, id: 2 };
       await expect(controller.findOne('1', otherUser)).rejects.toThrow(ForbiddenException);
 
-      // Test case 4: User not found
-      mockUsersService.findOne.mockRejectedValue(new ResourceNotFoundException('User', 1));
+      // Not found case
+      mockUsersService.findOne.mockRejectedValueOnce(new ResourceNotFoundException('User', 1));
       await expect(controller.findOne('1', adminUser)).rejects.toThrow(ResourceNotFoundException);
 
-      // Test case 5: Database error
-      mockUsersService.findOne.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockUsersService.findOne.mockRejectedValueOnce(new Error('Database error'));
       await expect(controller.findOne('1', adminUser)).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle create operation correctly', async () => {
+  describe('create', () => {
+    it('should handle all create scenarios', async () => {
       const createUserDto: CreateUserDto = {
         firstName: 'John',
         lastName: 'Doe',
@@ -115,63 +116,67 @@ describe('UsersController', () => {
         role: UserRole.USER,
       };
 
-      // Test case 1: Successful creation
-      mockUsersService.create.mockResolvedValue(mockUser);
+      // Success case
+      mockUsersService.create.mockResolvedValueOnce(mockUser);
       const result = await controller.create(createUserDto);
       expect(result).toEqual(mockUser);
       expect(mockUsersService.create).toHaveBeenCalledWith(createUserDto);
 
-      // Test case 2: Email already exists
-      mockUsersService.create.mockRejectedValue(
+      // Email exists case
+      mockUsersService.create.mockRejectedValueOnce(
         new ConflictException('User with email john@example.com already exists'),
       );
       await expect(controller.create(createUserDto)).rejects.toThrow(ConflictException);
 
-      // Test case 3: Database error
-      mockUsersService.create.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockUsersService.create.mockRejectedValueOnce(new Error('Database error'));
       await expect(controller.create(createUserDto)).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle update operation correctly', async () => {
+  describe('update', () => {
+    it('should handle all update scenarios', async () => {
       const updateUserDto: UpdateUserDto = {
         firstName: 'Jane',
         role: UserRole.ADMIN,
       };
 
-      // Test case 1: Successful update
+      // Success case
       const updatedUser = { ...mockUser, ...updateUserDto };
-      mockUsersService.update.mockResolvedValue(updatedUser);
+      mockUsersService.update.mockResolvedValueOnce(updatedUser);
       const result = await controller.update('1', updateUserDto);
       expect(result).toEqual(updatedUser);
       expect(mockUsersService.update).toHaveBeenCalledWith(1, updateUserDto);
 
-      // Test case 2: User not found
-      mockUsersService.update.mockRejectedValue(new ResourceNotFoundException('User', 1));
+      // Not found case
+      mockUsersService.update.mockRejectedValueOnce(new ResourceNotFoundException('User', 1));
       await expect(controller.update('1', updateUserDto)).rejects.toThrow(ResourceNotFoundException);
 
-      // Test case 3: Email already exists
-      mockUsersService.update.mockRejectedValue(
+      // Email exists case
+      mockUsersService.update.mockRejectedValueOnce(
         new ConflictException('User with email jane@example.com already exists'),
       );
       await expect(controller.update('1', updateUserDto)).rejects.toThrow(ConflictException);
 
-      // Test case 4: Database error
-      mockUsersService.update.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockUsersService.update.mockRejectedValueOnce(new Error('Database error'));
       await expect(controller.update('1', updateUserDto)).rejects.toThrow(DatabaseException);
     });
+  });
 
-    it('should handle remove operation correctly', async () => {
-      // Test case 1: Successful removal
-      mockUsersService.remove.mockResolvedValue(undefined);
+  describe('remove', () => {
+    it('should handle all remove scenarios', async () => {
+      // Success case
+      mockUsersService.remove.mockResolvedValueOnce(undefined);
       await controller.remove('1');
       expect(mockUsersService.remove).toHaveBeenCalledWith(1);
 
-      // Test case 2: User not found
-      mockUsersService.remove.mockRejectedValue(new ResourceNotFoundException('User', 1));
+      // Not found case
+      mockUsersService.remove.mockRejectedValueOnce(new ResourceNotFoundException('User', 1));
       await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
 
-      // Test case 3: Database error
-      mockUsersService.remove.mockRejectedValue(new Error('Database error'));
+      // Error case
+      mockUsersService.remove.mockRejectedValueOnce(new Error('Database error'));
       await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });
