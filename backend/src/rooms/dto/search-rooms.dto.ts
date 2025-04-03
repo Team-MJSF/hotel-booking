@@ -16,7 +16,7 @@ export enum SortOrder {
 }
 
 function IsAfterDate(property: string, validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isAfterDate',
       target: object.constructor,
@@ -24,9 +24,9 @@ function IsAfterDate(property: string, validationOptions?: ValidationOptions) {
       constraints: [property],
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: Date, args: ValidationArguments) {
           const [relatedPropertyName] = args.constraints;
-          const relatedValue = (args.object as any)[relatedPropertyName];
+          const relatedValue = (args.object as Record<string, Date>)[relatedPropertyName];
           return value > relatedValue;
         }
       }
@@ -35,7 +35,7 @@ function IsAfterDate(property: string, validationOptions?: ValidationOptions) {
 }
 
 function IsGreaterThan(property: string, validationOptions?: ValidationOptions) {
-  return function (object: Object, propertyName: string) {
+  return function (object: object, propertyName: string) {
     registerDecorator({
       name: 'isGreaterThan',
       target: object.constructor,
@@ -43,9 +43,9 @@ function IsGreaterThan(property: string, validationOptions?: ValidationOptions) 
       constraints: [property],
       options: validationOptions,
       validator: {
-        validate(value: any, args: ValidationArguments) {
+        validate(value: number, args: ValidationArguments) {
           const [relatedPropertyName] = args.constraints;
-          const relatedValue = (args.object as any)[relatedPropertyName];
+          const relatedValue = (args.object as Record<string, number>)[relatedPropertyName];
           return value > relatedValue;
         }
       }

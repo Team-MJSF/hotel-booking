@@ -1,8 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
-import { RegisterDto } from './dto/register.dto';
-import { LoginDto } from './dto/login.dto';
 import { UnauthorizedException } from '@nestjs/common';
 import { ProfileDto } from './dto/profile.dto';
 import { UserRole } from '../users/entities/user.entity';
@@ -51,7 +49,7 @@ describe('AuthController', () => {
           mockResult: { id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
           mockError: null,
           expectedError: null,
-          assertions: (result: any) => {
+          assertions: (result: Record<string, unknown>) => {
             expect(result).toEqual({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' });
             expect(authService.register).toHaveBeenCalledWith({
               firstName: 'John',
@@ -94,6 +92,8 @@ describe('AuthController', () => {
         expectedError, 
         assertions 
       } of testCases) {
+        console.log(`Testing: ${description}`);
+        
         if (mockError) {
           mockAuthService.register.mockRejectedValue(mockError);
         } else {
@@ -124,7 +124,7 @@ describe('AuthController', () => {
           mockResult: { access_token: 'jwt-token' },
           mockError: null,
           expectedError: null,
-          assertions: (result: any) => {
+          assertions: (result: Record<string, unknown>) => {
             expect(result).toEqual({ access_token: 'jwt-token' });
             expect(authService.login).toHaveBeenCalledWith({
               email: 'test@example.com',
@@ -158,6 +158,8 @@ describe('AuthController', () => {
         expectedError, 
         assertions 
       } of testCases) {
+        console.log(`Testing: ${description}`);
+        
         if (mockError) {
           mockAuthService.login.mockRejectedValue(mockError);
         } else {
@@ -206,7 +208,7 @@ describe('AuthController', () => {
           mockResult: expectedProfile,
           mockError: null,
           expectedError: null,
-          assertions: (result: any) => {
+          assertions: (result: ProfileDto) => {
             expect(result).toEqual(expectedProfile);
             expect(authService.getProfile).toHaveBeenCalledWith(mockUser.id);
           }
@@ -221,6 +223,8 @@ describe('AuthController', () => {
         expectedError, 
         assertions 
       } of testCases) {
+        console.log(`Testing: ${description}`);
+        
         if (mockError) {
           mockAuthService.getProfile.mockRejectedValue(mockError);
         } else {

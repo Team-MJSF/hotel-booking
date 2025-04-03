@@ -90,6 +90,7 @@ describe('JwtStrategy', () => {
     ];
 
     for (const { description, setup, expectedResult, shouldThrow, expectedError } of testCases) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       // Reset mock before each test case
       mockUsersService.findOne.mockReset();
       

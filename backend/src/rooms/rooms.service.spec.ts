@@ -5,7 +5,7 @@ import { RoomsService } from './rooms.service';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { SearchRoomsDto, SortField, SortOrder } from './dto/search-rooms.dto';
+import { SortField, SortOrder } from './dto/search-rooms.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 
 type MockQueryBuilder = {

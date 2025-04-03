@@ -3,8 +3,20 @@ import { plainToClass } from 'class-transformer';
 import { UpdateRoomDto } from './update-room.dto';
 import { RoomType, AvailabilityStatus } from '../entities/room.entity';
 
+// Define a type for the input data that matches the DTO structure
+type UpdateRoomDtoInput = Partial<{
+  type: RoomType | string;
+  roomNumber: string;
+  pricePerNight: number | string;
+  maxGuests: number | string;
+  description: string;
+  amenities: string;
+  availabilityStatus: AvailabilityStatus | string;
+  extraField?: string;
+}>;
+
 describe('UpdateRoomDto', () => {
-  const createDto = (data: any) => plainToClass(UpdateRoomDto, data);
+  const createDto = (data: UpdateRoomDtoInput) => plainToClass(UpdateRoomDto, data);
   
   const validateDto = async (dto: UpdateRoomDto) => {
     const errors = await validate(dto);

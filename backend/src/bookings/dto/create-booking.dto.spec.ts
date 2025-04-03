@@ -26,35 +26,35 @@ describe('CreateBookingDto', () => {
       expect(errors).toHaveLength(0);
 
       // Invalid userId case
-      createBookingDto.userId = 'not-a-number' as any;
+      createBookingDto.userId = 'not-a-number' as unknown as number;
       const userIdErrors = await validate(createBookingDto);
       expect(userIdErrors).toHaveLength(1);
       expect(userIdErrors[0].constraints).toHaveProperty('isNumber');
 
       // Invalid roomId case
       createBookingDto.userId = 1;
-      createBookingDto.roomId = 'not-a-number' as any;
+      createBookingDto.roomId = 'not-a-number' as unknown as number;
       const roomIdErrors = await validate(createBookingDto);
       expect(roomIdErrors).toHaveLength(1);
       expect(roomIdErrors[0].constraints).toHaveProperty('isNumber');
 
       // Invalid checkInDate case
       createBookingDto.roomId = 101;
-      createBookingDto.checkInDate = 'not-a-date' as any;
+      createBookingDto.checkInDate = 'not-a-date' as unknown as Date;
       const checkInDateErrors = await validate(createBookingDto);
       expect(checkInDateErrors).toHaveLength(1);
       expect(checkInDateErrors[0].constraints).toHaveProperty('isDate');
 
       // Invalid checkOutDate case
       createBookingDto.checkInDate = new Date('2024-03-20');
-      createBookingDto.checkOutDate = 'not-a-date' as any;
+      createBookingDto.checkOutDate = 'not-a-date' as unknown as Date;
       const checkOutDateErrors = await validate(createBookingDto);
       expect(checkOutDateErrors).toHaveLength(1);
       expect(checkOutDateErrors[0].constraints).toHaveProperty('isDate');
 
       // Invalid numberOfGuests case
       createBookingDto.checkOutDate = new Date('2024-03-25');
-      createBookingDto.numberOfGuests = 'not-a-number' as any;
+      createBookingDto.numberOfGuests = 'not-a-number' as unknown as number;
       const numberOfGuestsErrors = await validate(createBookingDto);
       expect(numberOfGuestsErrors).toHaveLength(1);
       expect(numberOfGuestsErrors[0].constraints).toHaveProperty('isNumber');

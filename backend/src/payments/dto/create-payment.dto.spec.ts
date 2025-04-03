@@ -54,7 +54,7 @@ describe('CreatePaymentDto', () => {
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
       createPaymentDto.amount = 100.50;
-      createPaymentDto.paymentMethod = 'INVALID_METHOD' as any;
+      createPaymentDto.paymentMethod = 'INVALID_METHOD' as unknown as PaymentMethod;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = PaymentStatus.PENDING;
 
@@ -67,7 +67,7 @@ describe('CreatePaymentDto', () => {
       createPaymentDto.bookingId = 1;
       createPaymentDto.amount = 100.50;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
-      createPaymentDto.currency = 'INVALID_CURRENCY' as any;
+      createPaymentDto.currency = 'INVALID_CURRENCY' as unknown as Currency;
       createPaymentDto.status = PaymentStatus.PENDING;
 
       const currencyErrors = await validate(createPaymentDto);
@@ -80,7 +80,7 @@ describe('CreatePaymentDto', () => {
       createPaymentDto.amount = 100.50;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
-      createPaymentDto.status = 'INVALID_STATUS' as any;
+      createPaymentDto.status = 'INVALID_STATUS' as unknown as PaymentStatus;
 
       const statusErrors = await validate(createPaymentDto);
       expect(statusErrors.length).toBeGreaterThan(0);
@@ -88,7 +88,7 @@ describe('CreatePaymentDto', () => {
 
       // Invalid bookingId case
       createPaymentDto = new CreatePaymentDto();
-      createPaymentDto.bookingId = 'not-a-number' as any;
+      createPaymentDto.bookingId = 'not-a-number' as unknown as number;
       createPaymentDto.amount = 100.50;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
@@ -101,7 +101,7 @@ describe('CreatePaymentDto', () => {
       // Invalid amount case
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 'not-a-number' as any;
+      createPaymentDto.amount = 'not-a-number' as unknown as number;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = PaymentStatus.PENDING;

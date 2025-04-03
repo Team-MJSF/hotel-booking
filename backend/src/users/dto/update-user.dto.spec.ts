@@ -1,8 +1,6 @@
 import { validate } from 'class-validator';
-import { plainToClass } from 'class-transformer';
 import { UpdateUserDto } from './update-user.dto';
 import { UserRole } from '../entities/user.entity';
-import { IsString, IsEmail, IsOptional, IsEnum, MinLength, Matches } from 'class-validator';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);

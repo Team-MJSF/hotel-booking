@@ -2,6 +2,11 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { UpdateBookingDto } from './update-booking.dto';
 
+// Define interface for test data with extra properties
+interface UpdateBookingDtoWithExtra extends UpdateBookingDto {
+  extraField?: string;
+}
+
 // Increase timeout for all tests
 jest.setTimeout(10000);
 
@@ -39,35 +44,35 @@ describe('UpdateBookingDto', () => {
       expect(emptyErrors).toHaveLength(0);
 
       // Invalid userId case
-      updateBookingDto.userId = 'not-a-number' as any;
+      updateBookingDto.userId = 'not-a-number' as unknown as number;
       const userIdErrors = await validate(updateBookingDto);
       expect(userIdErrors).toHaveLength(1);
       expect(userIdErrors[0].constraints).toHaveProperty('isNumber');
 
       // Invalid roomId case
       updateBookingDto = new UpdateBookingDto();
-      updateBookingDto.roomId = 'not-a-number' as any;
+      updateBookingDto.roomId = 'not-a-number' as unknown as number;
       const roomIdErrors = await validate(updateBookingDto);
       expect(roomIdErrors).toHaveLength(1);
       expect(roomIdErrors[0].constraints).toHaveProperty('isNumber');
 
       // Invalid checkInDate case
       updateBookingDto = new UpdateBookingDto();
-      updateBookingDto.checkInDate = 'not-a-date' as any;
+      updateBookingDto.checkInDate = 'not-a-date' as unknown as Date;
       const checkInDateErrors = await validate(updateBookingDto);
       expect(checkInDateErrors).toHaveLength(1);
       expect(checkInDateErrors[0].constraints).toHaveProperty('isDate');
 
       // Invalid checkOutDate case
       updateBookingDto = new UpdateBookingDto();
-      updateBookingDto.checkOutDate = 'not-a-date' as any;
+      updateBookingDto.checkOutDate = 'not-a-date' as unknown as Date;
       const checkOutDateErrors = await validate(updateBookingDto);
       expect(checkOutDateErrors).toHaveLength(1);
       expect(checkOutDateErrors[0].constraints).toHaveProperty('isDate');
 
       // Invalid numberOfGuests case
       updateBookingDto = new UpdateBookingDto();
-      updateBookingDto.numberOfGuests = 'not-a-number' as any;
+      updateBookingDto.numberOfGuests = 'not-a-number' as unknown as number;
       const numberOfGuestsErrors = await validate(updateBookingDto);
       expect(numberOfGuestsErrors).toHaveLength(1);
       expect(numberOfGuestsErrors[0].constraints).toHaveProperty('isNumber');
@@ -150,9 +155,8 @@ describe('UpdateBookingDto', () => {
         extraField: 'extra value'
       };
 
-      const dtoObject6 = plainToClass(UpdateBookingDto, dataWithExtraProperties);
-      // Use type assertion to access the extra property
-      expect((dtoObject6 as any).extraField).toBe('extra value');
+      const dtoObject6 = plainToClass(UpdateBookingDto, dataWithExtraProperties) as UpdateBookingDtoWithExtra;
+      expect(dtoObject6.extraField).toBe('extra value');
       
       // Validate that extra properties don't cause validation errors
       const errors = await validate(dtoObject6);

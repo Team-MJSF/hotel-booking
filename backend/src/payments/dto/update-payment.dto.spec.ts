@@ -3,6 +3,11 @@ import { plainToClass } from 'class-transformer';
 import { UpdatePaymentDto } from './update-payment.dto';
 import { PaymentStatus, PaymentMethod, Currency } from '../entities/payment.entity';
 
+// Define interface for test data with extra properties
+interface UpdatePaymentDtoWithExtra extends UpdatePaymentDto {
+  extraField?: string;
+}
+
 // Increase timeout for all tests
 jest.setTimeout(10000);
 
@@ -42,35 +47,35 @@ describe('UpdatePaymentDto', () => {
 
       // Invalid bookingId case
       updatePaymentDto = new UpdatePaymentDto();
-      updatePaymentDto.bookingId = 'not-a-number' as any;
+      updatePaymentDto.bookingId = 'not-a-number' as unknown as number;
       const bookingIdErrors = await validate(updatePaymentDto);
       expect(bookingIdErrors.length).toBeGreaterThan(0);
       expect(bookingIdErrors.some(error => error.property === 'bookingId')).toBe(true);
 
       // Invalid amount case
       updatePaymentDto = new UpdatePaymentDto();
-      updatePaymentDto.amount = 'invalid-amount' as any;
+      updatePaymentDto.amount = 'invalid-amount' as unknown as number;
       const amountErrors = await validate(updatePaymentDto);
       expect(amountErrors.length).toBeGreaterThan(0);
       expect(amountErrors.some(error => error.property === 'amount')).toBe(true);
 
       // Invalid payment method case
       updatePaymentDto = new UpdatePaymentDto();
-      updatePaymentDto.paymentMethod = 'INVALID_METHOD' as any;
+      updatePaymentDto.paymentMethod = 'INVALID_METHOD' as unknown as PaymentMethod;
       const paymentMethodErrors = await validate(updatePaymentDto);
       expect(paymentMethodErrors.length).toBeGreaterThan(0);
       expect(paymentMethodErrors.some(error => error.property === 'paymentMethod')).toBe(true);
 
       // Invalid currency case
       updatePaymentDto = new UpdatePaymentDto();
-      updatePaymentDto.currency = 'INVALID_CURRENCY' as any;
+      updatePaymentDto.currency = 'INVALID_CURRENCY' as unknown as Currency;
       const currencyErrors = await validate(updatePaymentDto);
       expect(currencyErrors.length).toBeGreaterThan(0);
       expect(currencyErrors.some(error => error.property === 'currency')).toBe(true);
 
       // Invalid status case
       updatePaymentDto = new UpdatePaymentDto();
-      updatePaymentDto.status = 'INVALID_STATUS' as any;
+      updatePaymentDto.status = 'INVALID_STATUS' as unknown as PaymentStatus;
       const statusErrors = await validate(updatePaymentDto);
       expect(statusErrors.length).toBeGreaterThan(0);
       expect(statusErrors.some(error => error.property === 'status')).toBe(true);
@@ -194,13 +199,13 @@ describe('UpdatePaymentDto', () => {
         extraField: 'extra value'
       };
 
-      const extraPropsDto = plainToClass(UpdatePaymentDto, extraPropsData);
+      const extraPropsDto = plainToClass(UpdatePaymentDto, extraPropsData) as UpdatePaymentDtoWithExtra;
       expect(extraPropsDto.bookingId).toBe(extraPropsData.bookingId);
       expect(extraPropsDto.amount).toBe(extraPropsData.amount);
       expect(extraPropsDto.paymentMethod).toBe(extraPropsData.paymentMethod);
       expect(extraPropsDto.currency).toBe(extraPropsData.currency);
       expect(extraPropsDto.status).toBe(extraPropsData.status);
-      // Extra properties are automatically ignored by class-transformer
+      expect(extraPropsDto.extraField).toBe(extraPropsData.extraField);
     });
   });
 }); 

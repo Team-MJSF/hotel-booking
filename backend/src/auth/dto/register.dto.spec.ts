@@ -2,6 +2,11 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { RegisterDto } from './register.dto';
 
+// Define interface for RegisterDto with extra field
+interface RegisterDtoWithExtra extends RegisterDto {
+  extraField?: string;
+}
+
 // Increase timeout for all tests
 jest.setTimeout(10000);
 
@@ -64,7 +69,7 @@ describe('RegisterDto', () => {
           data: [
             { firstName: 'John', lastName: 'Doe' },
             { firstName: 'Mary-Jane', lastName: 'Smith-Jones' },
-            { firstName: 'Jean-Pierre', lastName: "O'Connor" },
+            { firstName: 'Jean-Pierre', lastName: 'O\'Connor' },
             { firstName: 'José', lastName: 'González' },
             { firstName: 'Иван', lastName: 'Петров' }
           ].map(({ firstName, lastName }) => ({
@@ -82,11 +87,7 @@ describe('RegisterDto', () => {
         for (const item of dataArray) {
           registerDto = plainToClass(RegisterDto, item);
           const errors = await validate(registerDto);
-          const message = `Failed for case: ${description}`;
           expect(errors.length).toBe(0);
-          if (errors.length > 0) {
-            console.error(message, errors);
-          }
         }
       }
 
@@ -171,18 +172,10 @@ describe('RegisterDto', () => {
       for (const { description, data, expectedErrors } of invalidTestCases) {
         registerDto = plainToClass(RegisterDto, data);
         const errors = await validate(registerDto);
-        const message = `No errors found for invalid case: ${description}`;
         expect(errors.length).toBeGreaterThan(0);
-        if (errors.length === 0) {
-          console.error(message);
-        }
         expectedErrors.forEach(property => {
-          const message = `Expected error for property ${property} in case: ${description}`;
           const hasError = errors.some(error => error.property === property);
           expect(hasError).toBe(true);
-          if (!hasError) {
-            console.error(message);
-          }
         });
       }
     });
@@ -261,20 +254,16 @@ describe('RegisterDto', () => {
             confirmPassword: 'password123',
             extraField: 'extra value'
           },
-          assertions: (dto: RegisterDto) => {
+          assertions: (dto: RegisterDtoWithExtra) => {
             expect(dto).toHaveProperty('extraField');
-            expect((dto as any).extraField).toBe('extra value');
+            expect(dto.extraField).toBe('extra value');
           }
         }
       ];
 
       for (const { description, data, assertions } of testCases) {
-        const dtoObject = plainToClass(RegisterDto, data);
-        const message = `Failed instanceof check for: ${description}`;
+        const dtoObject = plainToClass(RegisterDto, data) as RegisterDtoWithExtra;
         expect(dtoObject).toBeInstanceOf(RegisterDto);
-        if (!(dtoObject instanceof RegisterDto)) {
-          console.error(message);
-        }
         assertions(dtoObject);
       }
     });
