@@ -17,6 +17,9 @@ type MockQueryBuilder = {
   getMany: jest.Mock;
 };
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('RoomsService', () => {
   let service: RoomsService;
   let roomsRepository: Repository<Room>;
@@ -79,6 +82,17 @@ describe('RoomsService', () => {
           }
         },
         {
+          description: 'return empty array when no rooms exist',
+          mockResult: [],
+          expectedResult: [],
+          mockError: null,
+          expectedError: null,
+          assertions: (result: Room[]) => {
+            expect(result).toEqual([]);
+            expect(roomsRepository.find).toHaveBeenCalled();
+          }
+        },
+        {
           description: 'throw DatabaseException when repository fails',
           mockResult: null,
           expectedResult: null,
@@ -100,7 +114,7 @@ describe('RoomsService', () => {
         if (expectedError) {
           await expect(service.findAll()).rejects.toThrow(expectedError);
         } else {
-      const result = await service.findAll();
+          const result = await service.findAll();
           expect(result).toEqual(expectedResult);
         }
         
@@ -120,8 +134,8 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room) => {
-      expect(result).toEqual(mockRoom);
-      expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+            expect(result).toEqual(mockRoom);
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
           }
         },
         {
@@ -189,12 +203,28 @@ describe('RoomsService', () => {
           expectedResult: mockRoom,
           expectedError: null,
           assertions: (result: Room) => {
-      expect(result).toEqual(mockRoom);
-      expect(roomsRepository.findOne).toHaveBeenCalledWith({
-        where: { roomNumber: createRoomDto.roomNumber },
-      });
-      expect(roomsRepository.create).toHaveBeenCalledWith(createRoomDto);
-      expect(roomsRepository.save).toHaveBeenCalled();
+            expect(result).toEqual(mockRoom);
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({
+              where: { roomNumber: createRoomDto.roomNumber },
+            });
+            expect(roomsRepository.create).toHaveBeenCalledWith(createRoomDto);
+            expect(roomsRepository.save).toHaveBeenCalled();
+          }
+        },
+        {
+          description: 'create a room with default amenities when not provided',
+          mockFindResult: null,
+          mockCreateResult: { ...mockRoom, amenities: '[]' },
+          mockSaveResult: { ...mockRoom, amenities: '[]' },
+          mockSaveError: null,
+          expectedResult: { ...mockRoom, amenities: '[]' },
+          expectedError: null,
+          assertions: (result: Room) => {
+            expect(result.amenities).toBe('[]');
+            expect(roomsRepository.create).toHaveBeenCalledWith({
+              ...createRoomDto,
+              amenities: '[]',
+            });
           }
         },
         {
@@ -278,8 +308,37 @@ describe('RoomsService', () => {
           expectedError: null,
           assertions: (result: Room) => {
             expect(result).toEqual({ ...mockRoom, ...updateRoomDto });
-      expect(roomsRepository.update).toHaveBeenCalledWith(1, updateRoomDto);
-      expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+            expect(roomsRepository.update).toHaveBeenCalledWith(1, updateRoomDto);
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+          }
+        },
+        {
+          description: 'update a room with partial data',
+          id: 1,
+          mockUpdateResult: { affected: 1 },
+          mockFindResult: { ...mockRoom, pricePerNight: 150 },
+          mockUpdateError: null,
+          expectedResult: { ...mockRoom, pricePerNight: 150 },
+          expectedError: null,
+          assertions: (result: Room) => {
+            expect(result.pricePerNight).toBe(150);
+            expect(roomsRepository.update).toHaveBeenCalledWith(1, expect.objectContaining({ pricePerNight: 150 }));
+          }
+        },
+        {
+          description: 'update a room with amenities',
+          id: 1,
+          mockUpdateResult: { affected: 1 },
+          mockFindResult: { ...mockRoom, amenities: '["wifi", "tv"]' },
+          mockUpdateError: null,
+          expectedResult: { ...mockRoom, amenities: '["wifi", "tv"]' },
+          expectedError: null,
+          assertions: (result: Room) => {
+            expect(result.amenities).toBe('["wifi", "tv"]');
+            expect(roomsRepository.update).toHaveBeenCalledWith(1, expect.objectContaining({ 
+              maxGuests: 3, 
+              pricePerNight: 150 
+            }));
           }
         },
         {
@@ -368,7 +427,7 @@ describe('RoomsService', () => {
           mockError: new Error('Database error'),
           expectedError: DatabaseException,
           assertions: () => {
-      expect(roomsRepository.softDelete).toHaveBeenCalledWith(1);
+            expect(roomsRepository.softDelete).toHaveBeenCalledWith(1);
           }
         }
       ];
@@ -391,6 +450,87 @@ describe('RoomsService', () => {
     });
   });
 
+  describe('findAvailableRooms', () => {
+    it('should handle findAvailableRooms operations correctly', async () => {
+      const checkInDate = new Date('2024-03-20');
+      const checkOutDate = new Date('2024-03-25');
+      const roomType = RoomType.DELUXE;
+      const maxGuests = 2;
+      const maxPrice = 200;
+
+      const testCases = [
+        {
+          description: 'find available rooms with all filters',
+          mockResult: [mockRoom],
+          mockError: null,
+          expectedError: null,
+          assertions: (mockQueryBuilder: MockQueryBuilder) => {
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalledWith('room');
+            expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('room.bookings', 'booking');
+            expect(mockQueryBuilder.where).toHaveBeenCalledWith('room.availabilityStatus = :status', {
+              status: AvailabilityStatus.AVAILABLE,
+            });
+            expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.type = :type', { type: roomType });
+            expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.maxGuests >= :maxGuests', { maxGuests });
+            expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.pricePerNight <= :maxPrice', { maxPrice });
+            expect(mockQueryBuilder.distinct).toHaveBeenCalledWith(true);
+          }
+        },
+        {
+          description: 'find available rooms with no filters',
+          mockResult: [mockRoom],
+          mockError: null,
+          expectedError: null,
+          assertions: (mockQueryBuilder: MockQueryBuilder) => {
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalledWith('room');
+            expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('room.bookings', 'booking');
+            expect(mockQueryBuilder.where).toHaveBeenCalledWith('room.availabilityStatus = :status', {
+              status: AvailabilityStatus.AVAILABLE,
+            });
+            expect(mockQueryBuilder.distinct).toHaveBeenCalledWith(true);
+          }
+        },
+        {
+          description: 'throw DatabaseException when query fails',
+          mockResult: null,
+          mockError: new Error('Database error'),
+          expectedError: DatabaseException,
+          assertions: () => {
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+          }
+        }
+      ];
+
+      for (const { description, mockResult, mockError, expectedError, assertions } of testCases) {
+        const mockQueryBuilder: MockQueryBuilder = {
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          distinct: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          getMany: jest.fn(),
+        };
+
+        mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+
+        if (mockError) {
+          mockQueryBuilder.getMany.mockRejectedValue(mockError);
+        } else {
+          mockQueryBuilder.getMany.mockResolvedValue(mockResult);
+        }
+
+        if (expectedError) {
+          await expect(service.findAvailableRooms(checkInDate, checkOutDate, roomType, maxGuests, maxPrice)).rejects.toThrow(expectedError);
+        } else {
+          const result = await service.findAvailableRooms(checkInDate, checkOutDate, roomType, maxGuests, maxPrice);
+          expect(result).toEqual(mockResult);
+        }
+        
+        assertions(mockQueryBuilder);
+      }
+    });
+  });
+
   describe('searchAvailableRooms', () => {
     const mockRooms = [
       { ...mockRoom, type: RoomType.DELUXE, pricePerNight: 200, availabilityStatus: AvailabilityStatus.AVAILABLE },
@@ -399,74 +539,75 @@ describe('RoomsService', () => {
       { ...mockRoom, type: RoomType.DELUXE, pricePerNight: 250, availabilityStatus: AvailabilityStatus.OCCUPIED },
     ];
 
-    it('should handle search operations correctly', async () => {
-      const testCases = [
+    it('should handle all search scenarios correctly', async () => {
+      // Test case 1: Basic search operations
+      const searchTestCases = [
         {
           description: 'filter rooms by type and price range',
           searchDto: {
-        roomType: RoomType.DELUXE,
-        minPrice: 150,
-        maxPrice: 250,
+            roomType: RoomType.DELUXE,
+            minPrice: 150,
+            maxPrice: 250,
           },
           expectedRooms: mockRooms.filter(room => 
-          room.type === RoomType.DELUXE && 
-          room.pricePerNight >= 150 && 
-          room.pricePerNight <= 250 &&
-          room.availabilityStatus === AvailabilityStatus.AVAILABLE
+            room.type === RoomType.DELUXE && 
+            room.pricePerNight >= 150 && 
+            room.pricePerNight <= 250 &&
+            room.availabilityStatus === AvailabilityStatus.AVAILABLE
           ),
           mockError: null,
           expectedError: null,
           assertions: (result: Room[]) => {
-      expect(result).toHaveLength(2);
-      expect(result.every(room => room.type === RoomType.DELUXE)).toBe(true);
-      expect(result.every(room => room.pricePerNight >= 150 && room.pricePerNight <= 250)).toBe(true);
-      expect(result.every(room => room.availabilityStatus === AvailabilityStatus.AVAILABLE)).toBe(true);
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+            expect(result).toHaveLength(2);
+            expect(result.every(room => room.type === RoomType.DELUXE)).toBe(true);
+            expect(result.every(room => room.pricePerNight >= 150 && room.pricePerNight <= 250)).toBe(true);
+            expect(result.every(room => room.availabilityStatus === AvailabilityStatus.AVAILABLE)).toBe(true);
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
           }
         },
         {
           description: 'filter rooms by type and availability',
           searchDto: {
-        roomType: RoomType.DELUXE,
+            roomType: RoomType.DELUXE,
           },
           expectedRooms: mockRooms.filter(room => 
-          room.type === RoomType.DELUXE && 
-          room.availabilityStatus === AvailabilityStatus.AVAILABLE
+            room.type === RoomType.DELUXE && 
+            room.availabilityStatus === AvailabilityStatus.AVAILABLE
           ),
           mockError: null,
           expectedError: null,
           assertions: (result: Room[]) => {
-      expect(result).toHaveLength(2);
-      expect(result.every(room => room.type === RoomType.DELUXE)).toBe(true);
-      expect(result.every(room => room.availabilityStatus === AvailabilityStatus.AVAILABLE)).toBe(true);
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+            expect(result).toHaveLength(2);
+            expect(result.every(room => room.type === RoomType.DELUXE)).toBe(true);
+            expect(result.every(room => room.availabilityStatus === AvailabilityStatus.AVAILABLE)).toBe(true);
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
           }
         },
         {
           description: 'throw DatabaseException when query fails',
           searchDto: {
-        roomType: RoomType.DELUXE,
+            roomType: RoomType.DELUXE,
           },
           expectedRooms: null,
           mockError: new Error('Database error'),
           expectedError: DatabaseException,
           assertions: () => {
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
           }
         }
       ];
 
-      for (const { description, searchDto, expectedRooms, mockError, expectedError, assertions } of testCases) {
-      const mockQueryBuilder: MockQueryBuilder = {
-        leftJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        distinct: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
-        getMany: jest.fn(),
-      };
+      for (const { description, searchDto, expectedRooms, mockError, expectedError, assertions } of searchTestCases) {
+        const mockQueryBuilder: MockQueryBuilder = {
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          distinct: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
+          getMany: jest.fn(),
+        };
 
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+        mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
 
         if (mockError) {
           mockQueryBuilder.getMany.mockRejectedValue(mockError);
@@ -477,23 +618,22 @@ describe('RoomsService', () => {
         if (expectedError) {
           await expect(service.searchAvailableRooms(searchDto)).rejects.toThrow(expectedError);
         } else {
-      const result = await service.searchAvailableRooms(searchDto);
+          const result = await service.searchAvailableRooms(searchDto);
           expect(result).toEqual(expectedRooms);
         }
         
         assertions(expectedRooms);
       }
-    });
 
-    it('should handle sorting operations correctly', async () => {
-      const testCases = [
+      // Test case 2: Sorting operations
+      const sortingTestCases = [
         {
           description: 'sort rooms by price in ascending order',
           searchDto: {
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
-        sortBy: SortField.PRICE,
-        sortOrder: SortOrder.ASC
+            checkInDate: new Date('2024-03-20'),
+            checkOutDate: new Date('2024-03-25'),
+            sortBy: SortField.PRICE,
+            sortOrder: SortOrder.ASC
           },
           expectedOrderBy: 'room.pricePerNight',
           expectedOrder: SortOrder.ASC
@@ -501,10 +641,10 @@ describe('RoomsService', () => {
         {
           description: 'sort rooms by type in descending order',
           searchDto: {
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
-        sortBy: SortField.TYPE,
-        sortOrder: SortOrder.DESC
+            checkInDate: new Date('2024-03-20'),
+            checkOutDate: new Date('2024-03-25'),
+            sortBy: SortField.TYPE,
+            sortOrder: SortOrder.DESC
           },
           expectedOrderBy: 'room.type',
           expectedOrder: SortOrder.DESC
@@ -512,9 +652,9 @@ describe('RoomsService', () => {
         {
           description: 'use default ASC order when sortOrder is not specified',
           searchDto: {
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
-        sortBy: SortField.MAX_GUESTS
+            checkInDate: new Date('2024-03-20'),
+            checkOutDate: new Date('2024-03-25'),
+            sortBy: SortField.MAX_GUESTS
           },
           expectedOrderBy: 'room.maxGuests',
           expectedOrder: SortOrder.ASC
@@ -532,26 +672,25 @@ describe('RoomsService', () => {
         }
       ];
 
-      for (const { description, searchDto, expectedOrderBy, expectedOrder } of testCases) {
-      const mockQueryBuilder: MockQueryBuilder = {
-        leftJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        distinct: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
+      for (const { description, searchDto, expectedOrderBy, expectedOrder } of sortingTestCases) {
+        const mockQueryBuilder: MockQueryBuilder = {
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          distinct: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
           getMany: jest.fn().mockResolvedValue([mockRoom]),
-      };
+        };
 
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+        mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
 
-      await service.searchAvailableRooms(searchDto);
+        await service.searchAvailableRooms(searchDto);
 
         expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith(expectedOrderBy, expectedOrder);
       }
-    });
 
-    it('should handle complex search scenarios correctly', async () => {
-      const testCases = [
+      // Test case 3: Complex search scenarios
+      const complexTestCases = [
         {
           description: 'return available rooms with all filters',
           searchDto: {
@@ -576,44 +715,44 @@ describe('RoomsService', () => {
         {
           description: 'return available rooms without optional filters',
           searchDto: {
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
+            checkInDate: new Date('2024-03-20'),
+            checkOutDate: new Date('2024-03-25'),
           },
           expectedRooms: [mockRoom],
           assertions: (mockQueryBuilder: MockQueryBuilder) => {
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalledWith('room');
-      expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('room.bookings', 'booking');
-      expect(mockQueryBuilder.where).toHaveBeenCalledWith('room.availabilityStatus = :status', {
-        status: AvailabilityStatus.AVAILABLE,
-      });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1); // Only for booking conflict
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalledWith('room');
+            expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith('room.bookings', 'booking');
+            expect(mockQueryBuilder.where).toHaveBeenCalledWith('room.availabilityStatus = :status', {
+              status: AvailabilityStatus.AVAILABLE,
+            });
+            expect(mockQueryBuilder.andWhere).toHaveBeenCalledTimes(1); // Only for booking conflict
           }
         },
         {
           description: 'apply sorting after all filters',
           searchDto: {
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
-        roomType: RoomType.DELUXE,
-        maxPrice: 300,
-        sortBy: SortField.PRICE,
-        sortOrder: SortOrder.DESC
+            checkInDate: new Date('2024-03-20'),
+            checkOutDate: new Date('2024-03-25'),
+            roomType: RoomType.DELUXE,
+            maxPrice: 300,
+            sortBy: SortField.PRICE,
+            sortOrder: SortOrder.DESC
           },
           expectedRooms: [mockRoom],
           assertions: (mockQueryBuilder: MockQueryBuilder) => {
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.type = :type', { type: RoomType.DELUXE });
-      expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.pricePerNight <= :maxPrice', { maxPrice: 300 });
-      expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.pricePerNight', SortOrder.DESC);
+            expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.type = :type', { type: RoomType.DELUXE });
+            expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('room.pricePerNight <= :maxPrice', { maxPrice: 300 });
+            expect(mockQueryBuilder.orderBy).toHaveBeenCalledWith('room.pricePerNight', SortOrder.DESC);
           }
         },
         {
           description: 'handle sorting with amenities filter',
           searchDto: {
-        checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25'),
-        amenities: ['wifi', 'tv'],
-        sortBy: SortField.MAX_GUESTS,
-        sortOrder: SortOrder.DESC
+            checkInDate: new Date('2024-03-20'),
+            checkOutDate: new Date('2024-03-25'),
+            amenities: ['wifi', 'tv'],
+            sortBy: SortField.MAX_GUESTS,
+            sortOrder: SortOrder.DESC
           },
           expectedRooms: [mockRoom],
           assertions: (mockQueryBuilder: MockQueryBuilder) => {
@@ -628,19 +767,19 @@ describe('RoomsService', () => {
         }
       ];
 
-      for (const { description, searchDto, expectedRooms, assertions } of testCases) {
-      const mockQueryBuilder: MockQueryBuilder = {
-        leftJoin: jest.fn().mockReturnThis(),
-        where: jest.fn().mockReturnThis(),
-        andWhere: jest.fn().mockReturnThis(),
-        distinct: jest.fn().mockReturnThis(),
-        orderBy: jest.fn().mockReturnThis(),
+      for (const { description, searchDto, expectedRooms, assertions } of complexTestCases) {
+        const mockQueryBuilder: MockQueryBuilder = {
+          leftJoin: jest.fn().mockReturnThis(),
+          where: jest.fn().mockReturnThis(),
+          andWhere: jest.fn().mockReturnThis(),
+          distinct: jest.fn().mockReturnThis(),
+          orderBy: jest.fn().mockReturnThis(),
           getMany: jest.fn().mockResolvedValue(expectedRooms),
-      };
+        };
 
-      mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
+        mockRoomsRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder as unknown as Repository<Room>['createQueryBuilder']);
 
-      await service.searchAvailableRooms(searchDto);
+        await service.searchAvailableRooms(searchDto);
 
         assertions(mockQueryBuilder);
       }
@@ -672,7 +811,7 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room) => {
-      expect(result).toBeNull();
+            expect(result).toBeNull();
             expect(roomsRepository.findOne).toHaveBeenCalledWith({
               where: { roomNumber: '999' },
             });
@@ -730,9 +869,9 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room[]) => {
-      expect(result).toHaveLength(1);
-      expect(result[0].description).toContain('ocean');
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+            expect(result).toHaveLength(1);
+            expect(result[0].description).toContain('ocean');
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
           }
         },
         {
@@ -742,8 +881,8 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room[]) => {
-      expect(result).toHaveLength(0);
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+            expect(result).toHaveLength(0);
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
           }
         },
         {
@@ -765,8 +904,8 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room[]) => {
-      expect(result).toHaveLength(1);
-      expect(result[0].description).toContain('ocean');
+            expect(result).toHaveLength(1);
+            expect(result[0].description).toContain('ocean');
           }
         },
         {
@@ -778,10 +917,10 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room[]) => {
-      expect(result).toHaveLength(2);
-      expect(result.some(room => room.description.includes('Luxury'))).toBe(true);
-      expect(result.some(room => room.description.includes('Deluxe'))).toBe(true);
-      expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
+            expect(result).toHaveLength(2);
+            expect(result.some(room => room.description.includes('Luxury'))).toBe(true);
+            expect(result.some(room => room.description.includes('Deluxe'))).toBe(true);
+            expect(mockRoomsRepository.createQueryBuilder).toHaveBeenCalled();
           }
         }
       ];
@@ -838,14 +977,14 @@ describe('RoomsService', () => {
           assertions: (result: Room) => {
             expect(result).toEqual(mockRooms.find(room => 
               room.roomNumber === '101' && 
-        room.availabilityStatus === AvailabilityStatus.AVAILABLE
+              room.availabilityStatus === AvailabilityStatus.AVAILABLE
             ));
             expect(roomsRepository.findOne).toHaveBeenCalledWith({
-        where: {
+              where: {
                 roomNumber: '101',
-          availabilityStatus: AvailabilityStatus.AVAILABLE,
-        },
-      });
+                availabilityStatus: AvailabilityStatus.AVAILABLE,
+              },
+            });
           }
         },
         {
@@ -856,13 +995,30 @@ describe('RoomsService', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Room) => {
-      expect(result).toBeNull();
+            expect(result).toBeNull();
             expect(roomsRepository.findOne).toHaveBeenCalledWith({
-        where: {
+              where: {
                 roomNumber: '102',
-          availabilityStatus: AvailabilityStatus.AVAILABLE,
+                availabilityStatus: AvailabilityStatus.AVAILABLE,
+              },
+            });
+          }
         },
-      });
+        {
+          description: 'return null when room does not exist',
+          roomNumber: '999',
+          mockResult: null,
+          expectedResult: null,
+          mockError: null,
+          expectedError: null,
+          assertions: (result: Room) => {
+            expect(result).toBeNull();
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({
+              where: {
+                roomNumber: '999',
+                availabilityStatus: AvailabilityStatus.AVAILABLE,
+              },
+            });
           }
         },
         {

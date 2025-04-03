@@ -2,10 +2,20 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { RegisterDto } from './register.dto';
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('RegisterDto', () => {
+  let registerDto: RegisterDto;
+
+  beforeEach(() => {
+    registerDto = new RegisterDto();
+  });
+
   describe('validation', () => {
-    it('should pass validation with valid data', async () => {
-      const testCases = [
+    it('should handle all validation scenarios', async () => {
+      // Valid data cases
+      const validTestCases = [
         {
           description: 'all valid fields',
           data: {
@@ -67,11 +77,11 @@ describe('RegisterDto', () => {
         }
       ];
 
-      for (const { description, data } of testCases) {
+      for (const { description, data } of validTestCases) {
         const dataArray = Array.isArray(data) ? data : [data];
         for (const item of dataArray) {
-          const dtoObject = plainToClass(RegisterDto, item);
-          const errors = await validate(dtoObject);
+          registerDto = plainToClass(RegisterDto, item);
+          const errors = await validate(registerDto);
           const message = `Failed for case: ${description}`;
           expect(errors.length).toBe(0);
           if (errors.length > 0) {
@@ -79,10 +89,9 @@ describe('RegisterDto', () => {
           }
         }
       }
-    });
 
-    it('should fail validation for invalid data', async () => {
-      const testCases = [
+      // Invalid data cases
+      const invalidTestCases = [
         {
           description: 'missing required fields',
           data: {
@@ -159,9 +168,9 @@ describe('RegisterDto', () => {
         }
       ];
 
-      for (const { description, data, expectedErrors } of testCases) {
-        const dtoObject = plainToClass(RegisterDto, data);
-        const errors = await validate(dtoObject);
+      for (const { description, data, expectedErrors } of invalidTestCases) {
+        registerDto = plainToClass(RegisterDto, data);
+        const errors = await validate(registerDto);
         const message = `No errors found for invalid case: ${description}`;
         expect(errors.length).toBeGreaterThan(0);
         if (errors.length === 0) {

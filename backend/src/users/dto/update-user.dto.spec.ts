@@ -63,8 +63,8 @@ describe('UpdateUserDto', () => {
     });
   });
 
-  describe('partial updates', () => {
-    it('should handle all partial update scenarios', async () => {
+  describe('transformation', () => {
+    it('should handle all transformation scenarios', async () => {
       // Only firstName update case
       updateUserDto.firstName = 'John';
       const firstNameErrors = await validate(updateUserDto);

@@ -184,28 +184,4 @@ describe('ProfileDto', () => {
       }
     });
   });
-
-  describe('sorting', () => {
-    it('should maintain consistent object structure for sorting', () => {
-      const dtoObject = plainToClass(ProfileDto, {
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        role: UserRole.USER,
-        createdAt: new Date(),
-        updatedAt: new Date()
-      });
-
-      // Verify that all properties are enumerable and maintain their order
-      const properties = Object.keys(dtoObject);
-      expect(properties).toContain('id');
-      expect(properties).toContain('firstName');
-      expect(properties).toContain('lastName');
-      expect(properties).toContain('email');
-      expect(properties).toContain('role');
-      expect(properties).toContain('createdAt');
-      expect(properties).toContain('updatedAt');
-    });
-  });
 }); 

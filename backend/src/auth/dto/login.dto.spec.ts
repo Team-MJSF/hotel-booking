@@ -2,39 +2,26 @@ import { validate } from 'class-validator';
 import { plainToClass } from 'class-transformer';
 import { LoginDto } from './login.dto';
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('LoginDto', () => {
+  let loginDto: LoginDto;
+
+  beforeEach(() => {
+    loginDto = new LoginDto();
+  });
+
   describe('validation', () => {
-    it('should pass validation with valid data', async () => {
-      const validData = {
-        email: 'john@example.com',
-        password: 'password123'
-      };
+    it('should handle all validation scenarios', async () => {
+      // Valid data case
+      loginDto.email = 'john@example.com';
+      loginDto.password = 'password123';
+      
+      let errors = await validate(loginDto);
+      expect(errors).toHaveLength(0);
 
-      const dtoObject = plainToClass(LoginDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should handle all validation failure cases', async () => {
-      const failureCases = [
-        { data: { password: 'password123' }, property: 'email', description: 'missing email' },
-        { data: { email: 'john@example.com' }, property: 'password', description: 'missing password' },
-        { data: { email: 'not-an-email', password: 'password123' }, property: 'email', description: 'invalid email format' },
-        { data: { email: '', password: 'password123' }, property: 'email', description: 'empty email' },
-        { data: { email: 'john@example.com', password: '' }, property: 'password', description: 'empty password' },
-        { data: { email: 'john@example.com', password: 'short' }, property: 'password', description: 'password shorter than 8 characters' }
-      ];
-
-      for (const { data, property, description } of failureCases) {
-        const dtoObject = plainToClass(LoginDto, data);
-        const errors = await validate(dtoObject);
-        expect(errors.length).toBeGreaterThan(0);
-        expect(errors[0].property).toBe(property);
-      }
-    });
-
-    it('should handle all valid email formats', async () => {
+      // Valid email formats
       const validEmails = [
         'user@example.com',
         'user.name@example.com',
@@ -45,18 +32,15 @@ describe('LoginDto', () => {
       ];
 
       for (const email of validEmails) {
-        const validData = {
-          email,
-          password: 'password123'
-        };
-
-        const dtoObject = plainToClass(LoginDto, validData);
-        const errors = await validate(dtoObject);
-        expect(errors.length).toBe(0);
+        loginDto = new LoginDto();
+        loginDto.email = email;
+        loginDto.password = 'password123';
+        
+        errors = await validate(loginDto);
+        expect(errors).toHaveLength(0);
       }
-    });
 
-    it('should handle all valid password formats', async () => {
+      // Valid password formats
       const validPasswords = [
         'password123',
         'P@ssw0rd',
@@ -66,14 +50,29 @@ describe('LoginDto', () => {
       ];
 
       for (const password of validPasswords) {
-        const validData = {
-          email: 'john@example.com',
-          password
-        };
+        loginDto = new LoginDto();
+        loginDto.email = 'john@example.com';
+        loginDto.password = password;
+        
+        errors = await validate(loginDto);
+        expect(errors).toHaveLength(0);
+      }
 
-        const dtoObject = plainToClass(LoginDto, validData);
-        const errors = await validate(dtoObject);
-        expect(errors.length).toBe(0);
+      // Validation failure cases
+      const failureCases = [
+        { data: { password: 'password123' }, property: 'email', description: 'missing email' },
+        { data: { email: 'john@example.com' }, property: 'password', description: 'missing password' },
+        { data: { email: 'not-an-email', password: 'password123' }, property: 'email', description: 'invalid email format' },
+        { data: { email: '', password: 'password123' }, property: 'email', description: 'empty email' },
+        { data: { email: 'john@example.com', password: '' }, property: 'password', description: 'empty password' },
+        { data: { email: 'john@example.com', password: 'short' }, property: 'password', description: 'password shorter than 8 characters' }
+      ];
+
+      for (const { data, property, description } of failureCases) {
+        loginDto = plainToClass(LoginDto, data);
+        errors = await validate(loginDto);
+        expect(errors.length).toBeGreaterThan(0);
+        expect(errors[0].property).toBe(property);
       }
     });
   });

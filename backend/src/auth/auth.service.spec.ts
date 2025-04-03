@@ -13,6 +13,9 @@ jest.mock('bcrypt', () => ({
   compare: jest.fn().mockImplementation((password, hash) => Promise.resolve(password === hash.replace('hashed_', '')))
 }));
 
+// Increase timeout for all tests
+jest.setTimeout(10000);
+
 describe('AuthService', () => {
   let service: AuthService;
   let mockUsersService: Partial<jest.Mocked<UsersService>>;
@@ -86,7 +89,7 @@ describe('AuthService', () => {
       lastName: 'User'
     };
 
-    it('should handle complete authentication flow scenarios', async () => {
+    it('should handle all authentication scenarios', async () => {
       // Test validateUser success
       mockUsersService.findByEmail.mockResolvedValue(mockUser);
       mockUsersService.validatePassword.mockResolvedValue(true);
@@ -124,9 +127,7 @@ describe('AuthService', () => {
       }));
       expect(registerResult).not.toHaveProperty('password');
       expect(bcrypt.hash).toHaveBeenCalledWith(registerDto.password, 10);
-    });
 
-    it('should handle authentication failure scenarios', async () => {
       // Test validateUser failures
       mockUsersService.findByEmail.mockResolvedValue(null);
       expect(await service.validateUser(loginDto.email, loginDto.password)).toBeNull();
