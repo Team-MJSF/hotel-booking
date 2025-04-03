@@ -1,4 +1,4 @@
-import { IsOptional, IsDate, IsEnum, IsInt, IsNumber, IsArray, IsString, Min } from 'class-validator';
+import { IsOptional, IsDate, IsEnum, IsInt, IsNumber, IsArray, IsString, Min, ValidateIf, ValidationArguments, ValidationOptions, registerDecorator } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty } from '@nestjs/swagger';
 import { RoomType } from '../entities/room.entity';
@@ -15,6 +15,44 @@ export enum SortOrder {
   DESC = 'DESC'
 }
 
+function IsAfterDate(property: string, validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isAfterDate',
+      target: object.constructor,
+      propertyName: propertyName,
+      constraints: [property],
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          const [relatedPropertyName] = args.constraints;
+          const relatedValue = (args.object as any)[relatedPropertyName];
+          return value > relatedValue;
+        }
+      }
+    });
+  };
+}
+
+function IsGreaterThan(property: string, validationOptions?: ValidationOptions) {
+  return function (object: Object, propertyName: string) {
+    registerDecorator({
+      name: 'isGreaterThan',
+      target: object.constructor,
+      propertyName: propertyName,
+      constraints: [property],
+      options: validationOptions,
+      validator: {
+        validate(value: any, args: ValidationArguments) {
+          const [relatedPropertyName] = args.constraints;
+          const relatedValue = (args.object as any)[relatedPropertyName];
+          return value > relatedValue;
+        }
+      }
+    });
+  };
+}
+
 export class SearchRoomsDto {
   @ApiProperty({ required: false, description: 'Check-in date for the booking' })
   @IsOptional()
@@ -26,6 +64,10 @@ export class SearchRoomsDto {
   @IsOptional()
   @IsDate()
   @Type(() => Date)
+  @ValidateIf((o) => o.checkInDate && o.checkOutDate)
+  @IsAfterDate('checkInDate', {
+    message: 'Check-out date must be after check-in date'
+  })
     checkOutDate?: Date;
 
   @ApiProperty({ required: false, enum: RoomType, description: 'Type of room to search for' })
@@ -52,6 +94,10 @@ export class SearchRoomsDto {
   @IsNumber()
   @Min(0)
   @Type(() => Number)
+  @ValidateIf((o) => o.minPrice !== undefined && o.maxPrice !== undefined)
+  @IsGreaterThan('minPrice', {
+    message: 'Maximum price must be greater than minimum price'
+  })
     maxPrice?: number;
 
   @ApiProperty({ required: false, type: [String], description: 'List of amenities required' })

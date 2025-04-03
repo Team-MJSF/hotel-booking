@@ -4,42 +4,36 @@ import { UpdateRoomDto } from './update-room.dto';
 import { RoomType, AvailabilityStatus } from '../entities/room.entity';
 
 describe('UpdateRoomDto', () => {
+  const createDto = (data: any) => plainToClass(UpdateRoomDto, data);
+  
+  const validateDto = async (dto: UpdateRoomDto) => {
+    const errors = await validate(dto);
+    return { errors, hasErrors: errors.length > 0 };
+  };
+
   describe('validation', () => {
-    it('should pass validation with no fields (empty update)', async () => {
-      const validData = {};
+    it('should validate all fields correctly', async () => {
+      // Test empty update (no fields)
+      const emptyDto = createDto({});
+      const { errors: emptyErrors } = await validateDto(emptyDto);
+      expect(emptyErrors.length).toBe(0);
 
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
+      // Test single field update
+      const singleFieldDto = createDto({ roomNumber: '101' });
+      const { errors: singleFieldErrors } = await validateDto(singleFieldDto);
+      expect(singleFieldErrors.length).toBe(0);
 
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with single field update', async () => {
-      const validData = {
-        roomNumber: '101'
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with multiple fields update', async () => {
-      const validData = {
+      // Test multiple fields update
+      const multipleFieldsDto = createDto({
         roomNumber: '101',
         pricePerNight: 100,
         maxGuests: 2
-      };
+      });
+      const { errors: multipleFieldsErrors } = await validateDto(multipleFieldsDto);
+      expect(multipleFieldsErrors.length).toBe(0);
 
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with all fields', async () => {
-      const validData = {
+      // Test all fields update
+      const allFieldsDto = createDto({
         type: RoomType.SINGLE,
         roomNumber: '101',
         pricePerNight: 100,
@@ -47,123 +41,70 @@ describe('UpdateRoomDto', () => {
         description: 'A comfortable room with a view',
         amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning']),
         availabilityStatus: AvailabilityStatus.AVAILABLE
-      };
+      });
+      const { errors: allFieldsErrors } = await validateDto(allFieldsDto);
+      expect(allFieldsErrors.length).toBe(0);
 
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
+      // Test all room types
+      const roomTypes = Object.values(RoomType);
+      for (const roomType of roomTypes) {
+        const dto = createDto({ type: roomType });
+        const { errors } = await validateDto(dto);
+        expect(errors.length).toBe(0);
+      }
 
-      expect(errors.length).toBe(0);
-    });
+      // Test all availability statuses
+      const availabilityStatuses = Object.values(AvailabilityStatus);
+      for (const status of availabilityStatuses) {
+        const dto = createDto({ availabilityStatus: status });
+        const { errors } = await validateDto(dto);
+        expect(errors.length).toBe(0);
+      }
 
-    it('should fail validation with invalid room type when type is provided', async () => {
-      const invalidData = {
-        type: 'INVALID_TYPE'
-      };
+      // Test invalid room type
+      const invalidRoomTypeDto = createDto({ type: 'INVALID_TYPE' });
+      const { errors: invalidRoomTypeErrors } = await validateDto(invalidRoomTypeDto);
+      expect(invalidRoomTypeErrors.length).toBeGreaterThan(0);
+      expect(invalidRoomTypeErrors[0].property).toBe('type');
 
-      const dtoObject = plainToClass(UpdateRoomDto, invalidData);
-      const errors = await validate(dtoObject);
+      // Test invalid price
+      const invalidPriceDto = createDto({ pricePerNight: 'not-a-number' });
+      const { errors: invalidPriceErrors } = await validateDto(invalidPriceDto);
+      expect(invalidPriceErrors.length).toBeGreaterThan(0);
+      expect(invalidPriceErrors[0].property).toBe('pricePerNight');
 
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('type');
-    });
+      // Test invalid max guests
+      const invalidMaxGuestsDto = createDto({ maxGuests: 'not-a-number' });
+      const { errors: invalidMaxGuestsErrors } = await validateDto(invalidMaxGuestsDto);
+      expect(invalidMaxGuestsErrors.length).toBeGreaterThan(0);
+      expect(invalidMaxGuestsErrors[0].property).toBe('maxGuests');
 
-    it('should pass validation with valid room type when type is provided', async () => {
-      const validData = {
-        type: RoomType.DELUXE
-      };
+      // Test invalid JSON for amenities
+      const invalidJsonDto = createDto({ amenities: 'not-valid-json' });
+      const { errors: invalidJsonErrors } = await validateDto(invalidJsonDto);
+      expect(invalidJsonErrors.length).toBeGreaterThan(0);
+      expect(invalidJsonErrors[0].property).toBe('amenities');
 
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
+      // Test invalid availability status
+      const invalidStatusDto = createDto({ availabilityStatus: 'INVALID_STATUS' });
+      const { errors: invalidStatusErrors } = await validateDto(invalidStatusDto);
+      expect(invalidStatusErrors.length).toBeGreaterThan(0);
+      expect(invalidStatusErrors[0].property).toBe('availabilityStatus');
 
-      expect(errors.length).toBe(0);
-    });
-
-    it('should fail validation with invalid price when price is provided', async () => {
-      const invalidData = {
-        pricePerNight: 'not-a-number'
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('pricePerNight');
-    });
-
-    it('should fail validation with invalid max guests when max guests is provided', async () => {
-      const invalidData = {
-        maxGuests: 'not-a-number'
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('maxGuests');
-    });
-
-    it('should fail validation with invalid JSON for amenities when amenities is provided', async () => {
-      const invalidData = {
-        amenities: 'not-valid-json'
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('amenities');
-    });
-
-    it('should pass validation with valid JSON for amenities when amenities is provided', async () => {
-      const validData = {
-        amenities: JSON.stringify(['wifi', 'tv'])
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should fail validation with invalid availability status when status is provided', async () => {
-      const invalidData = {
-        availabilityStatus: 'INVALID_STATUS'
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, invalidData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBeGreaterThan(0);
-      expect(errors[0].property).toBe('availabilityStatus');
-    });
-
-    it('should pass validation with valid availability status when status is provided', async () => {
-      const validData = {
-        availabilityStatus: AvailabilityStatus.MAINTENANCE
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
-    });
-
-    it('should pass validation with partial update of required fields', async () => {
-      const validData = {
+      // Test partial update of required fields
+      const partialUpdateDto = createDto({
         roomNumber: '101',
         pricePerNight: 100
-      };
-
-      const dtoObject = plainToClass(UpdateRoomDto, validData);
-      const errors = await validate(dtoObject);
-
-      expect(errors.length).toBe(0);
+      });
+      const { errors: partialUpdateErrors } = await validateDto(partialUpdateDto);
+      expect(partialUpdateErrors.length).toBe(0);
     });
   });
 
   describe('transformation', () => {
-    it('should transform plain object to UpdateRoomDto instance with correct types', () => {
-      const plainData = {
+    it('should transform all data types correctly', () => {
+      // Test basic transformation with all fields
+      const allFieldsDto = createDto({
         type: RoomType.SINGLE,
         roomNumber: '101',
         pricePerNight: 100.50,
@@ -171,22 +112,19 @@ describe('UpdateRoomDto', () => {
         description: 'A comfortable room with a view',
         amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning']),
         availabilityStatus: AvailabilityStatus.AVAILABLE
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(allFieldsDto).toBeInstanceOf(UpdateRoomDto);
+      expect(allFieldsDto.type).toBe(RoomType.SINGLE);
+      expect(allFieldsDto.roomNumber).toBe('101');
+      expect(typeof allFieldsDto.pricePerNight).toBe('number');
+      expect(typeof allFieldsDto.maxGuests).toBe('number');
+      expect(allFieldsDto.description).toBe('A comfortable room with a view');
+      expect(allFieldsDto.amenities).toBe(JSON.stringify(['wifi', 'tv', 'air-conditioning']));
+      expect(allFieldsDto.availabilityStatus).toBe(AvailabilityStatus.AVAILABLE);
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(dtoObject.type).toBe(plainData.type);
-      expect(dtoObject.roomNumber).toBe(plainData.roomNumber);
-      expect(typeof dtoObject.pricePerNight).toBe('number');
-      expect(typeof dtoObject.maxGuests).toBe('number');
-      expect(dtoObject.description).toBe(plainData.description);
-      expect(dtoObject.amenities).toBe(plainData.amenities);
-      expect(dtoObject.availabilityStatus).toBe(plainData.availabilityStatus);
-    });
-
-    it('should handle undefined values', () => {
-      const plainData = {
+      // Test undefined values
+      const undefinedDto = createDto({
         type: undefined,
         roomNumber: undefined,
         pricePerNight: undefined,
@@ -194,22 +132,19 @@ describe('UpdateRoomDto', () => {
         description: undefined,
         amenities: undefined,
         availabilityStatus: undefined
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(undefinedDto).toBeInstanceOf(UpdateRoomDto);
+      expect(undefinedDto.type).toBeUndefined();
+      expect(undefinedDto.roomNumber).toBeUndefined();
+      expect(undefinedDto.pricePerNight).toBeUndefined();
+      expect(undefinedDto.maxGuests).toBeUndefined();
+      expect(undefinedDto.description).toBeUndefined();
+      expect(undefinedDto.amenities).toBeUndefined();
+      expect(undefinedDto.availabilityStatus).toBeUndefined();
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(dtoObject.type).toBeUndefined();
-      expect(dtoObject.roomNumber).toBeUndefined();
-      expect(dtoObject.pricePerNight).toBeUndefined();
-      expect(dtoObject.maxGuests).toBeUndefined();
-      expect(dtoObject.description).toBeUndefined();
-      expect(dtoObject.amenities).toBeUndefined();
-      expect(dtoObject.availabilityStatus).toBeUndefined();
-    });
-
-    it('should handle null values', () => {
-      const plainData = {
+      // Test null values
+      const nullDto = createDto({
         type: null,
         roomNumber: null,
         pricePerNight: null,
@@ -217,22 +152,19 @@ describe('UpdateRoomDto', () => {
         description: null,
         amenities: null,
         availabilityStatus: null
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(nullDto).toBeInstanceOf(UpdateRoomDto);
+      expect(nullDto.type).toBeNull();
+      expect(nullDto.roomNumber).toBeNull();
+      expect(nullDto.pricePerNight).toBeNull();
+      expect(nullDto.maxGuests).toBeNull();
+      expect(nullDto.description).toBeNull();
+      expect(nullDto.amenities).toBeNull();
+      expect(nullDto.availabilityStatus).toBeNull();
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(dtoObject.type).toBeNull();
-      expect(dtoObject.roomNumber).toBeNull();
-      expect(dtoObject.pricePerNight).toBeNull();
-      expect(dtoObject.maxGuests).toBeNull();
-      expect(dtoObject.description).toBeNull();
-      expect(dtoObject.amenities).toBeNull();
-      expect(dtoObject.availabilityStatus).toBeNull();
-    });
-
-    it('should handle empty string values', () => {
-      const plainData = {
+      // Test empty string values
+      const emptyStringDto = createDto({
         type: '',
         roomNumber: '',
         pricePerNight: '',
@@ -240,49 +172,40 @@ describe('UpdateRoomDto', () => {
         description: '',
         amenities: '',
         availabilityStatus: ''
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(emptyStringDto).toBeInstanceOf(UpdateRoomDto);
+      expect(emptyStringDto.type).toBe('');
+      expect(emptyStringDto.roomNumber).toBe('');
+      expect(emptyStringDto.pricePerNight).toBe('');
+      expect(emptyStringDto.maxGuests).toBe('');
+      expect(emptyStringDto.description).toBe('');
+      expect(emptyStringDto.amenities).toBe('');
+      expect(emptyStringDto.availabilityStatus).toBe('');
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(dtoObject.type).toBe('');
-      expect(dtoObject.roomNumber).toBe('');
-      expect(dtoObject.pricePerNight).toBe('');
-      expect(dtoObject.maxGuests).toBe('');
-      expect(dtoObject.description).toBe('');
-      expect(dtoObject.amenities).toBe('');
-      expect(dtoObject.availabilityStatus).toBe('');
-    });
-
-    it('should handle number conversion', () => {
-      const plainData = {
+      // Test number conversion
+      const numberConversionDto = createDto({
         pricePerNight: '100.50',
         maxGuests: '2'
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(numberConversionDto).toBeInstanceOf(UpdateRoomDto);
+      expect(typeof numberConversionDto.pricePerNight).toBe('number');
+      expect(typeof numberConversionDto.maxGuests).toBe('number');
+      expect(numberConversionDto.pricePerNight).toBe(100.50);
+      expect(numberConversionDto.maxGuests).toBe(2);
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(typeof dtoObject.pricePerNight).toBe('number');
-      expect(typeof dtoObject.maxGuests).toBe('number');
-      expect(dtoObject.pricePerNight).toBe(100.50);
-      expect(dtoObject.maxGuests).toBe(2);
-    });
-
-    it('should handle enum values with case transformation', () => {
-      const plainData = {
+      // Test enum values with case transformation
+      const enumDto = createDto({
         type: 'SINGLE',
         availabilityStatus: 'AVAILABLE'
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(enumDto).toBeInstanceOf(UpdateRoomDto);
+      expect(enumDto.type).toBe(RoomType.SINGLE);
+      expect(enumDto.availabilityStatus).toBe(AvailabilityStatus.AVAILABLE);
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(dtoObject.type).toBe(RoomType.SINGLE);
-      expect(dtoObject.availabilityStatus).toBe(AvailabilityStatus.AVAILABLE);
-    });
-
-    it('should handle partial updates', () => {
+      // Test partial updates
       const updates = [
         { pricePerNight: 150.75 },
         { maxGuests: 3 },
@@ -290,50 +213,44 @@ describe('UpdateRoomDto', () => {
       ];
 
       updates.forEach(update => {
-        const dtoObject = plainToClass(UpdateRoomDto, update);
-        expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
+        const dto = createDto(update);
+        expect(dto).toBeInstanceOf(UpdateRoomDto);
         
         if (update.pricePerNight !== undefined) {
-          expect(typeof dtoObject.pricePerNight).toBe('number');
-          expect(dtoObject.pricePerNight).toBe(update.pricePerNight);
+          expect(typeof dto.pricePerNight).toBe('number');
+          expect(dto.pricePerNight).toBe(update.pricePerNight);
         }
         if (update.maxGuests !== undefined) {
-          expect(typeof dtoObject.maxGuests).toBe('number');
-          expect(dtoObject.maxGuests).toBe(update.maxGuests);
+          expect(typeof dto.maxGuests).toBe('number');
+          expect(dto.maxGuests).toBe(update.maxGuests);
         }
         if (update.description !== undefined) {
-          expect(typeof dtoObject.description).toBe('string');
-          expect(dtoObject.description).toBe(update.description);
+          expect(typeof dto.description).toBe('string');
+          expect(dto.description).toBe(update.description);
         }
       });
-    });
 
-    it('should handle JSON string for amenities', () => {
-      const plainData = {
+      // Test JSON string for amenities
+      const amenitiesDto = createDto({
         amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning'])
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
+      expect(amenitiesDto).toBeInstanceOf(UpdateRoomDto);
+      expect(typeof amenitiesDto.amenities).toBe('string');
+      expect(amenitiesDto.amenities).toBe(JSON.stringify(['wifi', 'tv', 'air-conditioning']));
 
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(typeof dtoObject.amenities).toBe('string');
-      expect(dtoObject.amenities).toBe(JSON.stringify(['wifi', 'tv', 'air-conditioning']));
-    });
-
-    it('should ignore extra properties', () => {
-      const plainData = {
+      // Test extra properties
+      const extraPropsDto = createDto({
         type: RoomType.SINGLE,
         roomNumber: '101',
         pricePerNight: 100.50,
         extraField: 'extra value'
-      };
+      });
 
-      const dtoObject = plainToClass(UpdateRoomDto, plainData);
-
-      expect(dtoObject).toBeInstanceOf(UpdateRoomDto);
-      expect(dtoObject.type).toBe(plainData.type);
-      expect(dtoObject.roomNumber).toBe(plainData.roomNumber);
-      expect(dtoObject.pricePerNight).toBe(plainData.pricePerNight);
+      expect(extraPropsDto).toBeInstanceOf(UpdateRoomDto);
+      expect(extraPropsDto.type).toBe(RoomType.SINGLE);
+      expect(extraPropsDto.roomNumber).toBe('101');
+      expect(extraPropsDto.pricePerNight).toBe(100.50);
       // Extra properties are automatically ignored by class-transformer
     });
   });
