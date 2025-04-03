@@ -10,6 +10,8 @@ import { User } from './users/entities/user.entity';
 import { Room } from './rooms/entities/room.entity';
 import { Booking } from './bookings/entities/booking.entity';
 import { Payment } from './payments/entities/payment.entity';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -17,6 +19,10 @@ import { Payment } from './payments/entities/payment.entity';
       isGlobal: true,
       envFilePath: `.env.${process.env.NODE_ENV || 'development'}`,
     }),
+    ThrottlerModule.forRoot([{
+      ttl: 60000, // 1 minute
+      limit: 100, // 100 requests per minute
+    }]),
     TypeOrmModule.forRoot({
       type: 'mysql',
       host: process.env.DB_HOST || 'localhost',
@@ -26,7 +32,7 @@ import { Payment } from './payments/entities/payment.entity';
       database: process.env.DB_NAME || 'hotel_booking_dev',
       entities: [User, Room, Booking, Payment],
       synchronize: false,
-      logging: process.env.NODE_ENV !== 'test',
+      logging: process.env.NODE_ENV === 'development',
       dropSchema: false,
       driver: require('mysql2'),
       extra: {
@@ -40,6 +46,12 @@ import { Payment } from './payments/entities/payment.entity';
     RoomsModule,
     BookingsModule,
     PaymentsModule,
+  ],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard
+    }
   ],
 })
 export class AppModule {}

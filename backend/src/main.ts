@@ -4,10 +4,17 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import helmet from 'helmet';
 
 export async function bootstrap() {
   const logger = new Logger('Bootstrap');
   const app = await NestFactory.create(AppModule);
+
+  // Enable Helmet for security headers
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }, // Needed for Swagger UI
+    crossOriginEmbedderPolicy: false, // Needed for Swagger UI
+  }));
 
   // Enable CORS
   app.enableCors();
@@ -27,7 +34,7 @@ export async function bootstrap() {
   // Swagger setup
   const config = new DocumentBuilder()
     .setTitle('Hotel Booking API')
-    .setDescription('This is the API for the Hotel Booking App. It is used to manage the hotel bookings and reservations. It is built with NestJS and uses MySQL as the database. It is currently in development and is not ready for production.')
+    .setDescription('The Hotel Booking API description')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
