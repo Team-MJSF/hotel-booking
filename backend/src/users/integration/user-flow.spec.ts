@@ -195,7 +195,7 @@ describe('User Flow Integration Tests', () => {
       expect(updatedProfileResponse.body.phoneNumber).toBe('9876543210');
 
       // Step 6: Create an admin user directly in the database
-      const adminInsertResult = await dataSource.query(`
+      await dataSource.query(`
         INSERT INTO users (first_name, last_name, email, password, role, phone_number, address, created_at, updated_at, token_version, is_active)
         VALUES ('${testAdmin.firstName}', '${testAdmin.lastName}', '${testAdmin.email}', 
                 '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 

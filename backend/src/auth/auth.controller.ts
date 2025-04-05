@@ -6,7 +6,7 @@ import { ProfileDto } from './dto/profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiExtraModels, getSchemaPath } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiExtraModels } from '@nestjs/swagger';
 import { User } from '../users/entities/user.entity';
 import { LoginResponseDto } from '../refresh-tokens/dto/login-response.dto';
 import { RefreshTokenRequestDto } from '../refresh-tokens/dto/refresh-token-request.dto';

@@ -13,7 +13,6 @@ import * as path from 'path';
 import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 
 // Maximum duration for the test
@@ -131,9 +130,9 @@ describe('Payment Flow Integration Tests', () => {
     // Check database tables
     await checkDatabaseTables(app);
     
-    userRepository = app.get(getRepositoryToken(User));
+    configService = app.get(ConfigService);
     jwtService = app.get(JwtService);
-    configService = app.get(NestConfigService);
+    userRepository = app.get(getRepositoryToken(User));
     
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -143,10 +142,6 @@ describe('Payment Flow Integration Tests', () => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
     
-    // Override the JwtAuthGuard to bypass authentication
-    const mockJwtAuthGuard = {
-      canActivate: jest.fn().mockImplementation(() => true),
-    };
     // Authentication is already bypassed via the MockJwtAuthGuard in the module setup
   }, 30000);
 
