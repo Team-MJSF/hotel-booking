@@ -11,10 +11,28 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 import * as path from 'path';
 import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { AuthGuard } from '@nestjs/passport';
+import { AdminGuard } from '../../auth/guards/admin.guard';
 
 // Maximum duration for the test
 const MAX_TEST_DURATION = 30000; // 30 seconds
 let safetyTimeout: NodeJS.Timeout;
+
+// Mock the JwtAuthGuard to always allow requests
+class MockJwtAuthGuard {
+  canActivate() {
+    return true;
+  }
+}
+
+// Mock the AdminGuard to always allow admin access
+class MockAdminGuard {
+  canActivate() {
+    return true;
+  }
+}
 
 // Define initTestApp function directly
 async function initTestApp(): Promise<INestApplication> {
@@ -43,9 +61,18 @@ async function initTestApp(): Promise<INestApplication> {
       }),
       AppModule,
     ],
+    providers: [
+      // Override JWT auth guard globally
+      {
+        provide: APP_GUARD,
+        useClass: MockJwtAuthGuard,
+      }
+    ]
   })
-    .overrideGuard('JwtAuthGuard')
-    .useValue({ canActivate: () => true })
+    .overrideGuard(JwtAuthGuard)
+    .useClass(MockJwtAuthGuard)
+    .overrideGuard(AdminGuard)
+    .useClass(MockAdminGuard)
     .compile();
 
   const app = moduleFixture.createNestApplication();
@@ -115,6 +142,12 @@ describe('Payment Flow Integration Tests', () => {
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
+    
+    // Override the JwtAuthGuard to bypass authentication
+    const mockJwtAuthGuard = {
+      canActivate: jest.fn().mockImplementation(() => true),
+    };
+    // Authentication is already bypassed via the MockJwtAuthGuard in the module setup
   }, 30000);
 
   afterAll(async () => {
@@ -214,6 +247,7 @@ describe('Payment Flow Integration Tests', () => {
         .post('/bookings')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
+          userId: userId,
           roomId,
           checkInDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
           checkOutDate: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow

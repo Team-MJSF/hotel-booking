@@ -32,15 +32,38 @@ export async function bootstrap() {
   app.useGlobalFilters(new HttpExceptionFilter());
 
   // Swagger setup
-  const config = new DocumentBuilder()
-    .setTitle('Hotel Booking API')
-    .setDescription('The Hotel Booking API description')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
+  if (process.env.NODE_ENV !== 'production') {
+    const config = new DocumentBuilder()
+      .setTitle('Hotel Booking API')
+      .setDescription('API documentation for the Hotel Booking System')
+      .setVersion('1.0')
+      .addTag('Authentication', 'Authentication and user management endpoints')
+      .addTag('Rooms', 'Room management and search endpoints')
+      .addTag('Bookings', 'Booking management endpoints')
+      .addTag('Payments', 'Payment processing endpoints')
+      .addBearerAuth(
+        {
+          type: 'http',
+          scheme: 'bearer',
+          bearerFormat: 'JWT',
+          name: 'JWT',
+          description: 'Enter JWT token',
+          in: 'header',
+        },
+        'JWT-auth', // This name here must match the name in @ApiBearerAuth() decorator
+      )
+      .build();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api', app, document);
+    const document = SwaggerModule.createDocument(app, config);
+    SwaggerModule.setup('api', app, document, {
+      swaggerOptions: {
+        persistAuthorization: true,
+        docExpansion: 'none',
+        tagsSorter: 'alpha',
+        operationsSorter: 'alpha',
+      },
+    });
+  }
 
   const port = process.env.PORT || 5000;
   await app.listen(port);

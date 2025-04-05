@@ -178,15 +178,27 @@ export class BookingsService {
    */
   async remove(id: number): Promise<void> {
     try {
-      const result = await this.bookingsRepository.softDelete({ bookingId: id });
-      if (result.affected === 0) {
+      // Instead of soft deleting, mark as cancelled
+      const booking = await this.findOne(id);
+      if (!booking) {
         throw new ResourceNotFoundException('Booking', id);
       }
+      
+      // Update the booking status to cancelled
+      booking.status = BookingStatus.CANCELLED;
+      
+      // If the room is associated with this booking, make it available again
+      if (booking.room) {
+        booking.room.availabilityStatus = AvailabilityStatus.AVAILABLE;
+        await this.roomsRepository.save(booking.room);
+      }
+      
+      await this.bookingsRepository.save(booking);
     } catch (error) {
       if (error instanceof ResourceNotFoundException) {
         throw error;
       }
-      throw new DatabaseException('Failed to delete booking', error as Error);
+      throw new DatabaseException('Failed to cancel booking', error as Error);
     }
   }
 }

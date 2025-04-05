@@ -39,6 +39,7 @@ jest.mock('@nestjs/swagger', () => ({
     setTitle: jest.fn().mockReturnThis(),
     setDescription: jest.fn().mockReturnThis(),
     setVersion: jest.fn().mockReturnThis(),
+    addTag: jest.fn().mockReturnThis(),
     addBearerAuth: jest.fn().mockReturnThis(),
     build: jest.fn(),
   })),
@@ -69,6 +70,9 @@ jest.mock('@nestjs/swagger', () => ({
     return function() {};
   }),
   ApiBody: jest.fn().mockImplementation(() => {
+    return function() {};
+  }),
+  ApiExtraModels: jest.fn().mockImplementation(() => {
     return function() {};
   }),
 }));
@@ -118,6 +122,7 @@ describe('Bootstrap', () => {
     expect(SwaggerModule.setup).toHaveBeenCalledWith(
       'api',
       mockApp,
+      expect.any(Object),
       expect.any(Object)
     );
   });

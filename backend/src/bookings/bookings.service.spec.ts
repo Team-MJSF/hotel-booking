@@ -30,6 +30,7 @@ describe('BookingsService', () => {
 
   const mockRoomRepository = {
     findOne: jest.fn(),
+    save: jest.fn(),
   };
 
   const mockUser: User = {
@@ -271,17 +272,39 @@ describe('BookingsService', () => {
   describe('remove', () => {
     it('should handle all remove scenarios', async () => {
       // Success case
-      mockBookingRepository.softDelete.mockResolvedValueOnce({ affected: 1 });
+      mockBookingRepository.findOne.mockResolvedValueOnce({
+        ...mockBooking,
+        room: mockRoom
+      });
+      mockBookingRepository.save.mockResolvedValueOnce({
+        ...mockBooking,
+        status: BookingStatus.CANCELLED
+      });
+      mockRoomRepository.save.mockResolvedValueOnce({
+        ...mockRoom,
+        availabilityStatus: AvailabilityStatus.AVAILABLE
+      });
+
       await service.remove(1);
-      expect(bookingRepository.softDelete).toHaveBeenCalledWith({ bookingId: 1 });
+      
+      expect(bookingRepository.findOne).toHaveBeenCalledWith({
+        where: { bookingId: 1 },
+        relations: ['user', 'room', 'payment'],
+      });
+      expect(bookingRepository.save).toHaveBeenCalled();
+      expect(roomRepository.save).toHaveBeenCalled();
 
       // Not found case
-      mockBookingRepository.softDelete.mockResolvedValueOnce({ affected: 0 });
+      mockBookingRepository.findOne.mockResolvedValueOnce(null);
       await expect(service.remove(1)).rejects.toThrow(ResourceNotFoundException);
 
       // Database error case
       const error = new Error('Database error');
-      mockBookingRepository.softDelete.mockRejectedValueOnce(error);
+      mockBookingRepository.findOne.mockResolvedValueOnce({
+        ...mockBooking,
+        room: mockRoom
+      });
+      mockBookingRepository.save.mockRejectedValueOnce(error);
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });
   });
