@@ -17,7 +17,7 @@ describe('CreatePaymentDto', () => {
     it('should handle all validation scenarios', async () => {
       // Valid DTO case with all fields
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = PaymentStatus.PENDING;
@@ -30,7 +30,7 @@ describe('CreatePaymentDto', () => {
       // Valid DTO case without optional fields
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = PaymentStatus.PENDING;
@@ -41,7 +41,7 @@ describe('CreatePaymentDto', () => {
       // Missing required fields case
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       // Missing paymentMethod, currency, and status
 
       const missingFieldsErrors = await validate(createPaymentDto);
@@ -53,7 +53,7 @@ describe('CreatePaymentDto', () => {
       // Invalid payment method case
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       createPaymentDto.paymentMethod = 'INVALID_METHOD' as unknown as PaymentMethod;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = PaymentStatus.PENDING;
@@ -65,7 +65,7 @@ describe('CreatePaymentDto', () => {
       // Invalid currency case
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = 'INVALID_CURRENCY' as unknown as Currency;
       createPaymentDto.status = PaymentStatus.PENDING;
@@ -77,7 +77,7 @@ describe('CreatePaymentDto', () => {
       // Invalid status case
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 1;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = 'INVALID_STATUS' as unknown as PaymentStatus;
@@ -89,7 +89,7 @@ describe('CreatePaymentDto', () => {
       // Invalid bookingId case
       createPaymentDto = new CreatePaymentDto();
       createPaymentDto.bookingId = 'not-a-number' as unknown as number;
-      createPaymentDto.amount = 100.50;
+      createPaymentDto.amount = 100.5;
       createPaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       createPaymentDto.currency = Currency.USD;
       createPaymentDto.status = PaymentStatus.PENDING;
@@ -117,12 +117,12 @@ describe('CreatePaymentDto', () => {
       // Basic transformation
       const plainData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
         transactionId: 'tx_123',
-        refundReason: 'Customer request'
+        refundReason: 'Customer request',
       };
 
       const dtoObject = plainToClass(CreatePaymentDto, plainData);
@@ -141,22 +141,22 @@ describe('CreatePaymentDto', () => {
         amount: '100.50',
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
-        status: PaymentStatus.PENDING
+        status: PaymentStatus.PENDING,
       };
 
       const numberStringDto = plainToClass(CreatePaymentDto, numberStringData);
       expect(typeof numberStringDto.bookingId).toBe('number');
       expect(typeof numberStringDto.amount).toBe('number');
       expect(numberStringDto.bookingId).toBe(1);
-      expect(numberStringDto.amount).toBe(100.50);
+      expect(numberStringDto.amount).toBe(100.5);
 
       // String to enum conversion
       const enumStringData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: 'CREDIT_CARD',
         currency: 'USD',
-        status: 'PENDING'
+        status: 'PENDING',
       };
 
       const enumStringDto = plainToClass(CreatePaymentDto, enumStringData);
@@ -167,12 +167,12 @@ describe('CreatePaymentDto', () => {
       // Undefined values
       const undefinedData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
         transactionId: undefined,
-        refundReason: undefined
+        refundReason: undefined,
       };
 
       const undefinedDto = plainToClass(CreatePaymentDto, undefinedData);
@@ -182,12 +182,12 @@ describe('CreatePaymentDto', () => {
       // Null values
       const nullData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
         transactionId: null,
-        refundReason: null
+        refundReason: null,
       };
 
       const nullDto = plainToClass(CreatePaymentDto, nullData);
@@ -197,12 +197,12 @@ describe('CreatePaymentDto', () => {
       // Empty string values
       const emptyStringData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
         transactionId: '',
-        refundReason: ''
+        refundReason: '',
       };
 
       const emptyStringDto = plainToClass(CreatePaymentDto, emptyStringData);
@@ -212,11 +212,11 @@ describe('CreatePaymentDto', () => {
       // Extra properties
       const extraPropsData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
-        extraField: 'extra value'
+        extraField: 'extra value',
       };
 
       const extraPropsDto = plainToClass(CreatePaymentDto, extraPropsData);
@@ -228,4 +228,4 @@ describe('CreatePaymentDto', () => {
       // Extra properties are automatically ignored by class-transformer
     });
   });
-}); 
+});

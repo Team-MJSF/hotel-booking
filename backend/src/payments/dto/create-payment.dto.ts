@@ -20,7 +20,7 @@ export class CreatePaymentDto {
     }
     return Number(value);
   })
-    bookingId: number;
+  bookingId: number;
 
   /**
    * The amount of the payment in USD
@@ -34,7 +34,7 @@ export class CreatePaymentDto {
     }
     return Number(value);
   })
-    amount: number;
+  amount: number;
 
   @ApiProperty({ description: 'The payment method used', enum: PaymentMethod })
   @IsNotEmpty()
@@ -45,7 +45,7 @@ export class CreatePaymentDto {
     }
     return value;
   })
-    paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethod;
 
   @ApiProperty({ description: 'The currency of the payment', enum: Currency })
   @IsNotEmpty()
@@ -56,12 +56,12 @@ export class CreatePaymentDto {
     }
     return value;
   })
-    currency: Currency;
+  currency: Currency;
 
   @ApiProperty({ description: 'The transaction ID from the payment provider' })
   @IsOptional()
   @IsString()
-    transactionId?: string;
+  transactionId?: string;
 
   /**
    * The status of the payment
@@ -76,7 +76,7 @@ export class CreatePaymentDto {
     }
     return value;
   })
-    status: PaymentStatus;
+  status: PaymentStatus;
 
   /**
    * Optional description or notes about the payment
@@ -84,5 +84,5 @@ export class CreatePaymentDto {
   @ApiPropertyOptional({ description: 'The reason for the refund if applicable' })
   @IsOptional()
   @IsString()
-    refundReason?: string;
+  refundReason?: string;
 }

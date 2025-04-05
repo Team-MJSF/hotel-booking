@@ -18,9 +18,9 @@ describe('ProfileDto', () => {
             phoneNumber: '+1234567890',
             address: '123 Main St',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
-          shouldPass: true
+          shouldPass: true,
         },
         {
           data: {
@@ -29,9 +29,9 @@ describe('ProfileDto', () => {
             lastName: 'Doe',
             email: 'john@example.com',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
-          shouldPass: true
+          shouldPass: true,
         },
         {
           data: {
@@ -41,10 +41,10 @@ describe('ProfileDto', () => {
             email: 'mary@example.com',
             role: UserRole.ADMIN,
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
-          shouldPass: true
-        }
+          shouldPass: true,
+        },
       ];
 
       // Invalid cases
@@ -52,10 +52,10 @@ describe('ProfileDto', () => {
         {
           data: {
             id: 1,
-            firstName: 'John'
+            firstName: 'John',
             // Missing required fields
           },
-          expectedErrors: ['lastName', 'email']
+          expectedErrors: ['lastName', 'email'],
         },
         {
           data: {
@@ -64,9 +64,9 @@ describe('ProfileDto', () => {
             lastName: 'Doe',
             email: 'not-an-email',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
-          expectedErrors: ['email']
+          expectedErrors: ['email'],
         },
         {
           data: {
@@ -76,10 +76,10 @@ describe('ProfileDto', () => {
             email: 'john@example.com',
             role: 'invalid_role',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
-          expectedErrors: ['role']
-        }
+          expectedErrors: ['role'],
+        },
       ];
 
       // Test valid scenarios
@@ -114,7 +114,7 @@ describe('ProfileDto', () => {
             phoneNumber: '+1234567890',
             address: '123 Main St',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
           expected: {
             id: 1,
@@ -123,8 +123,8 @@ describe('ProfileDto', () => {
             email: 'john@example.com',
             role: UserRole.USER,
             phoneNumber: '+1234567890',
-            address: '123 Main St'
-          }
+            address: '123 Main St',
+          },
         },
         {
           input: {
@@ -133,14 +133,14 @@ describe('ProfileDto', () => {
             lastName: 'Doe',
             email: undefined,
             createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-02T00:00:00.000Z'
+            updatedAt: '2024-01-02T00:00:00.000Z',
           },
           expected: {
             id: 1,
             firstName: 'John',
             lastName: 'Doe',
-            email: undefined
-          }
+            email: undefined,
+          },
         },
         {
           input: {
@@ -149,26 +149,26 @@ describe('ProfileDto', () => {
             lastName: 'Doe',
             email: null,
             createdAt: '2024-01-01T00:00:00.000Z',
-            updatedAt: '2024-01-02T00:00:00.000Z'
+            updatedAt: '2024-01-02T00:00:00.000Z',
           },
           expected: {
             id: 1,
             firstName: '',
             lastName: 'Doe',
-            email: null
-          }
-        }
+            email: null,
+          },
+        },
       ];
 
       for (const scenario of transformationScenarios) {
         const dtoObject = plainToClass(ProfileDto, scenario.input);
-        
+
         expect(dtoObject).toBeInstanceOf(ProfileDto);
         expect(dtoObject.id).toBe(scenario.expected.id);
         expect(dtoObject.firstName).toBe(scenario.expected.firstName);
         expect(dtoObject.lastName).toBe(scenario.expected.lastName);
         expect(dtoObject.email).toBe(scenario.expected.email);
-        
+
         if (scenario.input.role) {
           expect(dtoObject.role).toBe(scenario.input.role);
         }
@@ -178,10 +178,10 @@ describe('ProfileDto', () => {
         if (scenario.input.address) {
           expect(dtoObject.address).toBe(scenario.input.address);
         }
-        
+
         expect(dtoObject.createdAt).toBeInstanceOf(Date);
         expect(dtoObject.updatedAt).toBeInstanceOf(Date);
       }
     });
   });
-}); 
+});

@@ -144,8 +144,8 @@ export class CreateRooms1709913600001 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('rooms');
     if (table) {
-      const indices = table.indices.filter(
-        (index) => [
+      const indices = table.indices.filter(index =>
+        [
           'IDX_ROOMS_TYPE',
           'IDX_ROOMS_PRICE',
           'IDX_ROOMS_MAX_GUESTS',
@@ -153,10 +153,10 @@ export class CreateRooms1709913600001 implements MigrationInterface {
           'IDX_ROOMS_TYPE_PRICE',
           'IDX_ROOMS_TYPE_AVAILABILITY',
           'IDX_ROOMS_NUMBER',
-          'IDX_ROOMS_DESCRIPTION'
+          'IDX_ROOMS_DESCRIPTION',
         ].includes(index.name),
       );
-      await Promise.all(indices.map((index) => queryRunner.dropIndex('rooms', index)));
+      await Promise.all(indices.map(index => queryRunner.dropIndex('rooms', index)));
     }
     await queryRunner.dropTable('rooms');
   }

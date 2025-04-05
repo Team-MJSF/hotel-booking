@@ -11,10 +11,10 @@ describe('CreateRoomDto', () => {
     maxGuests: 2,
     description: 'A comfortable room',
     amenities: JSON.stringify(['wifi', 'tv']),
-    availabilityStatus: AvailabilityStatus.AVAILABLE
+    availabilityStatus: AvailabilityStatus.AVAILABLE,
   };
 
-  const createDto = (overrides = {}) => 
+  const createDto = (overrides = {}) =>
     plainToClass(CreateRoomDto, { ...validBaseDto, ...overrides });
 
   const validateDto = async (dto: CreateRoomDto) => {
@@ -34,7 +34,7 @@ describe('CreateRoomDto', () => {
         type: RoomType.SINGLE,
         roomNumber: '101',
         pricePerNight: 100,
-        maxGuests: 2
+        maxGuests: 2,
       });
       const { errors: minimalErrors } = await validateDto(minimalDto);
       expect(minimalErrors.length).toBe(0);
@@ -61,7 +61,7 @@ describe('CreateRoomDto', () => {
       const missingTypeDto = plainToClass(CreateRoomDto, {
         roomNumber: '101',
         pricePerNight: 100,
-        maxGuests: 2
+        maxGuests: 2,
       });
       const { errors: typeErrors } = await validateDto(missingTypeDto);
       expect(typeErrors.length).toBeGreaterThan(0);
@@ -70,7 +70,7 @@ describe('CreateRoomDto', () => {
       const missingRoomNumberDto = plainToClass(CreateRoomDto, {
         type: RoomType.SINGLE,
         pricePerNight: 100,
-        maxGuests: 2
+        maxGuests: 2,
       });
       const { errors: roomNumberErrors } = await validateDto(missingRoomNumberDto);
       expect(roomNumberErrors.length).toBeGreaterThan(0);
@@ -79,7 +79,7 @@ describe('CreateRoomDto', () => {
       const missingPriceDto = plainToClass(CreateRoomDto, {
         type: RoomType.SINGLE,
         roomNumber: '101',
-        maxGuests: 2
+        maxGuests: 2,
       });
       const { errors: priceErrors } = await validateDto(missingPriceDto);
       expect(priceErrors.length).toBeGreaterThan(0);
@@ -88,7 +88,7 @@ describe('CreateRoomDto', () => {
       const missingMaxGuestsDto = plainToClass(CreateRoomDto, {
         type: RoomType.SINGLE,
         roomNumber: '101',
-        pricePerNight: 100
+        pricePerNight: 100,
       });
       const { errors: maxGuestsErrors } = await validateDto(missingMaxGuestsDto);
       expect(maxGuestsErrors.length).toBeGreaterThan(0);
@@ -109,7 +109,7 @@ describe('CreateRoomDto', () => {
       // Test invalid number formats
       const invalidNumberDto = createDto({
         pricePerNight: 'not-a-number',
-        maxGuests: 'not-a-number'
+        maxGuests: 'not-a-number',
       });
       const { errors: numberErrors } = await validateDto(invalidNumberDto);
       expect(numberErrors.length).toBe(2);
@@ -134,9 +134,9 @@ describe('CreateRoomDto', () => {
         maxGuests: '2',
         description: 'A comfortable room',
         amenities: ['wifi', 'tv'],
-        availabilityStatus: 'AVAILABLE'
+        availabilityStatus: 'AVAILABLE',
       });
-      
+
       expect(dto.type).toBe(RoomType.SINGLE);
       expect(dto.roomNumber).toBe('101');
       expect(dto.pricePerNight).toBe(100);
@@ -144,49 +144,49 @@ describe('CreateRoomDto', () => {
       expect(dto.description).toBe('A comfortable room');
       expect(dto.amenities).toBe(JSON.stringify(['wifi', 'tv']));
       expect(dto.availabilityStatus).toBe(AvailabilityStatus.AVAILABLE);
-      
+
       // Test undefined values
       const undefinedDto = createDto({
         type: 'SINGLE',
         roomNumber: '101',
         pricePerNight: undefined,
-        maxGuests: undefined
+        maxGuests: undefined,
       });
       expect(undefinedDto.pricePerNight).toBeUndefined();
       expect(undefinedDto.maxGuests).toBeUndefined();
-      
+
       // Test null values
       const nullDto = createDto({
         type: 'SINGLE',
         roomNumber: '101',
         pricePerNight: null,
-        maxGuests: null
+        maxGuests: null,
       });
       expect(nullDto.pricePerNight).toBeNull();
       expect(nullDto.maxGuests).toBeNull();
-      
+
       // Test empty string values
       const emptyStringDto = createDto({
         type: 'SINGLE',
         roomNumber: '101',
         pricePerNight: '',
-        maxGuests: ''
+        maxGuests: '',
       });
       expect(emptyStringDto.pricePerNight).toBe('');
       expect(emptyStringDto.maxGuests).toBe('');
-      
+
       // Test type conversion
       const typeConversionDto = createDto({
         type: 'SINGLE',
         roomNumber: '101',
         pricePerNight: '100.50',
-        maxGuests: '3'
+        maxGuests: '3',
       });
       expect(typeof typeConversionDto.pricePerNight).toBe('number');
       expect(typeof typeConversionDto.maxGuests).toBe('number');
       expect(typeConversionDto.pricePerNight).toBe(100.5);
       expect(typeConversionDto.maxGuests).toBe(3);
-      
+
       // Test extra properties
       // The class-transformer library includes extra properties by default
       // We'll check that the DTO still has all the expected properties
@@ -195,18 +195,18 @@ describe('CreateRoomDto', () => {
         roomNumber: '101',
         pricePerNight: 100,
         maxGuests: 2,
-        extraProperty: 'should be ignored'
+        extraProperty: 'should be ignored',
       });
-      
+
       // Check that all expected properties are present
       expect(extraPropsDto.type).toBe(RoomType.SINGLE);
       expect(extraPropsDto.roomNumber).toBe('101');
       expect(extraPropsDto.pricePerNight).toBe(100);
       expect(extraPropsDto.maxGuests).toBe(2);
-      
+
       // The extra property might be included, but it shouldn't affect the DTO's functionality
       // We'll just acknowledge that it's there
       expect(extraPropsDto).toHaveProperty('extraProperty');
     });
   });
-}); 
+});

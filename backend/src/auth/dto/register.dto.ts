@@ -1,6 +1,15 @@
-import { IsEmail, IsString, MinLength, IsNotEmpty, Validate, ValidatorConstraint, ValidatorConstraintInterface, ValidationArguments, IsOptional, IsEnum } from 'class-validator';
+import {
+  IsEmail,
+  IsString,
+  MinLength,
+  IsNotEmpty,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
+  IsOptional,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { UserRole } from '../../users/entities/user.entity';
 
 @ValidatorConstraint({ name: 'passwordMatch', async: false })
 class PasswordMatchValidator implements ValidatorConstraintInterface {
@@ -16,46 +25,41 @@ class PasswordMatchValidator implements ValidatorConstraintInterface {
 }
 
 export class RegisterDto {
-  @ApiProperty({ description: 'The user\'s first name' })
+  @ApiProperty({ description: "The user's first name" })
   @IsNotEmpty()
   @IsString()
-    firstName: string;
+  firstName: string;
 
-  @ApiProperty({ description: 'The user\'s last name' })
+  @ApiProperty({ description: "The user's last name" })
   @IsNotEmpty()
   @IsString()
-    lastName: string;
+  lastName: string;
 
-  @ApiProperty({ description: 'The user\'s email address' })
+  @ApiProperty({ description: "The user's email address" })
   @IsNotEmpty()
   @IsEmail()
-    email: string;
+  email: string;
 
-  @ApiProperty({ description: 'The user\'s password (minimum 8 characters)' })
+  @ApiProperty({ description: "The user's password (minimum 8 characters)" })
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
-    password: string;
+  password: string;
 
-  @ApiProperty({ description: 'Confirm the user\'s password' })
+  @ApiProperty({ description: "Confirm the user's password" })
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
   @Validate(PasswordMatchValidator, ['password'])
-    confirmPassword: string;
+  confirmPassword: string;
 
-  @ApiProperty({ description: 'The user\'s role', enum: UserRole, default: UserRole.USER })
-  @IsEnum(UserRole)
-  @IsOptional()
-    role?: UserRole;
-
-  @ApiPropertyOptional({ description: 'The user\'s phone number' })
+  @ApiPropertyOptional({ description: "The user's phone number" })
   @IsOptional()
   @IsString()
-    phoneNumber?: string;
+  phoneNumber?: string;
 
-  @ApiPropertyOptional({ description: 'The user\'s address' })
+  @ApiPropertyOptional({ description: "The user's address" })
   @IsOptional()
   @IsString()
-    address?: string;
-} 
+  address?: string;
+}

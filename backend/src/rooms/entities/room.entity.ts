@@ -1,10 +1,4 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  OneToMany,
-  Index,
-} from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, OneToMany, Index } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
@@ -48,11 +42,11 @@ export interface RoomPhoto {
 export class Room extends BaseEntity {
   @PrimaryGeneratedColumn({ name: 'room_id' })
   @ApiProperty({ description: 'The unique identifier of the room' })
-    id: number;
+  id: number;
 
   @Column({ name: 'room_number', unique: true })
   @ApiProperty({ description: 'The room number' })
-    roomNumber: string;
+  roomNumber: string;
 
   @Column({
     name: 'room_type',
@@ -61,29 +55,29 @@ export class Room extends BaseEntity {
     default: RoomType.SINGLE,
   })
   @ApiProperty({ description: 'The type of room', enum: RoomType })
-    type: RoomType;
+  type: RoomType;
 
   @Column({ name: 'price_per_night', type: 'decimal', precision: 10, scale: 2 })
   @ApiProperty({ description: 'The price per night for the room' })
-    pricePerNight: number;
+  pricePerNight: number;
 
   @Column({ name: 'max_guests' })
   @ApiProperty({ description: 'The maximum number of guests allowed' })
-    maxGuests: number;
+  maxGuests: number;
 
   @Column({ name: 'description', nullable: true })
   @ApiProperty({ description: 'The description of the room' })
-    description: string;
+  description: string;
 
   @Column({ name: 'amenities', type: 'json', nullable: true })
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'The amenities available in the room',
-    type: 'string'
+    type: 'string',
   })
   public amenities: string;
 
   @Column({ name: 'photos', type: 'json', nullable: true })
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Array of photos associated with the room',
     type: 'array',
     items: {
@@ -92,12 +86,12 @@ export class Room extends BaseEntity {
         url: { type: 'string' },
         type: { type: 'string', enum: Object.values(PhotoType) },
         caption: { type: 'string' },
-        displayOrder: { type: 'number' }
-      }
+        displayOrder: { type: 'number' },
+      },
     },
-    required: false 
+    required: false,
   })
-    photos?: RoomPhoto[];
+  photos?: RoomPhoto[];
 
   @Column({
     name: 'availability_status',
@@ -107,11 +101,11 @@ export class Room extends BaseEntity {
   })
   @ApiProperty({
     description: 'The current availability status of the room',
-    enum: AvailabilityStatus
+    enum: AvailabilityStatus,
   })
-    availabilityStatus: AvailabilityStatus;
+  availabilityStatus: AvailabilityStatus;
 
-  @OneToMany(() => Booking, (booking) => booking.room)
+  @OneToMany(() => Booking, booking => booking.room)
   @ApiProperty({ description: 'The bookings associated with this room' })
-    bookings: Booking[];
+  bookings: Booking[];
 }

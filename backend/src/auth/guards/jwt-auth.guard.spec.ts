@@ -34,7 +34,7 @@ describe('JwtAuthGuard', () => {
           const result = guard.canActivate(mockContext);
           expect(result).toBe(true);
           expect(mockAuthGuard.canActivate).toHaveBeenCalledWith(mockContext);
-        }
+        },
       },
       {
         description: 'failed authentication',
@@ -43,17 +43,18 @@ describe('JwtAuthGuard', () => {
           const result = guard.canActivate(mockContext);
           expect(result).toBe(false);
           expect(mockAuthGuard.canActivate).toHaveBeenCalledWith(mockContext);
-        }
+        },
       },
       {
         description: 'authentication error',
-        setup: () => mockAuthGuard.canActivate.mockImplementation(() => {
-          throw new Error('Authentication failed');
-        }),
+        setup: () =>
+          mockAuthGuard.canActivate.mockImplementation(() => {
+            throw new Error('Authentication failed');
+          }),
         assertion: async () => {
           expect(() => guard.canActivate(mockContext)).toThrow('Authentication failed');
           expect(mockAuthGuard.canActivate).toHaveBeenCalledWith(mockContext);
-        }
+        },
       },
       {
         description: 'async authentication',
@@ -62,18 +63,18 @@ describe('JwtAuthGuard', () => {
           const result = await guard.canActivate(mockContext);
           expect(result).toBe(true);
           expect(mockAuthGuard.canActivate).toHaveBeenCalledWith(mockContext);
-        }
-      }
+        },
+      },
     ];
 
     // Run all test cases
     for (const { description, setup, assertion } of testCases) {
       // Reset mock for each test case
       mockAuthGuard.canActivate.mockReset();
-      
+
       // Set up the specific test scenario
       setup();
-      
+
       // Run the test
       await assertion();
     }
@@ -86,4 +87,4 @@ describe('JwtAuthGuard', () => {
     expect(freshGuard).toBeInstanceOf(JwtAuthGuard);
     expect(freshGuard.canActivate).toBeDefined();
   });
-}); 
+});

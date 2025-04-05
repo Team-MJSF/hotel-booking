@@ -4,7 +4,11 @@ import { Repository } from 'typeorm';
 import { Room, AvailabilityStatus } from './entities/room.entity';
 import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
-import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  ConflictException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import { SearchRoomsDto, SortField, SortOrder } from './dto/search-rooms.dto';
 
 @Injectable()
@@ -150,12 +154,12 @@ export class RoomsService {
         .andWhere(
           // Either no bookings exist OR no booking conflicts with requested dates
           '(booking.bookingId IS NULL OR NOT (' +
-          ':checkInDate < booking.checkOutDate AND ' +
-          ':checkOutDate > booking.checkInDate))',
+            ':checkInDate < booking.checkOutDate AND ' +
+            ':checkOutDate > booking.checkInDate))',
           {
             checkInDate,
             checkOutDate,
-          }
+          },
         );
 
       // Apply optional filters
@@ -220,12 +224,12 @@ export class RoomsService {
       if (searchDto.checkInDate && searchDto.checkOutDate) {
         query.andWhere(
           '(booking.bookingId IS NULL OR NOT (' +
-          ':checkInDate < booking.checkOutDate AND ' +
-          ':checkOutDate > booking.checkInDate))',
+            ':checkInDate < booking.checkOutDate AND ' +
+            ':checkOutDate > booking.checkInDate))',
           {
             checkInDate: searchDto.checkInDate,
             checkOutDate: searchDto.checkOutDate,
-          }
+          },
         );
       }
 

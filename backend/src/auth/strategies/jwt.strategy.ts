@@ -9,6 +9,7 @@ interface JwtPayload {
   email: string;
   sub: number;
   role: UserRole;
+  tokenVersion: number;
 }
 
 @Injectable()
@@ -32,6 +33,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     if (user.role !== payload.role) {
       throw new UnauthorizedException('User role mismatch');
     }
+    if (user.tokenVersion !== payload.tokenVersion) {
+      throw new UnauthorizedException('Token version mismatch');
+    }
     return user;
   }
-} 
+}
