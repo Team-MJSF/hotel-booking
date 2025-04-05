@@ -3,7 +3,6 @@ import { User, UserRole } from '../../users/entities/user.entity';
 import { Room, AvailabilityStatus, RoomType, PhotoType } from '../../rooms/entities/room.entity';
 import { Booking, BookingStatus } from '../../bookings/entities/booking.entity';
 import { Payment, Currency, PaymentMethod, PaymentStatus } from '../../payments/entities/payment.entity';
-import { RefreshToken } from '../../refresh-tokens/entities/refresh-token.entity';
 import * as bcrypt from 'bcrypt';
 import { DataSource } from 'typeorm';
 import { Logger } from '@nestjs/common';

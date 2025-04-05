@@ -10,7 +10,7 @@ export class RefreshTokenResponseDto {
   @IsNotEmpty()
   @MinLength(1)
   @Matches(/^\S+$/, { message: 'Access token cannot contain whitespace' })
-  access_token: string;
+    access_token: string;
 
   @ApiProperty({
     description: 'The new refresh token',
@@ -20,5 +20,5 @@ export class RefreshTokenResponseDto {
   @IsNotEmpty()
   @MinLength(1)
   @Matches(/^\S+$/, { message: 'Refresh token cannot contain whitespace' })
-  refresh_token: string;
+    refresh_token: string;
 } 

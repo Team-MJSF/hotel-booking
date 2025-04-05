@@ -65,7 +65,6 @@ async function createDatabaseIfNotExists(options: MysqlConnectionOptions): Promi
  */
 export async function getTypeOrmConfig(configService: ConfigService): Promise<DataSourceOptions> {
   const isDevelopment = process.env.NODE_ENV === 'development';
-  const isTest = process.env.NODE_ENV === 'test';
 
   // Create database options
   const options: MysqlConnectionOptions = {

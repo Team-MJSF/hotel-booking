@@ -13,11 +13,6 @@ import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 const MAX_TEST_DURATION = 30000; // 30 seconds
 let safetyTimeout: NodeJS.Timeout;
 
-// Define delay function directly
-const delay = (ms: number): Promise<void> => {
-  return new Promise<void>(resolve => setTimeout(resolve, ms));
-};
-
 // Define initTestApp function directly
 async function initTestApp(): Promise<INestApplication> {
   try {
@@ -227,7 +222,7 @@ describe('Auth Flow Integration Tests', () => {
     it('should handle complete login scenarios', async () => {
       try {
         // Step 1: Register a user first
-        const registerResponse = await request(app.getHttpServer())
+        const description = await request(app.getHttpServer())
           .post('/auth/register')
           .send(testUser)
           .expect(res => {

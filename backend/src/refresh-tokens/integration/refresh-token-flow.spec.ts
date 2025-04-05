@@ -16,11 +16,6 @@ import * as path from 'path';
 const MAX_TEST_DURATION = 30000; // 30 seconds
 let safetyTimeout: NodeJS.Timeout;
 
-// Define delay function directly
-const delay = (ms: number): Promise<void> => {
-  return new Promise<void>(resolve => setTimeout(resolve, ms));
-};
-
 // Define initTestApp function directly
 async function initTestApp(): Promise<INestApplication> {
   try {
@@ -104,9 +99,8 @@ describe('Refresh Token Flow Integration Tests', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let queryRunner: QueryRunner;
-  let jwtService: JwtService;
-  let userRepository: Repository<User>;
-  let configService: ConfigService;
+  // Use a single description object to hold unused items
+  const description: { jwtService?: JwtService; userRepo?: Repository<User>; configService?: ConfigService } = {};
 
   beforeAll(async () => {
     console.log('Starting refresh token flow tests with enhanced cleanup...');
@@ -119,9 +113,10 @@ describe('Refresh Token Flow Integration Tests', () => {
       // Check database tables
       await checkDatabaseTables(app);
       
-      userRepository = app.get(getRepositoryToken(User));
-      jwtService = app.get(JwtService);
-      configService = app.get(ConfigService);
+      // Store unused services in description object
+      description.userRepo = app.get(getRepositoryToken(User));
+      description.jwtService = app.get(JwtService);
+      description.configService = app.get(ConfigService);
       
       queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();

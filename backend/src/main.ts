@@ -12,7 +12,7 @@ export async function bootstrap() {
 
   // Enable Helmet for security headers
   app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }, // Needed for Swagger UI
+    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Needed for Swagger UI
     crossOriginEmbedderPolicy: false, // Needed for Swagger UI
   }));
 

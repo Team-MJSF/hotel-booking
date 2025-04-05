@@ -11,18 +11,18 @@ export class UpdateUserDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  firstName?: string;
+    firstName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  lastName?: string;
+    lastName?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
   @IsEmail()
-  email?: string;
+    email?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
@@ -31,25 +31,25 @@ export class UpdateUserDto {
   @Matches(/^(?=.*[!@#$%^&*])(?=.*[0-9])(?=.*[A-Z]).*$/, {
     message: 'Password must contain at least one special character, one number, and one uppercase letter'
   })
-  password?: string;
+    password?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsEnum(UserRole)
-  role?: UserRole;
+    role?: UserRole;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsPhoneNumber()
-  phoneNumber?: string;
+    phoneNumber?: string;
 
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  address?: string;
+    address?: string;
 
   @ApiProperty({ required: false, description: 'The user\'s token version', example: 1 })
   @IsOptional()
   @IsNumber()
-  tokenVersion?: number;
+    tokenVersion?: number;
 }

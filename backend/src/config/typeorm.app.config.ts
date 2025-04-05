@@ -1,10 +1,5 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
-import { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectionOptions';
-import { Logger } from '@nestjs/common';
-
-// Initialize logger
-const logger = new Logger('TypeOrmAppConfig');
 
 /**
  * Get TypeORM configuration options for the application module

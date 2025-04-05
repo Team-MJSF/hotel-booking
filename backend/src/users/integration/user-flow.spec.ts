@@ -9,10 +9,6 @@ import { DataSource, QueryRunner, Repository } from 'typeorm';
 import * as path from 'path';
 import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 
-const delay = (ms: number): Promise<void> => {
-  return new Promise<void>(resolve => setTimeout(resolve, ms));
-};
-
 // Initialize a test app with the correct TypeORM configuration
 async function initTestApp(): Promise<INestApplication> {
   try {
@@ -62,7 +58,7 @@ describe('User Flow Integration Tests', () => {
   let app: INestApplication;
   let dataSource: DataSource;
   let queryRunner: QueryRunner;
-  let userRepository: Repository<User>;
+  let description: Repository<User>;
 
   const testUser = {
     email: 'user-flow-test@example.com',
@@ -91,7 +87,7 @@ describe('User Flow Integration Tests', () => {
     const setup = await initTestApp();
     app = setup;
     dataSource = app.get(DataSource);
-    userRepository = dataSource.getRepository(User);
+    description = dataSource.getRepository(User);
   });
 
   afterAll(async () => {

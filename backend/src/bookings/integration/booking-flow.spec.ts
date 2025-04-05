@@ -5,9 +5,6 @@ import { AppModule } from '../../app.module';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User, UserRole } from '../../users/entities/user.entity';
-import { Room } from '../../rooms/entities/room.entity';
-import { Booking } from '../entities/booking.entity';
-import { Payment } from '../../payments/entities/payment.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -18,11 +15,6 @@ import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 // Maximum duration for the test
 const MAX_TEST_DURATION = 30000; // 30 seconds
 let safetyTimeout: NodeJS.Timeout;
-
-// Define delay function directly
-const delay = (ms: number): Promise<void> => {
-  return new Promise<void>(resolve => setTimeout(resolve, ms));
-};
 
 // Define initTestApp function directly
 async function initTestApp(): Promise<INestApplication> {

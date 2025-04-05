@@ -18,7 +18,6 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
 import * as bcrypt from 'bcrypt';
 import { Logger } from '@nestjs/common';
-import { NotFoundException } from '@nestjs/common';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);

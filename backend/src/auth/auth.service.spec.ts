@@ -7,8 +7,6 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenService } from '../refresh-tokens/refresh-token.service';
-import { LoginResponseDto } from '../refresh-tokens/dto/login-response.dto';
-import { RefreshTokenResponseDto } from '../refresh-tokens/dto/refresh-token-response.dto';
 import * as bcrypt from 'bcrypt';
 
 jest.mock('bcrypt', () => ({
