@@ -14,41 +14,41 @@ class PasswordMatchValidator implements ValidatorConstraintInterface {
   }
 }
 
-export class RegisterDto {
-  @ApiProperty({ description: 'The user\'s first name' })
+export class CreateAdminDto {
+  @ApiProperty({ description: 'The admin\'s first name' })
   @IsNotEmpty()
   @IsString()
     firstName: string;
 
-  @ApiProperty({ description: 'The user\'s last name' })
+  @ApiProperty({ description: 'The admin\'s last name' })
   @IsNotEmpty()
   @IsString()
     lastName: string;
 
-  @ApiProperty({ description: 'The user\'s email address' })
+  @ApiProperty({ description: 'The admin\'s email address' })
   @IsNotEmpty()
   @IsEmail()
     email: string;
 
-  @ApiProperty({ description: 'The user\'s password (minimum 8 characters)' })
+  @ApiProperty({ description: 'The admin\'s password (minimum 8 characters)' })
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
     password: string;
 
-  @ApiProperty({ description: 'Confirm the user\'s password' })
+  @ApiProperty({ description: 'Confirm the admin\'s password' })
   @IsNotEmpty()
   @IsString()
   @MinLength(8)
   @Validate(PasswordMatchValidator, ['password'])
     confirmPassword: string;
 
-  @ApiPropertyOptional({ description: 'The user\'s phone number' })
+  @ApiPropertyOptional({ description: 'The admin\'s phone number' })
   @IsOptional()
   @IsString()
     phoneNumber?: string;
 
-  @ApiPropertyOptional({ description: 'The user\'s address' })
+  @ApiPropertyOptional({ description: 'The admin\'s address' })
   @IsOptional()
   @IsString()
     address?: string;

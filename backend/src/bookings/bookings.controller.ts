@@ -1,12 +1,13 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ForbiddenException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBearerAuth, ApiBody, ApiExtraModels } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
-import { Booking, BookingStatus } from './entities/booking.entity';
+import { Booking } from './entities/booking.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
+import { User, UserRole } from '../users/entities/user.entity';
+import { AdminGuard } from '../auth/guards/admin.guard';
 
 /**
  * Controller for managing hotel bookings
@@ -152,8 +153,16 @@ export class BookingsController {
     }
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  findAll(@CurrentUser() user?: User): Promise<Booking[]> {
-    return this.bookingsService.findAll();
+  async findAll(@CurrentUser() user?: User): Promise<Booking[]> {
+    const bookings = await this.bookingsService.findAll();
+    
+    // If user is admin, return all bookings
+    // If regular user, filter to only show their own bookings
+    if (user && user.role !== UserRole.ADMIN) {
+      return bookings.filter(booking => booking.user?.id === user.id);
+    }
+    
+    return bookings;
   }
 
   /**
@@ -164,7 +173,7 @@ export class BookingsController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get a booking by ID',
-    description: 'Retrieves detailed information for a specific booking'
+    description: 'Retrieves detailed information for a specific booking. Users can only access their own bookings, while admins can access any booking.'
   })
   @ApiParam({ 
     name: 'id', 
@@ -209,8 +218,16 @@ export class BookingsController {
   })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  findOne(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking> {
-    return this.bookingsService.findOne(+id);
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only access own bookings unless admin' })
+  async findOne(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking> {
+    const booking = await this.bookingsService.findOne(+id);
+    
+    // Only allow users to access their own bookings or admins to access any booking
+    if (user && user.role !== UserRole.ADMIN && booking.user?.id !== user.id) {
+      throw new ForbiddenException('You can only access your own bookings');
+    }
+    
+    return booking;
   }
 
   /**
@@ -222,7 +239,7 @@ export class BookingsController {
   @Patch(':id')
   @ApiOperation({
     summary: 'Update a booking',
-    description: 'Updates an existing booking with the provided details. Can be used to modify dates, room, number of guests, or cancel a booking.'
+    description: 'Updates an existing booking with the provided details. Can be used to modify dates, room, number of guests, or cancel a booking. Users can only update their own bookings, while admins can update any booking.'
   })
   @ApiParam({ 
     name: 'id', 
@@ -276,8 +293,16 @@ export class BookingsController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data or dates' })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  update(@Param('id') id: string, @Body() updateBookingDto: UpdateBookingDto, @CurrentUser() user?: User): Promise<Booking> {
-    return this.bookingsService.update(+id, updateBookingDto);
+  @ApiResponse({ status: 403, description: 'Forbidden - Can only update own bookings unless admin' })
+  async update(@Param('id') id: string, @Body() updateBookingDto: UpdateBookingDto, @CurrentUser() user?: User): Promise<Booking> {
+    const booking = await this.bookingsService.findOne(+id);
+    
+    // Only allow users to update their own bookings or admins to update any booking
+    if (user && user.role !== UserRole.ADMIN && booking.user && booking.user.id !== user.id) {
+      throw new ForbiddenException('You can only update your own bookings');
+    }
+    
+    return await this.bookingsService.update(+id, updateBookingDto);
   }
 
   /**
@@ -286,9 +311,10 @@ export class BookingsController {
    * @returns Promise<void>
    */
   @Delete(':id')
+  @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Delete a booking',
-    description: 'Soft-deletes a booking. The record remains in the database but is marked as deleted.'
+    description: 'Soft-deletes a booking. The record remains in the database but is marked as deleted. (Admin only)'
   })
   @ApiParam({ 
     name: 'id', 
@@ -301,7 +327,8 @@ export class BookingsController {
   })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  remove(@Param('id') id: string, @CurrentUser() user?: User): Promise<void> {
+  @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
+  remove(@Param('id') id: string): Promise<void> {
     return this.bookingsService.remove(+id);
   }
 }

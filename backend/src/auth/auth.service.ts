@@ -9,6 +9,7 @@ import { RefreshTokenService } from '../refresh-tokens/refresh-token.service';
 import { LoginResponseDto } from '../refresh-tokens/dto/login-response.dto';
 import { RefreshTokenResponseDto } from '../refresh-tokens/dto/refresh-token-response.dto';
 import * as bcrypt from 'bcrypt';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @Injectable()
 export class AuthService {
@@ -102,7 +103,29 @@ export class AuthService {
     const user = await this.usersService.create({
       ...registerDto,
       password: hashedPassword,
-      role: registerDto.role || UserRole.USER,
+      role: UserRole.USER,
+    });
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = user;
+    return result;
+  }
+
+  async createAdmin(createAdminDto: CreateAdminDto): Promise<Omit<User, 'password'>> {
+    if (createAdminDto.password !== createAdminDto.confirmPassword) {
+      throw new UnauthorizedException('Passwords do not match');
+    }
+
+    const existingUser = await this.usersService.findByEmail(createAdminDto.email);
+    if (existingUser) {
+      throw new ConflictException('Email already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(createAdminDto.password, 10);
+    const user = await this.usersService.create({
+      ...createAdminDto,
+      password: hashedPassword,
+      role: UserRole.ADMIN,
     });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

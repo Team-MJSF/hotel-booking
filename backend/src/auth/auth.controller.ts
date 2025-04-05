@@ -4,15 +4,17 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ProfileDto } from './dto/profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { AdminGuard } from './guards/admin.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiExtraModels, getSchemaPath } from '@nestjs/swagger';
 import { User } from '../users/entities/user.entity';
 import { LoginResponseDto } from '../refresh-tokens/dto/login-response.dto';
 import { RefreshTokenRequestDto } from '../refresh-tokens/dto/refresh-token-request.dto';
 import { RefreshTokenResponseDto } from '../refresh-tokens/dto/refresh-token-response.dto';
+import { CreateAdminDto } from './dto/create-admin.dto';
 
 @ApiTags('Authentication')
-@ApiExtraModels(RegisterDto, LoginDto, LoginResponseDto, RefreshTokenRequestDto, RefreshTokenResponseDto, ProfileDto)
+@ApiExtraModels(RegisterDto, LoginDto, LoginResponseDto, RefreshTokenRequestDto, RefreshTokenResponseDto, ProfileDto, CreateAdminDto)
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -20,7 +22,7 @@ export class AuthController {
   @Post('register')
   @ApiOperation({
     summary: 'Register a new user',
-    description: 'Creates a new user account with the provided information. By default, users are assigned the USER role.'
+    description: 'Creates a new user account with the provided information. All user accounts created through this endpoint are assigned the USER role. Admin accounts can only be created by existing administrators.'
   })
   @ApiBody({
     type: RegisterDto,
@@ -69,6 +71,64 @@ export class AuthController {
   @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Post('create-admin')
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Create a new admin user',
+    description: 'Creates a new admin user account with the provided information. Only accessible by administrators. (Admin only)'
+  })
+  @ApiBody({
+    type: CreateAdminDto,
+    description: 'Admin user creation details',
+    examples: {
+      basic: {
+        summary: 'Basic admin creation',
+        value: {
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'admin@example.com',
+          password: 'StrongPassword123!',
+          confirmPassword: 'StrongPassword123!',
+        },
+      },
+      withOptional: {
+        summary: 'Admin with optional fields',
+        value: {
+          firstName: 'Admin',
+          lastName: 'User',
+          email: 'admin@example.com',
+          password: 'StrongPassword123!',
+          confirmPassword: 'StrongPassword123!',
+          phoneNumber: '+1234567890',
+          address: '123 Main St, City, Country',
+        },
+      },
+    },
+  })
+  @ApiResponse({ 
+    status: 201, 
+    description: 'Admin user successfully created',
+    schema: {
+      properties: {
+        id: { type: 'number', example: 1 },
+        firstName: { type: 'string', example: 'Admin' },
+        lastName: { type: 'string', example: 'User' },
+        email: { type: 'string', example: 'admin@example.com' },
+        role: { type: 'string', enum: ['user', 'admin'], example: 'admin' },
+        createdAt: { type: 'string', format: 'date-time' },
+        updatedAt: { type: 'string', format: 'date-time' },
+      }
+    }
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
+  @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
+  async createAdmin(@Body() createAdminDto: CreateAdminDto) {
+    return this.authService.createAdmin(createAdminDto);
   }
 
   @Post('login')

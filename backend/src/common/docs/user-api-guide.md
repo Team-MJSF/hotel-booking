@@ -1,381 +1,450 @@
 # User API Documentation
 
-## Introduction
+This documentation provides details about the user-related endpoints in the Hotel Booking System API.
 
-The User API provides endpoints to manage user accounts, authenticate users, and manage user profiles. The API supports features like user registration, authentication, profile management, and role-based access control.
+## Table of Contents
 
-## Authentication
+1. [Authentication Endpoints](#authentication-endpoints)
+   - [Register](#register)
+   - [Create Admin](#create-admin)
+   - [Login](#login)
+   - [Get Profile](#get-profile)
+   - [Refresh Token](#refresh-token)
+   - [Logout](#logout)
+   
+2. [User Management Endpoints](#user-management-endpoints)
+   - [List Users](#list-users)
+   - [Get User by ID](#get-user-by-id)
+   - [Create User](#create-user)
+   - [Update User](#update-user)
+   - [Delete User](#delete-user)
 
-Most endpoints related to user management require authentication. Administrative operations require an admin role.
+## Authentication Endpoints
 
-For protected endpoints, include a valid JWT token in the Authorization header:
+These endpoints handle user registration, authentication, and profile management.
 
-```
-Authorization: Bearer your_jwt_token
-```
+### Register
 
-## API Endpoints
-
-### User Registration
-
-Registers a new user in the system.
+Creates a new user account with the provided details. All user accounts created through this endpoint are assigned the USER role. Admin accounts can only be created by existing administrators.
 
 **Endpoint:** `POST /auth/register`
 
+**Authentication:** None (public endpoint)
+
 **Request Body:**
 ```json
 {
-  "email": "john.doe@example.com",
-  "password": "SecurePassword123!",
   "firstName": "John",
   "lastName": "Doe",
-  "phoneNumber": "+1234567890"
+  "email": "john.doe@example.com",
+  "password": "Password123!",
+  "confirmPassword": "Password123!",
+  "phoneNumber": "+1234567890",    // Optional
+  "address": "123 Main St"         // Optional
 }
 ```
 
-**Response:** `201 Created`
+**Response (201 Created):**
 ```json
 {
   "id": 1,
-  "email": "john.doe@example.com",
   "firstName": "John",
   "lastName": "Doe",
-  "phoneNumber": "+1234567890",
+  "email": "john.doe@example.com",
   "role": "user",
-  "createdAt": "2023-04-01T10:00:00Z",
-  "updatedAt": "2023-04-01T10:00:00Z"
+  "phoneNumber": "+1234567890",
+  "address": "123 Main St",
+  "createdAt": "2023-05-01T12:00:00Z",
+  "updatedAt": "2023-05-01T12:00:00Z"
 }
 ```
 
-### User Login
+**Error Responses:**
+- `400 Bad Request` - Invalid input data
+- `409 Conflict` - Email already exists
 
-Authenticates a user and provides a JWT token.
+### Create Admin
+
+Creates a new admin user account with the provided details. Only existing administrators can access this endpoint.
+
+**Endpoint:** `POST /auth/create-admin`
+
+**Authentication:** JWT (Bearer token) with Admin role
+
+**Request Body:**
+```json
+{
+  "firstName": "Admin",
+  "lastName": "User",
+  "email": "admin@example.com",
+  "password": "StrongPassword123!",
+  "confirmPassword": "StrongPassword123!",
+  "phoneNumber": "+1234567890",    // Optional
+  "address": "123 Main St"         // Optional
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": 2,
+  "firstName": "Admin",
+  "lastName": "User",
+  "email": "admin@example.com",
+  "role": "admin",
+  "phoneNumber": "+1234567890",
+  "address": "123 Main St",
+  "createdAt": "2023-05-01T12:00:00Z",
+  "updatedAt": "2023-05-01T12:00:00Z"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - Invalid input data
+- `401 Unauthorized` - User not authenticated
+- `403 Forbidden` - User is not an admin
+- `409 Conflict` - Email already exists
+
+### Login
+
+Authenticates a user and returns access and refresh tokens.
 
 **Endpoint:** `POST /auth/login`
+
+**Authentication:** None (public endpoint)
 
 **Request Body:**
 ```json
 {
   "email": "john.doe@example.com",
-  "password": "SecurePassword123!"
+  "password": "Password123!"
 }
 ```
 
-**Response:** `200 OK`
+**Response (201 Created):**
 ```json
 {
   "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "email": "john.doe@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "role": "user"
-  }
+  "refresh_token": "a1b2c3d4e5f6g7h8i9j0..."
 }
 ```
 
-### Get All Users (Admin Only)
+**Error Responses:**
+- `401 Unauthorized` - Invalid credentials
 
-Retrieves a list of all users in the system.
+### Get Profile
+
+Returns the profile information of the currently authenticated user.
+
+**Endpoint:** `GET /auth/profile`
+
+**Authentication:** JWT (Bearer token)
+
+**Response (200 OK):**
+```json
+{
+  "id": 1,
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "role": "user",
+  "phoneNumber": "+1234567890",
+  "address": "123 Main St",
+  "createdAt": "2023-05-01T12:00:00Z",
+  "updatedAt": "2023-05-01T12:00:00Z"
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - User not authenticated
+- `404 Not Found` - User not found
+
+### Refresh Token
+
+Creates a new access token using a valid refresh token.
+
+**Endpoint:** `POST /auth/refresh`
+
+**Authentication:** None (uses refresh token)
+
+**Request Body:**
+```json
+{
+  "refresh_token": "a1b2c3d4e5f6g7h8i9j0..."
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "refresh_token": "k9l8m7n6o5p4q3r2s1t0..."  // Optional, if token rotation is enabled
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid or expired refresh token
+
+### Logout
+
+Invalidates the provided refresh token, effectively logging out the user from that session.
+
+**Endpoint:** `POST /auth/logout`
+
+**Authentication:** JWT (Bearer token)
+
+**Request Body:**
+```json
+{
+  "refresh_token": "a1b2c3d4e5f6g7h8i9j0..."
+}
+```
+
+**Response (200 OK):**
+```json
+{
+  "message": "Successfully logged out"
+}
+```
+
+**Error Responses:**
+- `401 Unauthorized` - Invalid token or user not authenticated
+- `404 Not Found` - Refresh token not found
+
+## User Management Endpoints
+
+These endpoints are primarily for administrators to manage user accounts.
+
+### List Users
+
+Retrieves a list of all users. Only accessible by administrators.
 
 **Endpoint:** `GET /users`
 
-**Response:** `200 OK`
+**Authentication:** JWT (Bearer token) with Admin role
+
+**Response (200 OK):**
 ```json
 [
   {
     "id": 1,
-    "email": "john.doe@example.com",
     "firstName": "John",
     "lastName": "Doe",
+    "email": "john.doe@example.com",
+    "role": "admin",
     "phoneNumber": "+1234567890",
-    "role": "user",
-    "createdAt": "2023-04-01T10:00:00Z",
-    "updatedAt": "2023-04-01T10:00:00Z"
+    "address": "123 Main St",
+    "isActive": true,
+    "createdAt": "2023-01-01T12:00:00Z",
+    "updatedAt": "2023-01-02T12:00:00Z"
   },
   {
     "id": 2,
-    "email": "jane.smith@example.com",
     "firstName": "Jane",
     "lastName": "Smith",
-    "phoneNumber": "+9876543210",
-    "role": "admin",
-    "createdAt": "2023-04-01T11:00:00Z",
-    "updatedAt": "2023-04-01T11:00:00Z"
+    "email": "jane.smith@example.com",
+    "role": "user",
+    "phoneNumber": "+0987654321",
+    "address": "456 Elm St",
+    "isActive": true,
+    "createdAt": "2023-01-03T12:00:00Z",
+    "updatedAt": "2023-01-04T12:00:00Z"
   }
 ]
 ```
 
+**Error Responses:**
+- `401 Unauthorized` - User not authenticated
+- `403 Forbidden` - User is not an admin
+
 ### Get User by ID
 
-Retrieves a specific user by their ID. Users can only view their own profile, while admins can view any user.
+Retrieves detailed information for a specific user. Users can only access their own profile, while admins can access any profile.
 
-**Endpoint:** `GET /users/{id}`
+**Endpoint:** `GET /users/:id`
 
-**Response:** `200 OK`
+**Authentication:** JWT (Bearer token)
+
+**Path Parameters:**
+- `id` - User ID
+
+**Response (200 OK):**
 ```json
 {
   "id": 1,
-  "email": "john.doe@example.com",
   "firstName": "John",
   "lastName": "Doe",
-  "phoneNumber": "+1234567890",
+  "email": "john.doe@example.com",
   "role": "user",
-  "createdAt": "2023-04-01T10:00:00Z",
-  "updatedAt": "2023-04-01T10:00:00Z"
+  "phoneNumber": "+1234567890",
+  "address": "123 Main St",
+  "isActive": true,
+  "bookings": [
+    {
+      "bookingId": 1,
+      "checkInDate": "2023-05-15T14:00:00Z",
+      "checkOutDate": "2023-05-20T11:00:00Z",
+      "numberOfGuests": 2,
+      "status": "confirmed",
+      "createdAt": "2023-04-05T12:00:00Z",
+      "updatedAt": "2023-04-05T12:00:00Z"
+    }
+  ],
+  "createdAt": "2023-01-01T12:00:00Z",
+  "updatedAt": "2023-01-02T12:00:00Z"
 }
 ```
+
+**Error Responses:**
+- `401 Unauthorized` - User not authenticated
+- `403 Forbidden` - Can only access own profile unless admin
+- `404 Not Found` - User not found
+
+### Create User
+
+Creates a new user with the specified details. Only accessible by administrators.
+
+**Endpoint:** `POST /users`
+
+**Authentication:** JWT (Bearer token) with Admin role
+
+**Request Body:**
+```json
+{
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "password": "Password123!",
+  "confirmPassword": "Password123!",
+  "role": "user",
+  "phoneNumber": "+1234567890",
+  "address": "123 Main St"
+}
+```
+
+**Response (201 Created):**
+```json
+{
+  "id": 1,
+  "firstName": "John",
+  "lastName": "Doe",
+  "email": "john.doe@example.com",
+  "role": "user",
+  "phoneNumber": "+1234567890",
+  "address": "123 Main St",
+  "isActive": true,
+  "createdAt": "2023-01-01T12:00:00Z",
+  "updatedAt": "2023-01-01T12:00:00Z"
+}
+```
+
+**Error Responses:**
+- `400 Bad Request` - Invalid input data
+- `401 Unauthorized` - User not authenticated
+- `403 Forbidden` - User is not an admin
+- `409 Conflict` - Email already exists
 
 ### Update User
 
-Updates an existing user's profile. Users can only update their own profile, while admins can update any user.
+Updates an existing user with the provided details. Users can only update their own profile, while admins can update any profile.
 
-**Endpoint:** `PATCH /users/{id}`
+**Endpoint:** `PATCH /users/:id`
 
-**Request Body:** (partial update)
+**Authentication:** JWT (Bearer token)
+
+**Path Parameters:**
+- `id` - User ID
+
+**Request Body (all fields optional):**
 ```json
 {
-  "firstName": "Johnny",
-  "lastName": "Doe",
-  "phoneNumber": "+1987654321"
+  "firstName": "Updated",
+  "lastName": "Name",
+  "email": "new.email@example.com",
+  "password": "NewPassword123!",
+  "role": "admin",
+  "phoneNumber": "+9876543210",
+  "address": "New Address, City"
 }
 ```
 
-**Response:** `200 OK`
+**Response (200 OK):**
 ```json
 {
   "id": 1,
-  "email": "john.doe@example.com",
-  "firstName": "Johnny",
-  "lastName": "Doe",
-  "phoneNumber": "+1987654321",
-  "role": "user",
-  "createdAt": "2023-04-01T10:00:00Z",
-  "updatedAt": "2023-04-05T12:00:00Z"
+  "firstName": "Updated",
+  "lastName": "Name",
+  "email": "new.email@example.com",
+  "role": "admin",
+  "phoneNumber": "+9876543210",
+  "address": "New Address, City",
+  "isActive": true,
+  "createdAt": "2023-01-01T12:00:00Z",
+  "updatedAt": "2023-01-05T12:00:00Z"
 }
 ```
 
+**Error Responses:**
+- `400 Bad Request` - Invalid input data
+- `401 Unauthorized` - User not authenticated
+- `403 Forbidden` - Can only update own profile unless admin
+- `404 Not Found` - User not found
+- `409 Conflict` - Email already exists
+
 ### Delete User
 
-Removes a user from the system. Users can only delete their own account, while admins can delete any user.
+Soft-deletes a user. The record remains in the database but is marked as inactive. Only accessible by administrators.
 
-**Endpoint:** `DELETE /users/{id}`
+**Endpoint:** `DELETE /users/:id`
 
-**Response:** `200 OK`
+**Authentication:** JWT (Bearer token) with Admin role
+
+**Path Parameters:**
+- `id` - User ID
+
+**Response (200 OK):**
 ```json
 {
   "message": "User successfully deleted"
 }
 ```
 
-### Change User Role (Admin Only)
+**Error Responses:**
+- `401 Unauthorized` - User not authenticated
+- `403 Forbidden` - User is not an admin or trying to delete own account
+- `404 Not Found` - User not found
 
-Changes a user's role in the system.
+## Authentication Flow
 
-**Endpoint:** `PATCH /users/{id}/role`
+1. Register a user using `/auth/register`
+2. Login using `/auth/login` to receive access and refresh tokens
+3. Use the access token for authenticated requests by including it in the Authorization header:
+   ```
+   Authorization: Bearer your_access_token_here
+   ```
+4. When the access token expires, use `/auth/refresh` with your refresh token to get a new access token
+5. Use `/auth/logout` to invalidate a refresh token when done
 
-**Request Body:**
-```json
-{
-  "role": "admin"
-}
-```
+## Role-Based Access
 
-**Response:** `200 OK`
-```json
-{
-  "id": 1,
-  "email": "john.doe@example.com",
-  "firstName": "Johnny",
-  "lastName": "Doe",
-  "role": "admin",
-  "updatedAt": "2023-04-06T09:00:00Z"
-}
-```
+The API implements role-based access control with two roles:
 
-### Get Current User Profile
+1. **User** - Regular user who can:
+   - View and update their own profile
+   - Create and manage their own bookings
 
-Retrieves the profile of the currently authenticated user.
+2. **Admin** - Administrator who can:
+   - View and update any user profile
+   - Create new users
+   - Delete users
+   - View all users
+   - Manage all bookings and rooms
 
-**Endpoint:** `GET /users/profile`
+## Data Validation
 
-**Response:** `200 OK`
-```json
-{
-  "id": 1,
-  "email": "john.doe@example.com",
-  "firstName": "Johnny",
-  "lastName": "Doe",
-  "phoneNumber": "+1987654321",
-  "role": "user",
-  "createdAt": "2023-04-01T10:00:00Z",
-  "updatedAt": "2023-04-05T12:00:00Z"
-}
-```
+All endpoints perform validation on input data:
 
-## User Roles
-
-The system supports the following user roles:
-
-- **user**: Regular user with basic privileges
-- **admin**: Administrator with full system access
-
-## Password Reset
-
-### Request Password Reset
-
-Initiates a password reset process for a user.
-
-**Endpoint:** `POST /auth/forgot-password`
-
-**Request Body:**
-```json
-{
-  "email": "john.doe@example.com"
-}
-```
-
-**Response:** `200 OK`
-```json
-{
-  "message": "If an account with that email exists, a password reset link has been sent"
-}
-```
-
-### Reset Password
-
-Resets a user's password using a valid reset token.
-
-**Endpoint:** `POST /auth/reset-password`
-
-**Request Body:**
-```json
-{
-  "token": "reset_token_received_via_email",
-  "newPassword": "NewSecurePassword123!"
-}
-```
-
-**Response:** `200 OK`
-```json
-{
-  "message": "Password successfully reset"
-}
-```
-
-## Validation Rules
-
-When creating or updating users, the following validation rules apply:
-
-1. Email must be valid and unique
-2. Password must be at least 8 characters long and include at least one uppercase letter, one lowercase letter, one number, and one special character
-3. First name and last name are required
-4. Phone number must be in a valid format
-
-## Error Responses
-
-The API returns standardized error responses:
-
-### 400 Bad Request
-```json
-{
-  "statusCode": 400,
-  "message": ["Email must be a valid email address", "Password is too weak"],
-  "error": "Bad Request"
-}
-```
-
-### 401 Unauthorized
-```json
-{
-  "statusCode": 401,
-  "message": "Invalid credentials",
-  "error": "Unauthorized"
-}
-```
-
-### 403 Forbidden
-```json
-{
-  "statusCode": 403,
-  "message": "You do not have permission to perform this action",
-  "error": "Forbidden"
-}
-```
-
-### 404 Not Found
-```json
-{
-  "statusCode": 404,
-  "message": "User with ID 999 not found",
-  "error": "Not Found"
-}
-```
-
-### 409 Conflict
-```json
-{
-  "statusCode": 409,
-  "message": "Email already in use",
-  "error": "Conflict"
-}
-```
-
-## Usage Examples
-
-### Registering a New User
-
-To register a new user in the system:
-
-```
-POST /auth/register
-```
-With request body:
-```json
-{
-  "email": "new.user@example.com",
-  "password": "SecurePassword123!",
-  "firstName": "New",
-  "lastName": "User",
-  "phoneNumber": "+1234567890"
-}
-```
-
-### Authenticating a User
-
-To authenticate a user and obtain a JWT token:
-
-```
-POST /auth/login
-```
-With request body:
-```json
-{
-  "email": "john.doe@example.com",
-  "password": "SecurePassword123!"
-}
-```
-
-### Updating User Profile
-
-To update a user's profile information:
-
-```
-PATCH /users/1
-```
-With request body:
-```json
-{
-  "firstName": "Jonathan",
-  "phoneNumber": "+1987654321"
-}
-```
-
-### Searching for Admin Users (Admin Only)
-
-To find all users with admin roles:
-
-```
-GET /users?role=admin
-``` 
+- Email addresses must be valid
+- Passwords must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character
+- Phone numbers must be in a valid format
+- User roles must be either 'user' or 'admin' 

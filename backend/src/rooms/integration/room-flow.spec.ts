@@ -154,18 +154,20 @@ describe('Room Flow Integration Tests', () => {
     let roomId: number;
 
     it('should complete the full room flow', async () => {
-      // Step 1: Register an admin user
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser)
-        .expect(201);
+      // Step 1: Create an admin user directly in the database
+      await dataSource.query(`
+        INSERT INTO users (first_name, last_name, email, password, role, phone_number, address, created_at, updated_at, token_version, is_active)
+        VALUES ('${testUser.firstName}', '${testUser.lastName}', '${testUser.email}', 
+                '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 
+                '${UserRole.ADMIN}', '${testUser.phoneNumber}', '${testUser.address}', NOW(), NOW(), 0, true)
+      `);
 
       // Step 2: Login to get JWT token
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
           email: testUser.email,
-          password: testUser.password,
+          password: 'password123', // The hash corresponds to 'password123'
         })
         .expect(201);
 

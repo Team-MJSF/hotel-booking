@@ -41,6 +41,7 @@ export async function bootstrap() {
       .addTag('Rooms', 'Room management and search endpoints')
       .addTag('Bookings', 'Booking management endpoints')
       .addTag('Payments', 'Payment processing endpoints')
+      .addTag('Users', 'User account management and administration endpoints')
       .addBearerAuth(
         {
           type: 'http',

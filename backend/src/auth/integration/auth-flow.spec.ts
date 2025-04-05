@@ -80,7 +80,6 @@ describe('Auth Flow Integration Tests', () => {
     confirmPassword: 'admin123',
     firstName: 'Admin',
     lastName: 'User',
-    role: UserRole.ADMIN,
   };
 
   beforeAll(async () => {
@@ -172,9 +171,28 @@ describe('Auth Flow Integration Tests', () => {
         .send(testUser)
         .expect(409);
 
-      // Test admin registration
+      // First, create a user with admin privileges directly in the database
+      await dataSource.query(`
+        INSERT INTO users (first_name, last_name, email, password, role, created_at, updated_at, token_version, is_active)
+        VALUES ('Admin', 'User', 'admin-creator@example.com', 
+                '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 
+                'admin', NOW(), NOW(), 0, true)
+      `);
+
+      // Login as the admin user
+      const adminCreatorLogin = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'admin-creator@example.com',
+          password: 'password123', // The hash above corresponds to 'password123'
+        })
+        .expect(201);
+
+      // Now create a new admin user using the protected endpoint
+      const adminCreatorToken = adminCreatorLogin.body.access_token;
       const adminRegisterResponse = await request(app.getHttpServer())
-        .post('/auth/register')
+        .post('/auth/create-admin')
+        .set('Authorization', `Bearer ${adminCreatorToken}`)
         .send(testAdmin)
         .expect(201);
 
@@ -213,12 +231,13 @@ describe('Auth Flow Integration Tests', () => {
       expect(userLoginResponse.body).toHaveProperty('access_token');
       expect(typeof userLoginResponse.body.access_token).toBe('string');
 
-      // Admin login - we're skipping the actual validation due to current auth implementation
-      
-      // Just register the admin without verifying login
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testAdmin);
+      // Create an admin user directly in the database for testing
+      await dataSource.query(`
+        INSERT INTO users (first_name, last_name, email, password, role, created_at, updated_at, token_version, is_active)
+        VALUES ('Admin', 'User', '${testAdmin.email}', 
+                '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 
+                'admin', NOW(), NOW(), 0, true)
+      `);
 
       // Test login with incorrect password
       await request(app.getHttpServer())
@@ -285,14 +304,18 @@ describe('Auth Flow Integration Tests', () => {
 
   describe('Role-Based Access Flow', () => {
     it('should handle complete role-based access scenarios', async () => {
-      // Register and login both user types
+      // Register a regular user
       await request(app.getHttpServer())
         .post('/auth/register')
         .send(testUser);
 
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testAdmin);
+      // Create an admin user directly in the database for testing
+      await dataSource.query(`
+        INSERT INTO users (first_name, last_name, email, password, role, created_at, updated_at, token_version, is_active)
+        VALUES ('Admin', 'User', '${testAdmin.email}', 
+                '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 
+                'admin', NOW(), NOW(), 0, true)
+      `);
 
       const userLoginResponse = await request(app.getHttpServer())
         .post('/auth/login')
@@ -305,7 +328,7 @@ describe('Auth Flow Integration Tests', () => {
         .post('/auth/login')
         .send({
           email: testAdmin.email,
-          password: testAdmin.password,
+          password: 'password123', // The hash above corresponds to 'password123'
         });
 
       const userToken = userLoginResponse.body.access_token;

@@ -226,17 +226,21 @@ describe('BookingsController', () => {
       };
 
       // Success case
+      // Mock findOne first since the controller now calls it to check permissions
+      mockBookingsService.findOne.mockResolvedValueOnce(mockBooking);
       const updatedBooking = { ...mockBooking, ...validUpdateDto };
       mockBookingsService.update.mockResolvedValueOnce(updatedBooking);
       const result = await controller.update('1', validUpdateDto, mockUser);
       expect(result).toEqual(updatedBooking);
+      expect(mockBookingsService.findOne).toHaveBeenCalledWith(1);
       expect(mockBookingsService.update).toHaveBeenCalledWith(1, validUpdateDto);
 
-      // Not found case
-      mockBookingsService.update.mockRejectedValueOnce(new ResourceNotFoundException('Booking', 1));
+      // Not found case - findOne throws
+      mockBookingsService.findOne.mockRejectedValueOnce(new ResourceNotFoundException('Booking', 1));
       await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(ResourceNotFoundException);
 
       // Validation error case
+      mockBookingsService.findOne.mockResolvedValueOnce(mockBooking); // Mock findOne to succeed
       const validationError = new BookingValidationException('Check-in date must be before check-out date', [
         { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
         { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
@@ -245,6 +249,7 @@ describe('BookingsController', () => {
       await expect(controller.update('1', invalidUpdateDto, mockUser)).rejects.toThrow(BookingValidationException);
 
       // Database error case
+      mockBookingsService.findOne.mockResolvedValueOnce(mockBooking); // Mock findOne to succeed
       const error = new DatabaseException('Failed to update booking', new Error('Database error'));
       mockBookingsService.update.mockRejectedValueOnce(error);
       await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(DatabaseException);
@@ -255,17 +260,17 @@ describe('BookingsController', () => {
     it('should handle all remove scenarios', async () => {
       // Success case
       mockBookingsService.remove.mockResolvedValueOnce(undefined);
-      await controller.remove('1', mockUser);
+      await controller.remove('1');
       expect(mockBookingsService.remove).toHaveBeenCalledWith(1);
 
       // Not found case
       mockBookingsService.remove.mockRejectedValueOnce(new ResourceNotFoundException('Booking', 1));
-      await expect(controller.remove('1', mockUser)).rejects.toThrow(ResourceNotFoundException);
+      await expect(controller.remove('1')).rejects.toThrow(ResourceNotFoundException);
 
       // Database error case
       const error = new DatabaseException('Failed to delete booking', new Error('Database error'));
       mockBookingsService.remove.mockRejectedValueOnce(error);
-      await expect(controller.remove('1', mockUser)).rejects.toThrow(DatabaseException);
+      await expect(controller.remove('1')).rejects.toThrow(DatabaseException);
     });
   });
 });

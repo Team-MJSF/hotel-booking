@@ -30,6 +30,7 @@ The API is organized into the following sections:
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/auth/register` | Register a new user account |
+| POST | `/auth/create-admin` | Create a new admin user (Admin only) |
 | POST | `/auth/login` | Login and receive access/refresh tokens |
 | POST | `/auth/refresh` | Refresh an expired access token |
 | POST | `/auth/logout` | Invalidate a refresh token |

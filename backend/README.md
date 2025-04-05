@@ -40,6 +40,7 @@ A NestJS-based backend for a hotel booking system with authentication, room mana
 
 ### Authentication
 - `POST /auth/register` - Register new user
+- `POST /auth/create-admin` - Create admin user (Admin only)
 - `POST /auth/login` - User login
 - `GET /auth/profile` - Get user profile
 - `POST /auth/refresh` - Refresh access token

@@ -6,16 +6,13 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner, Connection } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 import * as path from 'path';
 import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
-import { AuthGuard } from '@nestjs/passport';
-import { Room } from '../../rooms/entities/room.entity';
-import { Booking } from '../entities/booking.entity';
 import { AdminGuard } from '../../auth/guards/admin.guard';
 
 // Maximum duration for the test
@@ -98,10 +95,7 @@ async function checkDatabaseTables(app: INestApplication) {
 
 describe('Booking Flow Integration Tests', () => {
   let app: INestApplication;
-  let connection: Connection;
   let userRepository: Repository<User>;
-  let roomRepository: Repository<Room>;
-  let bookingRepository: Repository<Booking>;
   let jwtService: JwtService;
   let configService: NestConfigService;
   let dataSource: DataSource;
@@ -131,15 +125,12 @@ describe('Booking Flow Integration Tests', () => {
   beforeAll(async () => {
     const testSetup = await initTestApp();
     app = testSetup;
-    connection = app.get(Connection);
     dataSource = app.get(DataSource);
     
     // Check database tables
     await checkDatabaseTables(app);
     
     userRepository = app.get(getRepositoryToken(User));
-    roomRepository = app.get(getRepositoryToken(Room));
-    bookingRepository = app.get(getRepositoryToken(Booking));
     jwtService = app.get(JwtService);
     configService = app.get(NestConfigService);
     
@@ -150,13 +141,6 @@ describe('Booking Flow Integration Tests', () => {
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
-
-    // Override the JwtAuthGuard to bypass authentication
-    const mockJwtAuthGuard = {
-      canActivate: jest.fn().mockImplementation(() => true),
-    };
-    // Note: We cannot use overrideGuard on INestApplication
-    // Authentication is already bypassed via the MockJwtAuthGuard in the module setup
   }, 30000);
 
   afterAll(async () => {

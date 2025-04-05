@@ -194,13 +194,19 @@ describe('User Flow Integration Tests', () => {
       expect(updatedProfileResponse.body.lastName).toBe('User');
       expect(updatedProfileResponse.body.phoneNumber).toBe('9876543210');
 
-      // Step 6: Register an admin user
-      const adminRegisterResponse = await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testAdmin)
-        .expect(201);
-
-      adminId = adminRegisterResponse.body.id;
+      // Step 6: Create an admin user directly in the database
+      const adminInsertResult = await dataSource.query(`
+        INSERT INTO users (first_name, last_name, email, password, role, phone_number, address, created_at, updated_at, token_version, is_active)
+        VALUES ('${testAdmin.firstName}', '${testAdmin.lastName}', '${testAdmin.email}', 
+                '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 
+                '${UserRole.ADMIN}', '${testAdmin.phoneNumber}', '${testAdmin.address}', NOW(), NOW(), 0, true)
+      `);
+      
+      // Get the admin ID from the insert result
+      const [adminIdResult] = await dataSource.query(`
+        SELECT user_id as id FROM users WHERE email = '${testAdmin.email}'
+      `);
+      adminId = adminIdResult.id;
       
       // Add a small delay to ensure the transaction is complete
       await delay(500);
@@ -210,7 +216,7 @@ describe('User Flow Integration Tests', () => {
         .post('/auth/login')
         .send({
           email: testAdmin.email,
-          password: testAdmin.password,
+          password: 'password123', // The hash corresponds to 'password123'
         })
         .expect(201);
 
