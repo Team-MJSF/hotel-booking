@@ -88,15 +88,15 @@ describe('AdminGuard', () => {
     // Run all test cases
     testCases.forEach(({ description, context, expectedResult }) => {
       const result = guard.canActivate(context as unknown as ExecutionContext);
-      
+
       // For admin users, expect true
       if (expectedResult) {
         expect(result).toBe(true);
-      } 
+      }
       // For non-admin users, expect false (not true)
       else {
         expect(result).not.toBe(true);
       }
     });
   });
-}); 
+});

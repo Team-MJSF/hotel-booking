@@ -1,10 +1,4 @@
-import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { ExceptionFilter, Catch, ArgumentsHost, HttpException, HttpStatus } from '@nestjs/common';
 import { Response } from 'express';
 import { HotelBookingException } from '../exceptions/hotel-booking.exception';
 
@@ -24,9 +18,11 @@ export class HttpExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const status = exception.getStatus();
       const exceptionResponse = exception.getResponse();
-      
+
       return response.status(status).json({
-        ...(typeof exceptionResponse === 'object' ? exceptionResponse : { message: exceptionResponse }),
+        ...(typeof exceptionResponse === 'object'
+          ? exceptionResponse
+          : { message: exceptionResponse }),
         timestamp: new Date().toISOString(),
         path: request.url,
       });
@@ -72,4 +68,4 @@ export class HttpExceptionFilter implements ExceptionFilter {
       path: request.url,
     });
   }
-} 
+}

@@ -7,10 +7,7 @@ import { Booking } from '../bookings/entities/booking.entity';
 import { BookingsModule } from '../bookings/bookings.module';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Payment, Booking]),
-    BookingsModule,
-  ],
+  imports: [TypeOrmModule.forFeature([Payment, Booking]), BookingsModule],
   controllers: [PaymentsController],
   providers: [PaymentsService],
   exports: [PaymentsService],

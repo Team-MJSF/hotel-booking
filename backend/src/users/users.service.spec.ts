@@ -1,11 +1,11 @@
 // Mock bcrypt before any imports
 jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockImplementation((password) => Promise.resolve(`hashed_${password}`)),
+  hash: jest.fn().mockImplementation(password => Promise.resolve(`hashed_${password}`)),
   compare: jest.fn().mockImplementation((password, hash) => {
     // Extract the original password from the hashed value
     const originalPassword = hash.replace('hashed_', '');
     return Promise.resolve(password === originalPassword);
-  })
+  }),
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -15,7 +15,11 @@ import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  ConflictException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import * as bcrypt from 'bcrypt';
 import { Logger } from '@nestjs/common';
 
@@ -40,13 +44,24 @@ describe('UsersService', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john@example.com',
-    password: 'hashedPassword',
+    password: 'hashed_password',
     role: UserRole.USER,
     phoneNumber: '1234567890',
-    address: '123 Main St',
+    address: '123 Test St',
     bookings: [],
+    refreshTokens: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+    tokenVersion: 0,
+    isActive: true,
+  };
+
+  const createUserDto: CreateUserDto = {
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    password: 'password123',
+    confirmPassword: 'password123',
   };
 
   beforeEach(async () => {
@@ -135,14 +150,58 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-    it('should handle all create scenarios', async () => {
-      const createUserDto: CreateUserDto = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
+    it('should create a new user', async () => {
+      const createUserDto = {
+        email: 'test@example.com',
         password: 'password123',
+        confirmPassword: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
+        phoneNumber: '+1234567890',
       };
 
+      const savedUser = {
+        ...createUserDto,
+        id: 1,
+        role: UserRole.USER,
+        tokenVersion: 0,
+      };
+
+      mockRepository.create.mockReturnValue(savedUser);
+      mockRepository.save.mockResolvedValue(savedUser);
+
+      const result = await service.create(createUserDto);
+
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        email: createUserDto.email,
+        password: createUserDto.password,
+        firstName: createUserDto.firstName,
+        lastName: createUserDto.lastName,
+        phoneNumber: createUserDto.phoneNumber,
+        confirmPassword: createUserDto.confirmPassword,
+        role: UserRole.USER,
+        tokenVersion: 0,
+      });
+      expect(mockRepository.save).toHaveBeenCalledWith(savedUser);
+      expect(result).toEqual(savedUser);
+    });
+
+    it('should throw ConflictException if email already exists', async () => {
+      const createUserDto: CreateUserDto = {
+        email: 'test@example.com',
+        password: 'password123',
+        confirmPassword: 'password123',
+        firstName: 'Test',
+        lastName: 'User',
+        phoneNumber: '+1234567890',
+      };
+
+      mockRepository.findOne.mockResolvedValue({ id: 1, email: 'test@example.com' });
+
+      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
+    });
+
+    it('should handle all create scenarios', async () => {
       // Success case
       mockRepository.findOne.mockResolvedValueOnce(null);
       mockRepository.create.mockReturnValueOnce(mockUser);
@@ -152,6 +211,7 @@ describe('UsersService', () => {
       expect(repository.create).toHaveBeenCalledWith({
         ...createUserDto,
         role: UserRole.USER,
+        tokenVersion: 0,
       });
       expect(repository.save).toHaveBeenCalled();
 
@@ -235,13 +295,13 @@ describe('UsersService', () => {
     it('should handle all password validation scenarios', async () => {
       const userWithHashedPassword = {
         ...mockUser,
-        password: 'hashed_password123'
+        password: 'hashed_password',
       };
 
       // Success case
-      const result = await service.validatePassword(userWithHashedPassword, 'password123');
+      const result = await service.validatePassword(userWithHashedPassword, 'password');
       expect(result).toBe(true);
-      expect(bcrypt.compare).toHaveBeenCalledWith('password123', 'hashed_password123');
+      expect(bcrypt.compare).toHaveBeenCalledWith('password', 'hashed_password');
 
       // Invalid password case
       const result2 = await service.validatePassword(userWithHashedPassword, 'wrongpassword');
@@ -249,7 +309,9 @@ describe('UsersService', () => {
 
       // Error case
       (bcrypt.compare as jest.Mock).mockRejectedValueOnce(new Error('Validation error'));
-      await expect(service.validatePassword(userWithHashedPassword, 'password123')).rejects.toThrow(DatabaseException);
+      await expect(service.validatePassword(userWithHashedPassword, 'password')).rejects.toThrow(
+        DatabaseException,
+      );
     });
   });
-}); 
+});

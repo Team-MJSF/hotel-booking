@@ -120,16 +120,16 @@ export class CreateBookings1709913600002 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('bookings');
     if (table) {
-      const indices = table.indices.filter(
-        (index) => [
+      const indices = table.indices.filter(index =>
+        [
           'IDX_BOOKINGS_DATES',
           'IDX_BOOKINGS_STATUS',
           'IDX_BOOKINGS_USER_STATUS',
           'IDX_BOOKINGS_ROOM_STATUS',
-          'IDX_BOOKINGS_ACTIVE'
+          'IDX_BOOKINGS_ACTIVE',
         ].includes(index.name),
       );
-      await Promise.all(indices.map((index) => queryRunner.dropIndex('bookings', index)));
+      await Promise.all(indices.map(index => queryRunner.dropIndex('bookings', index)));
     }
     await queryRunner.query(
       'ALTER TABLE `bookings` DROP FOREIGN KEY `FK_9643fa98c94e908f6ea51f0c559`',

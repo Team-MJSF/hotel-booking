@@ -28,8 +28,8 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: 'john@example.com',
             password: 'password123',
-            confirmPassword: 'password123'
-          }
+            confirmPassword: 'password123',
+          },
         },
         {
           description: 'valid email formats',
@@ -39,47 +39,43 @@ describe('RegisterDto', () => {
             'user+tag@example.com',
             'user@subdomain.example.com',
             'user@example.co.uk',
-            'user@example.io'
+            'user@example.io',
           ].map(email => ({
             firstName: 'John',
             lastName: 'Doe',
             email,
             password: 'password123',
-            confirmPassword: 'password123'
-          }))
+            confirmPassword: 'password123',
+          })),
         },
         {
           description: 'valid password formats',
-          data: [
-            'password123',
-            'P@ssw0rd',
-            '12345678',
-            'verylongpassword',
-            'pass123word'
-          ].map(password => ({
-            firstName: 'John',
-            lastName: 'Doe',
-            email: 'john@example.com',
-            password,
-            confirmPassword: password
-          }))
+          data: ['password123', 'P@ssw0rd', '12345678', 'verylongpassword', 'pass123word'].map(
+            password => ({
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+              password,
+              confirmPassword: password,
+            }),
+          ),
         },
         {
           description: 'valid name formats',
           data: [
             { firstName: 'John', lastName: 'Doe' },
             { firstName: 'Mary-Jane', lastName: 'Smith-Jones' },
-            { firstName: 'Jean-Pierre', lastName: 'O\'Connor' },
+            { firstName: 'Jean-Pierre', lastName: "O'Connor" },
             { firstName: 'José', lastName: 'González' },
-            { firstName: 'Иван', lastName: 'Петров' }
+            { firstName: 'Иван', lastName: 'Петров' },
           ].map(({ firstName, lastName }) => ({
             firstName,
             lastName,
             email: 'user@example.com',
             password: 'password123',
-            confirmPassword: 'password123'
-          }))
-        }
+            confirmPassword: 'password123',
+          })),
+        },
       ];
 
       for (const { description, data } of validTestCases) {
@@ -97,9 +93,9 @@ describe('RegisterDto', () => {
           description: 'missing required fields',
           data: {
             firstName: 'John',
-            lastName: 'Doe'
+            lastName: 'Doe',
           },
-          expectedErrors: ['email', 'password', 'confirmPassword']
+          expectedErrors: ['email', 'password', 'confirmPassword'],
         },
         {
           description: 'empty first name',
@@ -108,9 +104,9 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: 'john@example.com',
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
-          expectedErrors: ['firstName']
+          expectedErrors: ['firstName'],
         },
         {
           description: 'empty last name',
@@ -119,9 +115,9 @@ describe('RegisterDto', () => {
             lastName: '',
             email: 'john@example.com',
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
-          expectedErrors: ['lastName']
+          expectedErrors: ['lastName'],
         },
         {
           description: 'invalid email format',
@@ -130,9 +126,9 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: 'not-an-email',
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
-          expectedErrors: ['email']
+          expectedErrors: ['email'],
         },
         {
           description: 'empty email',
@@ -141,9 +137,9 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: '',
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
-          expectedErrors: ['email']
+          expectedErrors: ['email'],
         },
         {
           description: 'password too short',
@@ -152,9 +148,9 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: 'john@example.com',
             password: 'short',
-            confirmPassword: 'short'
+            confirmPassword: 'short',
           },
-          expectedErrors: ['password', 'confirmPassword']
+          expectedErrors: ['password', 'confirmPassword'],
         },
         {
           description: 'mismatched passwords',
@@ -163,10 +159,10 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: 'john@example.com',
             password: 'password123',
-            confirmPassword: 'differentpassword'
+            confirmPassword: 'differentpassword',
           },
-          expectedErrors: ['confirmPassword']
-        }
+          expectedErrors: ['confirmPassword'],
+        },
       ];
 
       for (const { description, data, expectedErrors } of invalidTestCases) {
@@ -191,7 +187,7 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: 'john@example.com',
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
           assertions: (dto: RegisterDto) => {
             expect(dto.firstName).toBe('John');
@@ -199,7 +195,7 @@ describe('RegisterDto', () => {
             expect(dto.email).toBe('john@example.com');
             expect(dto.password).toBe('password123');
             expect(dto.confirmPassword).toBe('password123');
-          }
+          },
         },
         {
           description: 'undefined values',
@@ -208,11 +204,11 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: undefined,
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
           assertions: (dto: RegisterDto) => {
             expect(dto.email).toBeUndefined();
-          }
+          },
         },
         {
           description: 'null values',
@@ -221,11 +217,11 @@ describe('RegisterDto', () => {
             lastName: 'Doe',
             email: null,
             password: 'password123',
-            confirmPassword: 'password123'
+            confirmPassword: 'password123',
           },
           assertions: (dto: RegisterDto) => {
             expect(dto.email).toBeNull();
-          }
+          },
         },
         {
           description: 'empty string values',
@@ -234,7 +230,7 @@ describe('RegisterDto', () => {
             lastName: '',
             email: '',
             password: '',
-            confirmPassword: ''
+            confirmPassword: '',
           },
           assertions: (dto: RegisterDto) => {
             expect(dto.firstName).toBe('');
@@ -242,7 +238,7 @@ describe('RegisterDto', () => {
             expect(dto.email).toBe('');
             expect(dto.password).toBe('');
             expect(dto.confirmPassword).toBe('');
-          }
+          },
         },
         {
           description: 'extra properties',
@@ -252,13 +248,13 @@ describe('RegisterDto', () => {
             email: 'john@example.com',
             password: 'password123',
             confirmPassword: 'password123',
-            extraField: 'extra value'
+            extraField: 'extra value',
           },
           assertions: (dto: RegisterDtoWithExtra) => {
             expect(dto).toHaveProperty('extraField');
             expect(dto.extraField).toBe('extra value');
-          }
-        }
+          },
+        },
       ];
 
       for (const { description, data, assertions } of testCases) {
@@ -268,4 +264,4 @@ describe('RegisterDto', () => {
       }
     });
   });
-}); 
+});

@@ -20,7 +20,7 @@ describe('UpdateUserDto', () => {
       updateUserDto.email = 'john@example.com';
       updateUserDto.password = 'Password123!';
       updateUserDto.role = UserRole.USER;
-      updateUserDto.phoneNumber = '1234567890';
+      updateUserDto.phoneNumber = '+12345678901';
       updateUserDto.address = '123 Main St';
 
       const errors = await validate(updateUserDto);
@@ -57,7 +57,7 @@ describe('UpdateUserDto', () => {
       updateUserDto.phoneNumber = '123';
       const phoneErrors = await validate(updateUserDto);
       expect(phoneErrors).toHaveLength(1);
-      expect(phoneErrors[0].constraints).toHaveProperty('matches');
+      expect(phoneErrors[0].constraints).toHaveProperty('isPhoneNumber');
     });
   });
 
@@ -92,4 +92,4 @@ describe('UpdateUserDto', () => {
       expect(emptyErrors).toHaveLength(0);
     });
   });
-}); 
+});

@@ -14,7 +14,7 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-    userId: number;
+  userId: number;
 
   /**
    * The ID of the room being booked
@@ -23,7 +23,7 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-    roomId: number;
+  roomId: number;
 
   /**
    * The check-in date for the booking
@@ -32,7 +32,7 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @Transform(({ value }) => new Date(value))
   @IsDate()
-    checkInDate: Date;
+  checkInDate: Date;
 
   /**
    * The check-out date for the booking
@@ -41,7 +41,7 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @Transform(({ value }) => new Date(value))
   @IsDate()
-    checkOutDate: Date;
+  checkOutDate: Date;
 
   /**
    * The number of guests for the booking
@@ -50,7 +50,7 @@ export class CreateBookingDto {
   @IsNotEmpty()
   @IsNumber()
   @Type(() => Number)
-    numberOfGuests: number;
+  numberOfGuests: number;
 
   /**
    * Optional special requests or notes for the booking
@@ -58,5 +58,5 @@ export class CreateBookingDto {
   @ApiPropertyOptional({ description: 'Optional special requests or notes for the booking' })
   @IsOptional()
   @IsString()
-    specialRequests?: string;
+  specialRequests?: string;
 }

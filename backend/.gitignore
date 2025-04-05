@@ -1,6 +1,7 @@
 # Dependencies
 node_modules/
 dist/
+dist-migrations/
 *.d.ts
 /dist
 

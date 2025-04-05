@@ -85,7 +85,7 @@ describe('UpdateBookingDto', () => {
       const dataWithStringNumbers = {
         userId: '1',
         roomId: '2',
-        numberOfGuests: '2'
+        numberOfGuests: '2',
       };
 
       const dtoObject1 = plainToClass(UpdateBookingDto, dataWithStringNumbers);
@@ -99,14 +99,16 @@ describe('UpdateBookingDto', () => {
       // Date string conversion
       const dataWithDateStrings = {
         checkInDate: '2024-01-01T00:00:00.000Z',
-        checkOutDate: '2024-01-02T00:00:00.000Z'
+        checkOutDate: '2024-01-02T00:00:00.000Z',
       };
 
       const dtoObject2 = plainToClass(UpdateBookingDto, dataWithDateStrings);
       expect(dtoObject2.checkInDate instanceof Date).toBe(true);
       expect(dtoObject2.checkOutDate instanceof Date).toBe(true);
       expect(dtoObject2.checkInDate.getTime()).toBe(new Date('2024-01-01T00:00:00.000Z').getTime());
-      expect(dtoObject2.checkOutDate.getTime()).toBe(new Date('2024-01-02T00:00:00.000Z').getTime());
+      expect(dtoObject2.checkOutDate.getTime()).toBe(
+        new Date('2024-01-02T00:00:00.000Z').getTime(),
+      );
 
       // Optional fields with various values
       const dataWithUndefinedOptionalField = {
@@ -115,7 +117,7 @@ describe('UpdateBookingDto', () => {
         checkInDate: '2024-01-01T00:00:00.000Z',
         checkOutDate: '2024-01-02T00:00:00.000Z',
         numberOfGuests: 2,
-        specialRequests: undefined
+        specialRequests: undefined,
       };
 
       const dtoObject3 = plainToClass(UpdateBookingDto, dataWithUndefinedOptionalField);
@@ -127,7 +129,7 @@ describe('UpdateBookingDto', () => {
         checkInDate: '2024-01-01T00:00:00.000Z',
         checkOutDate: '2024-01-02T00:00:00.000Z',
         numberOfGuests: 2,
-        specialRequests: null
+        specialRequests: null,
       };
 
       const dtoObject4 = plainToClass(UpdateBookingDto, dataWithNullOptionalField);
@@ -139,7 +141,7 @@ describe('UpdateBookingDto', () => {
         checkInDate: '2024-01-01T00:00:00.000Z',
         checkOutDate: '2024-01-02T00:00:00.000Z',
         numberOfGuests: 2,
-        specialRequests: ''
+        specialRequests: '',
       };
 
       const dtoObject5 = plainToClass(UpdateBookingDto, dataWithEmptyStringOptionalField);
@@ -152,15 +154,18 @@ describe('UpdateBookingDto', () => {
         checkInDate: '2024-01-01T00:00:00.000Z',
         checkOutDate: '2024-01-02T00:00:00.000Z',
         numberOfGuests: 2,
-        extraField: 'extra value'
+        extraField: 'extra value',
       };
 
-      const dtoObject6 = plainToClass(UpdateBookingDto, dataWithExtraProperties) as UpdateBookingDtoWithExtra;
+      const dtoObject6 = plainToClass(
+        UpdateBookingDto,
+        dataWithExtraProperties,
+      ) as UpdateBookingDtoWithExtra;
       expect(dtoObject6.extraField).toBe('extra value');
-      
+
       // Validate that extra properties don't cause validation errors
       const errors = await validate(dtoObject6);
       expect(errors).toHaveLength(0);
     });
   });
-}); 
+});

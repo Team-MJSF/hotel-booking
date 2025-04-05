@@ -6,7 +6,10 @@ import { Payment, PaymentStatus, PaymentMethod, Currency } from './entities/paym
 import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
-import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import { BookingsService } from '../bookings/bookings.service';
 
 // Increase timeout for all tests
@@ -224,7 +227,9 @@ describe('PaymentsService', () => {
       };
       mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
       mockBookingsRepository.findOne.mockResolvedValueOnce(null);
-      await expect(service.update(1, updateWithNewBooking)).rejects.toThrow(ResourceNotFoundException);
+      await expect(service.update(1, updateWithNewBooking)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
       const error = new Error('Database error');
@@ -303,7 +308,9 @@ describe('PaymentsService', () => {
 
       // Test not found error
       mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
-      await expect(service.processRefund(1, refundReason)).rejects.toThrow(ResourceNotFoundException);
+      await expect(service.processRefund(1, refundReason)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
       const error = new Error('Database error');
@@ -334,13 +341,17 @@ describe('PaymentsService', () => {
 
       // Test not found error
       mockPaymentsRepository.findOne.mockResolvedValueOnce(null);
-      await expect(service.updatePaymentStatus(1, PaymentStatus.COMPLETED)).rejects.toThrow(ResourceNotFoundException);
+      await expect(service.updatePaymentStatus(1, PaymentStatus.COMPLETED)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
       const error = new Error('Database error');
       mockPaymentsRepository.findOne.mockResolvedValueOnce(mockPayment);
       mockPaymentsRepository.save.mockRejectedValueOnce(error);
-      await expect(service.updatePaymentStatus(1, PaymentStatus.COMPLETED)).rejects.toThrow(DatabaseException);
+      await expect(service.updatePaymentStatus(1, PaymentStatus.COMPLETED)).rejects.toThrow(
+        DatabaseException,
+      );
     });
   });
-}); 
+});
