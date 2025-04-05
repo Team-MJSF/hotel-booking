@@ -79,7 +79,7 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Da
     synchronize: false,
     migrationsRun: false,
     dropSchema: false,
-    logging: isDevelopment,
+    logging: isDevelopment && process.env.NODE_ENV !== 'test',
     migrationsTableName: 'migrations',
     entitySkipConstructor: true,
   };

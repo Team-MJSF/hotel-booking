@@ -1,21 +1,17 @@
 import type { JestConfigWithTsJest } from 'ts-jest';
 
-const config: JestConfigWithTsJest = {
-  preset: 'ts-jest/presets/default-esm',
+// Base configuration shared by all test types
+const baseConfig: JestConfigWithTsJest = {
+  preset: 'ts-jest',
   testEnvironment: 'node',
-  extensionsToTreatAsEsm: ['.ts', '.tsx'],
   transform: {
     '^.+\\.tsx?$': [
       'ts-jest',
       {
-        useESM: true,
         tsconfig: 'tsconfig.json',
         diagnostics: false,
       },
     ],
-  },
-  moduleNameMapper: {
-    '^(\\.{1,2}/.*)\\.js$': '$1',
   },
   verbose: true,
   // Show individual test cases
@@ -23,22 +19,14 @@ const config: JestConfigWithTsJest = {
     name: 'HOTEL-BOOKING',
     color: 'blue',
   },
-  // Enable parallel test execution
-  maxWorkers: process.env.TEST_TYPE === 'integration' ? 1 : '50%',
   // Enable caching
   cache: true,
   cacheDirectory: '.jest-cache',
-  // Test patterns
-  testMatch: [
-    '**/src/**/*.spec.ts',
-    '**/src/**/*.test.ts'
-  ],
   // Ignore patterns
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
     '/*.d.ts',
-    'src/main.spec.ts'
   ],
   // Coverage configuration
   collectCoverageFrom: [
@@ -71,6 +59,53 @@ const config: JestConfigWithTsJest = {
   moduleDirectories: ['node_modules'],
   // Add selective test running
   watchPathIgnorePatterns: ['node_modules', 'dist', '.jest-cache']
-};
+} as const;
+
+// Determine which configuration to use based on TEST_TYPE environment variable
+const config = (() => {
+  // Integration test specific config
+  if (process.env.TEST_TYPE === 'integration') {
+    return {
+      ...baseConfig,
+      // Only run integration tests
+      testMatch: ['**/src/**/integration/**/*.spec.ts'],
+      // Set longer timeout for integration tests
+      testTimeout: 30000,
+    };
+  }
+  
+  // Unit test specific config
+  if (process.env.TEST_TYPE === 'unit') {
+    return {
+      ...baseConfig,
+      // Exclude integration tests, only run unit tests
+      testMatch: ['**/src/**/*.spec.ts'],
+      testPathIgnorePatterns: [
+        '/node_modules/',
+        '/dist/',
+        '/*.d.ts',
+        '**/src/**/integration/**/*.spec.ts',
+        'src/main.spec.ts'
+      ],
+      // Run unit tests in parallel
+      maxWorkers: '50%',
+    };
+  }
+  
+  // Default config (run all tests)
+  return {
+    ...baseConfig,
+    testMatch: [
+      '**/src/**/*.spec.ts',
+      '**/src/**/*.test.ts'
+    ],
+    testPathIgnorePatterns: [
+      '/node_modules/',
+      '/dist/',
+      '/*.d.ts',
+      'src/main.spec.ts'
+    ],
+  };
+})();
 
 export default config; 
