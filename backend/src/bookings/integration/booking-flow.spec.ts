@@ -18,70 +18,53 @@ let safetyTimeout: NodeJS.Timeout;
 
 // Define initTestApp function directly
 async function initTestApp(): Promise<INestApplication> {
-  try {
-    // Ensure TypeORM can find the entities
-    process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-    
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          envFilePath: path.resolve(process.cwd(), '.env.test'),
-        }),
-        TypeOrmModule.forRootAsync({
-          imports: [ConfigModule],
-          useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
-            const config = await getTypeOrmConfig(configService);
-            return {
-              ...config,
-              logging: true,
-              synchronize: true, // Enable synchronize for tests
-              autoLoadEntities: true, // Make sure entities are auto-loaded
-              entities: ['src/**/*.entity.ts'], // Explicitly define entities pattern
-            };
-          },
-          inject: [ConfigService],
-        }),
-        AppModule,
-      ],
-    })
-      .overrideGuard('JwtAuthGuard')
-      .useValue({ canActivate: () => true })
-      .compile();
+  // Ensure TypeORM can find the entities
+  process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
+  
+  const moduleFixture: TestingModule = await Test.createTestingModule({
+    imports: [
+      ConfigModule.forRoot({
+        isGlobal: true,
+        envFilePath: path.resolve(process.cwd(), '.env.test'),
+      }),
+      TypeOrmModule.forRootAsync({
+        imports: [ConfigModule],
+        useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
+          const config = await getTypeOrmConfig(configService);
+          return {
+            ...config,
+            logging: false,
+            synchronize: true, // Enable synchronize for tests
+            autoLoadEntities: true, // Make sure entities are auto-loaded
+            entities: ['src/**/*.entity.ts'], // Explicitly define entities pattern
+          };
+        },
+        inject: [ConfigService],
+      }),
+      AppModule,
+    ],
+  })
+    .overrideGuard('JwtAuthGuard')
+    .useValue({ canActivate: () => true })
+    .compile();
 
-    const app = moduleFixture.createNestApplication();
-    await app.init();
+  const app = moduleFixture.createNestApplication();
+  await app.init();
 
-    const dataSource = moduleFixture.get(DataSource);
-    await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
-    await dataSource.query('SET SESSION time_zone = "+00:00"');
-    await dataSource.query('SET NAMES utf8mb4');
+  const dataSource = moduleFixture.get(DataSource);
+  await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
+  await dataSource.query('SET SESSION time_zone = "+00:00"');
+  await dataSource.query('SET NAMES utf8mb4');
 
-    return app;
-  } catch (error) {
-    console.error('Failed to initialize test app:', error);
-    throw error;
-  }
+  return app;
 }
 
 async function checkDatabaseTables(app: INestApplication) {
-  try {
-    const dataSource = app.get(DataSource);
-    const queryRunner = dataSource.createQueryRunner();
-    await queryRunner.connect();
-    
-    console.log('Database connection info:', {
-      database: dataSource.options.database,
-      isConnected: dataSource.isInitialized
-    });
-    
-    const tables = await queryRunner.query('SHOW TABLES');
-    console.log('Available tables:', tables.map(t => Object.values(t)[0]));
-    
-    await queryRunner.release();
-  } catch (error) {
-    console.error('Failed to check database tables:', error);
-  }
+  const dataSource = app.get(DataSource);
+  const queryRunner = dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.query('SHOW TABLES');
+  await queryRunner.release();
 }
 
 describe('Booking Flow Integration Tests', () => {
@@ -114,32 +97,24 @@ describe('Booking Flow Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    console.log('Starting booking flow tests with enhanced cleanup...');
+    const setup = await initTestApp();
+    app = setup;
+    dataSource = app.get(DataSource);
     
-    try {
-      const setup = await initTestApp();
-      app = setup;
-      dataSource = app.get(DataSource);
-      
-      // Check database tables
-      await checkDatabaseTables(app);
-      
-      userRepository = app.get(getRepositoryToken(User));
-      jwtService = app.get(JwtService);
-      configService = app.get(NestConfigService);
-      
-      queryRunner = dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      
-      safetyTimeout = setTimeout(() => {
-        console.error('Test exceeded maximum duration!');
-        process.exit(1); // Force exit if tests hang
-      }, MAX_TEST_DURATION);
-    } catch (error) {
-      console.error('Setup error:', error);
-      throw error;
-    }
+    // Check database tables
+    await checkDatabaseTables(app);
+    
+    userRepository = app.get(getRepositoryToken(User));
+    jwtService = app.get(JwtService);
+    configService = app.get(NestConfigService);
+    
+    queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
+    safetyTimeout = setTimeout(() => {
+      process.exit(1); // Force exit if tests hang
+    }, MAX_TEST_DURATION);
   }, 30000);
 
   afterAll(async () => {

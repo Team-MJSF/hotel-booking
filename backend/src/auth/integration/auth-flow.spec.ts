@@ -15,67 +15,50 @@ let safetyTimeout: NodeJS.Timeout;
 
 // Define initTestApp function directly
 async function initTestApp(): Promise<INestApplication> {
-  try {
-    // Ensure TypeORM can find the entities
-    process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-    
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          envFilePath: path.resolve(process.cwd(), '.env.test'),
-        }),
-        TypeOrmModule.forRootAsync({
-          imports: [ConfigModule],
-          useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
-            const config = await getTypeOrmConfig(configService);
-            return {
-              ...config,
-              logging: true,
-              synchronize: true, // Enable synchronize for tests
-              autoLoadEntities: true, // Make sure entities are auto-loaded
-              entities: ['src/**/*.entity.ts'], // Explicitly define entities pattern
-            };
-          },
-          inject: [ConfigService],
-        }),
-        AppModule,
-      ],
-    }).compile();
+  // Ensure TypeORM can find the entities
+  process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
+  
+  const moduleFixture: TestingModule = await Test.createTestingModule({
+    imports: [
+      ConfigModule.forRoot({
+        isGlobal: true,
+        envFilePath: path.resolve(process.cwd(), '.env.test'),
+      }),
+      TypeOrmModule.forRootAsync({
+        imports: [ConfigModule],
+        useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
+          const config = await getTypeOrmConfig(configService);
+          return {
+            ...config,
+            logging: false,
+            synchronize: true, // Enable synchronize for tests
+            autoLoadEntities: true, // Make sure entities are auto-loaded
+            entities: ['src/**/*.entity.ts'], // Explicitly define entities pattern
+          };
+        },
+        inject: [ConfigService],
+      }),
+      AppModule,
+    ],
+  }).compile();
 
-    const app = moduleFixture.createNestApplication();
-    await app.init();
+  const app = moduleFixture.createNestApplication();
+  await app.init();
 
-    const dataSource = moduleFixture.get(DataSource);
-    await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
-    await dataSource.query('SET SESSION time_zone = "+00:00"');
-    await dataSource.query('SET NAMES utf8mb4');
+  const dataSource = moduleFixture.get(DataSource);
+  await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
+  await dataSource.query('SET SESSION time_zone = "+00:00"');
+  await dataSource.query('SET NAMES utf8mb4');
 
-    return app;
-  } catch (error) {
-    console.error('Failed to initialize test app:', error);
-    throw error;
-  }
+  return app;
 }
 
 async function checkDatabaseTables(app: INestApplication) {
-  try {
-    const dataSource = app.get(DataSource);
-    const queryRunner = dataSource.createQueryRunner();
-    await queryRunner.connect();
-    
-    console.log('Database connection info:', {
-      database: dataSource.options.database,
-      isConnected: dataSource.isInitialized
-    });
-    
-    const tables = await queryRunner.query('SHOW TABLES');
-    console.log('Available tables:', tables.map(t => Object.values(t)[0]));
-    
-    await queryRunner.release();
-  } catch (error) {
-    console.error('Failed to check database tables:', error);
-  }
+  const dataSource = app.get(DataSource);
+  const queryRunner = dataSource.createQueryRunner();
+  await queryRunner.connect();
+  await queryRunner.query('SHOW TABLES');
+  await queryRunner.release();
 }
 
 describe('Auth Flow Integration Tests', () => {
@@ -101,34 +84,36 @@ describe('Auth Flow Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    console.log('Starting tests with enhanced cleanup...');
+    const setup = await initTestApp();
+    app = setup;
+    dataSource = app.get(DataSource);
     
-    try {
-      const setup = await initTestApp();
-      app = setup;
-      dataSource = app.get(DataSource);
-      
-      // Check database tables
-      await checkDatabaseTables(app);
-      
-      queryRunner = dataSource.createQueryRunner();
-      await queryRunner.connect();
-      await queryRunner.startTransaction();
-      
-      safetyTimeout = setTimeout(() => {
-        console.error('Test exceeded maximum duration!');
-        process.exit(1); // Force exit if tests hang
-      }, MAX_TEST_DURATION);
-    } catch (error) {
-      console.error('Setup error:', error);
-      throw error;
-    }
+    // Check database tables
+    await checkDatabaseTables(app);
+    
+    queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
+    safetyTimeout = setTimeout(() => {
+      process.exit(1); // Force exit if tests hang
+    }, MAX_TEST_DURATION);
   });
 
   afterAll(async () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
     
+    // Close database connections and query runners
+    if (queryRunner && queryRunner.isReleased === false) {
+      await queryRunner.release();
+    }
+    
+    if (dataSource && dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
+    
+    // Close the application
     if (app) {
       await app.close();
     }
@@ -157,127 +142,101 @@ describe('Auth Flow Integration Tests', () => {
 
   describe('Registration Flow', () => {
     it('should handle complete registration scenarios', async () => {
-      try {
-        // Step 1: Register a user
-        const registerResponse = await request(app.getHttpServer())
-          .post('/auth/register')
-          .send(testUser)
-          .expect(res => {
-            console.log('Registration response:', res.status, res.body);
-            if (res.status !== 201) {
-              throw new Error(`Expected 201, got ${res.status}: ${JSON.stringify(res.body)}`);
-            }
-          });
+      // Step 1: Register a user
+      const registerResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testUser)
+        .expect(201);
 
-        expect(registerResponse.body).toMatchObject({
-          email: testUser.email,
-          firstName: testUser.firstName,
-          lastName: testUser.lastName,
-          role: UserRole.USER,
-        });
-        expect(registerResponse.body).not.toHaveProperty('password');
+      expect(registerResponse.body).toMatchObject({
+        email: testUser.email,
+        firstName: testUser.firstName,
+        lastName: testUser.lastName,
+        role: UserRole.USER,
+      });
+      expect(registerResponse.body).not.toHaveProperty('password');
 
-        // Test registration with mismatched passwords
-        await request(app.getHttpServer())
-          .post('/auth/register')
-          .send({
-            ...testUser,
-            email: 'test2@example.com',
-            confirmPassword: 'different',
-          })
-          .expect(401);
+      // Test registration with mismatched passwords
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send({
+          ...testUser,
+          email: 'test2@example.com',
+          confirmPassword: 'different',
+        })
+        .expect(401);
 
-        // Test registration with existing email
-        await request(app.getHttpServer())
-          .post('/auth/register')
-          .send(testUser)
-          .expect(409);
+      // Test registration with existing email
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testUser)
+        .expect(409);
 
-        // Test admin registration
-        const adminRegisterResponse = await request(app.getHttpServer())
-          .post('/auth/register')
-          .send(testAdmin)
-          .expect(201);
+      // Test admin registration
+      const adminRegisterResponse = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testAdmin)
+        .expect(201);
 
-        expect(adminRegisterResponse.body).toMatchObject({
-          email: testAdmin.email,
-          firstName: testAdmin.firstName,
-          lastName: testAdmin.lastName,
-          role: UserRole.ADMIN,
-        });
+      expect(adminRegisterResponse.body).toMatchObject({
+        email: testAdmin.email,
+        firstName: testAdmin.firstName,
+        lastName: testAdmin.lastName,
+        role: UserRole.ADMIN,
+      });
 
-        // Test duplicate registration
-        await request(app.getHttpServer())
-          .post('/auth/register')
-          .send(testUser)
-          .expect(409);
-      } catch (error) {
-        console.error('Test error:', error);
-        throw error;
-      }
+      // Test duplicate registration
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testUser)
+        .expect(409);
     });
   });
 
   describe('Login Flow', () => {
     it('should handle complete login scenarios', async () => {
-      try {
-        // Step 1: Register a user first
-        const description = await request(app.getHttpServer())
-          .post('/auth/register')
-          .send(testUser)
-          .expect(res => {
-            console.log('Pre-login registration response:', res.status, res.body);
-            if (res.status !== 201) {
-              throw new Error(`Expected 201, got ${res.status}: ${JSON.stringify(res.body)}`);
-            }
-          });
+      // Step 1: Register a user first
+      const description = await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testUser)
+        .expect(201);
 
-        // Step 2: Login with the registered user
-        const userLoginResponse = await request(app.getHttpServer())
-          .post('/auth/login')
-          .send({
-            email: testUser.email,
-            password: testUser.password,
-          })
-          .expect(res => {
-            console.log('Login response:', res.status, res.body);
-            if (res.status !== 201) {
-              throw new Error(`Expected 201, got ${res.status}: ${JSON.stringify(res.body)}`);
-            }
-          });
+      // Step 2: Login with the registered user
+      const userLoginResponse = await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: testUser.password,
+        })
+        .expect(201);
 
-        expect(userLoginResponse.body).toHaveProperty('access_token');
-        expect(typeof userLoginResponse.body.access_token).toBe('string');
+      expect(userLoginResponse.body).toHaveProperty('access_token');
+      expect(typeof userLoginResponse.body.access_token).toBe('string');
 
-        // Admin login - we're skipping the actual validation due to current auth implementation
-        console.log('Skipping admin login verification due to current implementation limitations');
-        
-        // Just register the admin without verifying login
-        await request(app.getHttpServer())
-          .post('/auth/register')
-          .send(testAdmin);
+      // Admin login - we're skipping the actual validation due to current auth implementation
+      
+      // Just register the admin without verifying login
+      await request(app.getHttpServer())
+        .post('/auth/register')
+        .send(testAdmin);
 
-        // Test login with incorrect password
-        await request(app.getHttpServer())
-          .post('/auth/login')
-          .send({
-            email: testUser.email,
-            password: 'wrongpassword',
-          })
-          .expect(401);
+      // Test login with incorrect password
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: testUser.email,
+          password: 'wrongpassword',
+        })
+        .expect(401);
 
-        // Test login with non-existent email
-        await request(app.getHttpServer())
-          .post('/auth/login')
-          .send({
-            email: 'nonexistent@example.com',
-            password: 'password123',
-          })
-          .expect(401);
-      } catch (error) {
-        console.error('Login test error:', error);
-        throw error;
-      }
+      // Test login with non-existent email
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({
+          email: 'nonexistent@example.com',
+          password: 'password123',
+        })
+        .expect(401);
     });
   });
 
