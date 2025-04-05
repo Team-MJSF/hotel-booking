@@ -22,7 +22,7 @@ describe('UpdatePaymentDto', () => {
     it('should handle all validation scenarios', async () => {
       // Valid DTO case with all fields
       updatePaymentDto.bookingId = 1;
-      updatePaymentDto.amount = 100.50;
+      updatePaymentDto.amount = 100.5;
       updatePaymentDto.paymentMethod = PaymentMethod.CREDIT_CARD;
       updatePaymentDto.currency = Currency.USD;
       updatePaymentDto.status = PaymentStatus.PENDING;
@@ -87,12 +87,12 @@ describe('UpdatePaymentDto', () => {
       // Basic transformation
       const plainData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
         transactionId: 'tx_123',
-        refundReason: 'Customer request'
+        refundReason: 'Customer request',
       };
 
       const dtoObject = plainToClass(UpdatePaymentDto, plainData);
@@ -108,20 +108,20 @@ describe('UpdatePaymentDto', () => {
       // String to number conversion
       const numberStringData = {
         bookingId: '1',
-        amount: '100.50'
+        amount: '100.50',
       };
 
       const numberStringDto = plainToClass(UpdatePaymentDto, numberStringData);
       expect(typeof numberStringDto.bookingId).toBe('number');
       expect(typeof numberStringDto.amount).toBe('number');
       expect(numberStringDto.bookingId).toBe(1);
-      expect(numberStringDto.amount).toBe(100.50);
+      expect(numberStringDto.amount).toBe(100.5);
 
       // String to enum conversion
       const enumStringData = {
         paymentMethod: 'CREDIT_CARD',
         currency: 'USD',
-        status: 'PENDING'
+        status: 'PENDING',
       };
 
       const enumStringDto = plainToClass(UpdatePaymentDto, enumStringData);
@@ -137,7 +137,7 @@ describe('UpdatePaymentDto', () => {
         currency: undefined,
         status: undefined,
         transactionId: undefined,
-        refundReason: undefined
+        refundReason: undefined,
       };
 
       const undefinedDto = plainToClass(UpdatePaymentDto, undefinedData);
@@ -157,7 +157,7 @@ describe('UpdatePaymentDto', () => {
         currency: null,
         status: null,
         transactionId: null,
-        refundReason: null
+        refundReason: null,
       };
 
       const nullDto = plainToClass(UpdatePaymentDto, nullData);
@@ -177,7 +177,7 @@ describe('UpdatePaymentDto', () => {
         currency: '',
         status: '',
         transactionId: '',
-        refundReason: ''
+        refundReason: '',
       };
 
       const emptyStringDto = plainToClass(UpdatePaymentDto, emptyStringData);
@@ -192,14 +192,17 @@ describe('UpdatePaymentDto', () => {
       // Extra properties
       const extraPropsData = {
         bookingId: 1,
-        amount: 100.50,
+        amount: 100.5,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
-        extraField: 'extra value'
+        extraField: 'extra value',
       };
 
-      const extraPropsDto = plainToClass(UpdatePaymentDto, extraPropsData) as UpdatePaymentDtoWithExtra;
+      const extraPropsDto = plainToClass(
+        UpdatePaymentDto,
+        extraPropsData,
+      ) as UpdatePaymentDtoWithExtra;
       expect(extraPropsDto.bookingId).toBe(extraPropsData.bookingId);
       expect(extraPropsDto.amount).toBe(extraPropsData.amount);
       expect(extraPropsDto.paymentMethod).toBe(extraPropsData.paymentMethod);
@@ -208,4 +211,4 @@ describe('UpdatePaymentDto', () => {
       expect(extraPropsDto.extraField).toBe(extraPropsData.extraField);
     });
   });
-}); 
+});

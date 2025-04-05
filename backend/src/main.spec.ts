@@ -19,7 +19,7 @@ jest.mock('@nestjs/common', () => ({
 // Mock helmet
 jest.mock('helmet', () => ({
   __esModule: true,
-  default: jest.fn().mockReturnValue((req, res, next) => next())
+  default: jest.fn().mockReturnValue((req, res, next) => next()),
 }));
 
 // Mock NestFactory and AppModule
@@ -48,32 +48,32 @@ jest.mock('@nestjs/swagger', () => ({
     setup: jest.fn(),
   },
   ApiProperty: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiPropertyOptional: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
-  PartialType: jest.fn().mockImplementation((type) => type),
+  PartialType: jest.fn().mockImplementation(type => type),
   ApiOperation: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiResponse: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiTags: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiBearerAuth: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiParam: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiBody: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
   ApiExtraModels: jest.fn().mockImplementation(() => {
-    return function() {};
+    return function () {};
   }),
 }));
 
@@ -106,12 +106,8 @@ describe('Bootstrap', () => {
 
     expect(NestFactory.create).toHaveBeenCalled();
     expect(mockApp.enableCors).toHaveBeenCalled();
-    expect(mockApp.useGlobalPipes).toHaveBeenCalledWith(
-      expect.any(ValidationPipe)
-    );
-    expect(mockApp.useGlobalFilters).toHaveBeenCalledWith(
-      expect.any(HttpExceptionFilter)
-    );
+    expect(mockApp.useGlobalPipes).toHaveBeenCalledWith(expect.any(ValidationPipe));
+    expect(mockApp.useGlobalFilters).toHaveBeenCalledWith(expect.any(HttpExceptionFilter));
   });
 
   it('should setup Swagger documentation', async () => {
@@ -123,7 +119,7 @@ describe('Bootstrap', () => {
       'api',
       mockApp,
       expect.any(Object),
-      expect.any(Object)
+      expect.any(Object),
     );
   });
 
@@ -133,4 +129,4 @@ describe('Bootstrap', () => {
 
     expect(mockApp.listen).toHaveBeenCalledWith(port);
   });
-}); 
+});

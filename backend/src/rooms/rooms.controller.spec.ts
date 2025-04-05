@@ -4,7 +4,11 @@ import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
 import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
-import { ResourceNotFoundException, DatabaseException, ConflictException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  DatabaseException,
+  ConflictException,
+} from '../common/exceptions/hotel-booking.exception';
 import { SearchRoomsDto } from './dto/search-rooms.dto';
 
 // Increase timeout for all tests
@@ -12,7 +16,18 @@ jest.setTimeout(10000);
 
 describe('RoomsController', () => {
   let controller: RoomsController;
-  let mockRoomsService: jest.Mocked<Pick<RoomsService, 'findAll' | 'findOne' | 'create' | 'update' | 'remove' | 'searchAvailableRooms' | 'findAvailableRooms'>>;
+  let mockRoomsService: jest.Mocked<
+    Pick<
+      RoomsService,
+      | 'findAll'
+      | 'findOne'
+      | 'create'
+      | 'update'
+      | 'remove'
+      | 'searchAvailableRooms'
+      | 'findAvailableRooms'
+    >
+  >;
 
   const mockRoom: Room = {
     id: 1,
@@ -90,7 +105,7 @@ describe('RoomsController', () => {
         maxGuests: 2,
         minPrice: 100,
         maxPrice: 300,
-        amenities: ['wifi', 'tv']
+        amenities: ['wifi', 'tv'],
       };
 
       const availableRooms: Room[] = [
@@ -106,8 +121,8 @@ describe('RoomsController', () => {
           availabilityStatus: AvailabilityStatus.AVAILABLE,
           bookings: [],
           createdAt: new Date(),
-          updatedAt: new Date()
-        }
+          updatedAt: new Date(),
+        },
       ];
 
       mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
@@ -118,7 +133,7 @@ describe('RoomsController', () => {
       // Test with minimal filters
       const searchDtoMinimal: SearchRoomsDto = {
         checkInDate: new Date('2024-03-20'),
-        checkOutDate: new Date('2024-03-25')
+        checkOutDate: new Date('2024-03-25'),
       };
 
       mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
@@ -203,7 +218,9 @@ describe('RoomsController', () => {
 
       // Test not found error
       mockRoomsService.update.mockRejectedValue(new ResourceNotFoundException('Room', 1));
-      await expect(controller.update('1', updateRoomDto)).rejects.toThrow(ResourceNotFoundException);
+      await expect(controller.update('1', updateRoomDto)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
       const error = new DatabaseException('Failed to update room', new Error('Database error'));

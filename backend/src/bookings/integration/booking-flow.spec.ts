@@ -37,7 +37,7 @@ class MockAdminGuard {
 async function initTestApp(): Promise<INestApplication> {
   // Ensure TypeORM can find the entities
   process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-  
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -65,8 +65,8 @@ async function initTestApp(): Promise<INestApplication> {
       {
         provide: APP_GUARD,
         useClass: MockJwtAuthGuard,
-      }
-    ]
+      },
+    ],
   })
     .overrideGuard(JwtAuthGuard)
     .useClass(MockJwtAuthGuard)
@@ -126,18 +126,18 @@ describe('Booking Flow Integration Tests', () => {
     const testSetup = await initTestApp();
     app = testSetup;
     dataSource = app.get(DataSource);
-    
+
     // Check database tables
     await checkDatabaseTables(app);
-    
+
     userRepository = app.get(getRepositoryToken(User));
     jwtService = app.get(JwtService);
     configService = app.get(NestConfigService);
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
@@ -146,16 +146,16 @@ describe('Booking Flow Integration Tests', () => {
   afterAll(async () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
-    
+
     // Close database connections and query runners
     if (queryRunner && queryRunner.isReleased === false) {
       await queryRunner.release();
     }
-    
+
     if (dataSource && dataSource.isInitialized) {
       await dataSource.destroy();
     }
-    
+
     // Close the application
     if (app) {
       await app.close();
@@ -171,7 +171,7 @@ describe('Booking Flow Integration Tests', () => {
     await dataSource.query('DELETE FROM users');
     await dataSource.query('DELETE FROM rooms');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -226,12 +226,12 @@ describe('Booking Flow Integration Tests', () => {
 
       // Create admin token directly instead of trying to login
       adminToken = jwtService.sign(
-        { 
+        {
           sub: createdAdmin.id,
           email: createdAdmin.email,
-          role: createdAdmin.role
+          role: createdAdmin.role,
         },
-        { secret: configService.get('JWT_SECRET') }
+        { secret: configService.get('JWT_SECRET') },
       );
 
       // Create a room (admin operation)
@@ -268,7 +268,7 @@ describe('Booking Flow Integration Tests', () => {
 
       // Get the booking
       bookingId = createBookingResponse.body.bookingId;
-      
+
       const getBookingResponse = await request(app.getHttpServer())
         .get(`/bookings/${bookingId}`)
         .set('Authorization', `Bearer ${userToken}`)
@@ -306,4 +306,4 @@ describe('Booking Flow Integration Tests', () => {
       expect(cancelledBookingResponse.body.status).toBe('cancelled');
     });
   });
-}); 
+});

@@ -2,12 +2,21 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { BookingsController } from './bookings.controller';
 import { BookingsService } from './bookings.service';
 import { Booking, BookingStatus } from './entities/booking.entity';
-import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  DatabaseException,
+  BookingValidationException,
+} from '../common/exceptions/hotel-booking.exception';
 import { RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import type { User } from '../users/entities/user.entity';
 import { Room } from '../rooms/entities/room.entity';
-import { Payment, PaymentStatus, PaymentMethod, Currency } from '../payments/entities/payment.entity';
+import {
+  Payment,
+  PaymentStatus,
+  PaymentMethod,
+  Currency,
+} from '../payments/entities/payment.entity';
 import { UserRole } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
@@ -64,13 +73,13 @@ describe('BookingsController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const mockPayment: Payment = {
     paymentId: 1,
     booking: null,
-    amount: 100.00,
+    amount: 100.0,
     paymentMethod: PaymentMethod.CREDIT_CARD,
     status: PaymentStatus.PENDING,
     createdAt: new Date(),
@@ -158,7 +167,9 @@ describe('BookingsController', () => {
       expect(mockBookingsService.findOne).toHaveBeenCalledWith(1);
 
       // Not found case
-      mockBookingsService.findOne.mockRejectedValueOnce(new ResourceNotFoundException('Booking', 1));
+      mockBookingsService.findOne.mockRejectedValueOnce(
+        new ResourceNotFoundException('Booking', 1),
+      );
       await expect(controller.findOne('1', mockUser)).rejects.toThrow(ResourceNotFoundException);
 
       // Database error case
@@ -193,12 +204,17 @@ describe('BookingsController', () => {
       expect(mockBookingsService.create).toHaveBeenCalledWith(validBookingDto);
 
       // Validation error case
-      const validationError = new BookingValidationException('Check-in date must be before check-out date', [
-        { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
-        { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
-      ]);
+      const validationError = new BookingValidationException(
+        'Check-in date must be before check-out date',
+        [
+          { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
+          { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
+        ],
+      );
       mockBookingsService.create.mockRejectedValueOnce(validationError);
-      await expect(controller.create(invalidBookingDto, mockUser)).rejects.toThrow(BookingValidationException);
+      await expect(controller.create(invalidBookingDto, mockUser)).rejects.toThrow(
+        BookingValidationException,
+      );
 
       // Database error case
       const error = new DatabaseException('Failed to create booking', new Error('Database error'));
@@ -236,23 +252,34 @@ describe('BookingsController', () => {
       expect(mockBookingsService.update).toHaveBeenCalledWith(1, validUpdateDto);
 
       // Not found case - findOne throws
-      mockBookingsService.findOne.mockRejectedValueOnce(new ResourceNotFoundException('Booking', 1));
-      await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(ResourceNotFoundException);
+      mockBookingsService.findOne.mockRejectedValueOnce(
+        new ResourceNotFoundException('Booking', 1),
+      );
+      await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Validation error case
       mockBookingsService.findOne.mockResolvedValueOnce(mockBooking); // Mock findOne to succeed
-      const validationError = new BookingValidationException('Check-in date must be before check-out date', [
-        { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
-        { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
-      ]);
+      const validationError = new BookingValidationException(
+        'Check-in date must be before check-out date',
+        [
+          { field: 'checkInDate', message: 'Check-in date must be before check-out date' },
+          { field: 'checkOutDate', message: 'Check-out date must be after check-in date' },
+        ],
+      );
       mockBookingsService.update.mockRejectedValueOnce(validationError);
-      await expect(controller.update('1', invalidUpdateDto, mockUser)).rejects.toThrow(BookingValidationException);
+      await expect(controller.update('1', invalidUpdateDto, mockUser)).rejects.toThrow(
+        BookingValidationException,
+      );
 
       // Database error case
       mockBookingsService.findOne.mockResolvedValueOnce(mockBooking); // Mock findOne to succeed
       const error = new DatabaseException('Failed to update booking', new Error('Database error'));
       mockBookingsService.update.mockRejectedValueOnce(error);
-      await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(DatabaseException);
+      await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(
+        DatabaseException,
+      );
     });
   });
 

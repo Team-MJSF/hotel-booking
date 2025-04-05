@@ -13,7 +13,7 @@ describe('CreateAdminDto', () => {
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
         phoneNumber: '+1234567890',
-        address: '123 Main St, City, Country'
+        address: '123 Main St, City, Country',
       });
 
       // Act
@@ -46,7 +46,7 @@ describe('CreateAdminDto', () => {
         lastName: 'User',
         email: 'invalid-email',
         password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!'
+        confirmPassword: 'StrongPass123!',
       });
 
       // Act
@@ -66,7 +66,7 @@ describe('CreateAdminDto', () => {
         lastName: 'User',
         email: 'admin@example.com',
         password: 'short',
-        confirmPassword: 'short'
+        confirmPassword: 'short',
       });
 
       // Act
@@ -86,7 +86,7 @@ describe('CreateAdminDto', () => {
         lastName: 'User',
         email: 'admin@example.com',
         password: 'StrongPass123!',
-        confirmPassword: 'DifferentPass456!'
+        confirmPassword: 'DifferentPass456!',
       });
 
       // Act
@@ -106,7 +106,7 @@ describe('CreateAdminDto', () => {
         lastName: 'User',
         email: 'admin@example.com',
         password: 'StrongPass123!',
-        confirmPassword: 'StrongPass123!'
+        confirmPassword: 'StrongPass123!',
       });
 
       // Act
@@ -124,7 +124,7 @@ describe('CreateAdminDto', () => {
         email: 'admin@example.com',
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
-        phoneNumber: 12345 // Invalid: should be a string
+        phoneNumber: 12345, // Invalid: should be a string
       });
 
       // Act
@@ -145,7 +145,7 @@ describe('CreateAdminDto', () => {
         email: 'admin@example.com',
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
-        address: 12345 // Invalid: should be a string
+        address: 12345, // Invalid: should be a string
       });
 
       // Act
@@ -169,7 +169,7 @@ describe('CreateAdminDto', () => {
         password: 'StrongPass123!',
         confirmPassword: 'StrongPass123!',
         phoneNumber: '+1234567890',
-        address: '123 Main St, City, Country'
+        address: '123 Main St, City, Country',
       };
 
       // Act
@@ -186,4 +186,4 @@ describe('CreateAdminDto', () => {
       expect(dto.address).toBe(plainObject.address);
     });
   });
-}); 
+});

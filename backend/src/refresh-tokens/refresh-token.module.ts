@@ -8,4 +8,4 @@ import { RefreshTokenService } from './refresh-token.service';
   providers: [RefreshTokenService],
   exports: [RefreshTokenService],
 })
-export class RefreshTokenModule {} 
+export class RefreshTokenModule {}

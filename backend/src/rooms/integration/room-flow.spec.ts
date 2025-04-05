@@ -18,7 +18,7 @@ let safetyTimeout: NodeJS.Timeout;
 async function initTestApp(): Promise<INestApplication> {
   // Ensure TypeORM can find the entities
   process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-  
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -93,16 +93,16 @@ describe('Room Flow Integration Tests', () => {
     const setup = await initTestApp();
     app = setup;
     dataSource = app.get(DataSource);
-    
+
     // Check database tables
     await checkDatabaseTables(app);
-    
+
     description = app.get(getRepositoryToken(User));
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
@@ -111,16 +111,16 @@ describe('Room Flow Integration Tests', () => {
   afterAll(async () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
-    
+
     // Close database connections and query runners
     if (queryRunner && queryRunner.isReleased === false) {
       await queryRunner.release();
     }
-    
+
     if (dataSource && dataSource.isInitialized) {
       await dataSource.destroy();
     }
-    
+
     // Close the application
     if (app) {
       await app.close();
@@ -136,7 +136,7 @@ describe('Room Flow Integration Tests', () => {
     await dataSource.query('DELETE FROM users');
     await dataSource.query('DELETE FROM rooms');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -247,4 +247,4 @@ describe('Room Flow Integration Tests', () => {
         .expect(404);
     });
   });
-}); 
+});

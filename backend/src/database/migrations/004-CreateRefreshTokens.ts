@@ -81,13 +81,11 @@ export class CreateRefreshTokens1709913600004 implements MigrationInterface {
   public async down(queryRunner: QueryRunner): Promise<void> {
     const table = await queryRunner.getTable('refresh_tokens');
     if (table) {
-      const foreignKey = table.foreignKeys.find(
-        (fk) => fk.name === 'FK_REFRESH_TOKENS_USER',
-      );
+      const foreignKey = table.foreignKeys.find(fk => fk.name === 'FK_REFRESH_TOKENS_USER');
       if (foreignKey) {
         await queryRunner.dropForeignKey('refresh_tokens', foreignKey);
       }
     }
     await queryRunner.dropTable('refresh_tokens');
   }
-} 
+}

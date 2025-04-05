@@ -17,7 +17,7 @@ let safetyTimeout: NodeJS.Timeout;
 async function initTestApp(): Promise<INestApplication> {
   // Ensure TypeORM can find the entities
   process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-  
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -86,14 +86,14 @@ describe('Auth Flow Integration Tests', () => {
     const setup = await initTestApp();
     app = setup;
     dataSource = app.get(DataSource);
-    
+
     // Check database tables
     await checkDatabaseTables(app);
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
@@ -102,16 +102,16 @@ describe('Auth Flow Integration Tests', () => {
   afterAll(async () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
-    
+
     // Close database connections and query runners
     if (queryRunner && queryRunner.isReleased === false) {
       await queryRunner.release();
     }
-    
+
     if (dataSource && dataSource.isInitialized) {
       await dataSource.destroy();
     }
-    
+
     // Close the application
     if (app) {
       await app.close();
@@ -126,7 +126,7 @@ describe('Auth Flow Integration Tests', () => {
     await dataSource.query('DELETE FROM refresh_tokens');
     await dataSource.query('DELETE FROM users');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -166,10 +166,7 @@ describe('Auth Flow Integration Tests', () => {
         .expect(401);
 
       // Test registration with existing email
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser)
-        .expect(409);
+      await request(app.getHttpServer()).post('/auth/register').send(testUser).expect(409);
 
       // First, create a user with admin privileges directly in the database
       await dataSource.query(`
@@ -204,10 +201,7 @@ describe('Auth Flow Integration Tests', () => {
       });
 
       // Test duplicate registration
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser)
-        .expect(409);
+      await request(app.getHttpServer()).post('/auth/register').send(testUser).expect(409);
     });
   });
 
@@ -262,16 +256,12 @@ describe('Auth Flow Integration Tests', () => {
   describe('Profile Access Flow', () => {
     it('should handle complete profile access scenarios', async () => {
       // Register and login a user
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser);
+      await request(app.getHttpServer()).post('/auth/register').send(testUser);
 
-      const loginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const loginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
       const accessToken = loginResponse.body.access_token;
 
@@ -296,18 +286,14 @@ describe('Auth Flow Integration Tests', () => {
         .expect(401);
 
       // Test profile access without token
-      await request(app.getHttpServer())
-        .get('/auth/profile')
-        .expect(401);
+      await request(app.getHttpServer()).get('/auth/profile').expect(401);
     });
   });
 
   describe('Role-Based Access Flow', () => {
     it('should handle complete role-based access scenarios', async () => {
       // Register a regular user
-      await request(app.getHttpServer())
-        .post('/auth/register')
-        .send(testUser);
+      await request(app.getHttpServer()).post('/auth/register').send(testUser);
 
       // Create an admin user directly in the database for testing
       await dataSource.query(`
@@ -317,19 +303,15 @@ describe('Auth Flow Integration Tests', () => {
                 'admin', NOW(), NOW(), 0, true)
       `);
 
-      const userLoginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: testUser.email,
-          password: testUser.password,
-        });
+      const userLoginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+        email: testUser.email,
+        password: testUser.password,
+      });
 
-      const adminLoginResponse = await request(app.getHttpServer())
-        .post('/auth/login')
-        .send({
-          email: testAdmin.email,
-          password: 'password123', // The hash above corresponds to 'password123'
-        });
+      const adminLoginResponse = await request(app.getHttpServer()).post('/auth/login').send({
+        email: testAdmin.email,
+        password: 'password123', // The hash above corresponds to 'password123'
+      });
 
       const userToken = userLoginResponse.body.access_token;
       const adminToken = adminLoginResponse.body.access_token;
@@ -366,4 +348,4 @@ describe('Auth Flow Integration Tests', () => {
       expect(adminUsersResponse.body.length).toBeGreaterThan(0);
     });
   });
-}); 
+});

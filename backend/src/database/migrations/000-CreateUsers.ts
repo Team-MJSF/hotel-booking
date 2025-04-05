@@ -118,9 +118,9 @@ export class CreateUsers1709913600000 implements MigrationInterface {
     const table = await queryRunner.getTable('users');
     if (table) {
       const indices = table.indices.filter(
-        (index) => index.name === 'IDX_USERS_ROLE' || index.name === 'IDX_USERS_EMAIL',
+        index => index.name === 'IDX_USERS_ROLE' || index.name === 'IDX_USERS_EMAIL',
       );
-      await Promise.all(indices.map((index) => queryRunner.dropIndex('users', index)));
+      await Promise.all(indices.map(index => queryRunner.dropIndex('users', index)));
     }
     await queryRunner.dropTable('users');
   }

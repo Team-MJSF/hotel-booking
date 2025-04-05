@@ -17,7 +17,7 @@ describe('LoginDto', () => {
       // Valid data case
       loginDto.email = 'john@example.com';
       loginDto.password = 'password123';
-      
+
       let errors = await validate(loginDto);
       expect(errors).toHaveLength(0);
 
@@ -28,14 +28,14 @@ describe('LoginDto', () => {
         'user+tag@example.com',
         'user@subdomain.example.com',
         'user@example.co.uk',
-        'user@example.io'
+        'user@example.io',
       ];
 
       for (const email of validEmails) {
         loginDto = new LoginDto();
         loginDto.email = email;
         loginDto.password = 'password123';
-        
+
         errors = await validate(loginDto);
         expect(errors).toHaveLength(0);
       }
@@ -46,14 +46,14 @@ describe('LoginDto', () => {
         'P@ssw0rd',
         '12345678',
         'verylongpassword',
-        'pass123word'
+        'pass123word',
       ];
 
       for (const password of validPasswords) {
         loginDto = new LoginDto();
         loginDto.email = 'john@example.com';
         loginDto.password = password;
-        
+
         errors = await validate(loginDto);
         expect(errors).toHaveLength(0);
       }
@@ -61,11 +61,31 @@ describe('LoginDto', () => {
       // Validation failure cases
       const failureCases = [
         { data: { password: 'password123' }, property: 'email', description: 'missing email' },
-        { data: { email: 'john@example.com' }, property: 'password', description: 'missing password' },
-        { data: { email: 'not-an-email', password: 'password123' }, property: 'email', description: 'invalid email format' },
-        { data: { email: '', password: 'password123' }, property: 'email', description: 'empty email' },
-        { data: { email: 'john@example.com', password: '' }, property: 'password', description: 'empty password' },
-        { data: { email: 'john@example.com', password: 'short' }, property: 'password', description: 'password shorter than 8 characters' }
+        {
+          data: { email: 'john@example.com' },
+          property: 'password',
+          description: 'missing password',
+        },
+        {
+          data: { email: 'not-an-email', password: 'password123' },
+          property: 'email',
+          description: 'invalid email format',
+        },
+        {
+          data: { email: '', password: 'password123' },
+          property: 'email',
+          description: 'empty email',
+        },
+        {
+          data: { email: 'john@example.com', password: '' },
+          property: 'password',
+          description: 'empty password',
+        },
+        {
+          data: { email: 'john@example.com', password: 'short' },
+          property: 'password',
+          description: 'password shorter than 8 characters',
+        },
       ];
 
       for (const { data, property, description } of failureCases) {
@@ -84,38 +104,38 @@ describe('LoginDto', () => {
           description: 'plain object',
           data: {
             email: 'john@example.com',
-            password: 'password123'
-          }
+            password: 'password123',
+          },
         },
         {
           description: 'undefined values',
           data: {
             email: undefined,
-            password: 'password123'
-          }
+            password: 'password123',
+          },
         },
         {
           description: 'null values',
           data: {
             email: null,
-            password: 'password123'
-          }
+            password: 'password123',
+          },
         },
         {
           description: 'empty string values',
           data: {
             email: '',
-            password: 'password123'
-          }
+            password: 'password123',
+          },
         },
         {
           description: 'extra properties',
           data: {
             email: 'john@example.com',
             password: 'password123',
-            extraField: 'extra value'
-          }
-        }
+            extraField: 'extra value',
+          },
+        },
       ];
 
       for (const { data } of transformationCases) {
@@ -126,4 +146,4 @@ describe('LoginDto', () => {
       }
     });
   });
-}); 
+});

@@ -79,7 +79,7 @@ describe('CreateUserDto', () => {
       const roleCases = [
         { input: 'ADMIN', expected: UserRole.ADMIN },
         { input: 'admin', expected: UserRole.ADMIN },
-        { input: 'Admin', expected: UserRole.ADMIN }
+        { input: 'Admin', expected: UserRole.ADMIN },
       ];
 
       roleCases.forEach(({ input, expected }) => {
@@ -88,7 +88,7 @@ describe('CreateUserDto', () => {
           lastName: 'Doe',
           email: 'john@example.com',
           password: 'Password123!',
-          role: input
+          role: input,
         };
         const dtoObject = plainToClass(CreateUserDto, data);
         expect(dtoObject.role).toBe(expected);
@@ -102,7 +102,7 @@ describe('CreateUserDto', () => {
         password: 'Password123!',
         role: undefined,
         phoneNumber: null,
-        address: ''
+        address: '',
       };
 
       const dtoObject = plainToClass(CreateUserDto, dataWithOptionalFields);
@@ -111,4 +111,4 @@ describe('CreateUserDto', () => {
       expect(dtoObject.address).toBe('');
     });
   });
-}); 
+});

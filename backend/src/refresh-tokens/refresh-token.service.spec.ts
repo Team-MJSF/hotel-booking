@@ -24,7 +24,7 @@ describe('RefreshTokenService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const mockRefreshToken: RefreshToken = {
@@ -34,7 +34,7 @@ describe('RefreshTokenService', () => {
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
     user: mockUser,
     createdAt: new Date(),
-    updatedAt: new Date()
+    updatedAt: new Date(),
   };
 
   beforeEach(async () => {
@@ -70,7 +70,7 @@ describe('RefreshTokenService', () => {
         token: expect.any(String),
         user: mockUser,
         expiresAt: expect.any(Date),
-        isActive: true
+        isActive: true,
       });
       expect(refreshTokenRepository.save).toHaveBeenCalledWith(mockRefreshToken);
     });
@@ -88,9 +88,7 @@ describe('RefreshTokenService', () => {
 
       // Test token not found
       jest.spyOn(refreshTokenRepository, 'findOne').mockResolvedValueOnce(null);
-      await expect(service.findToken('invalid_token'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(service.findToken('invalid_token')).rejects.toThrow(UnauthorizedException);
 
       // Test expired token
       const expiredToken = {
@@ -98,9 +96,7 @@ describe('RefreshTokenService', () => {
         expiresAt: new Date(Date.now() - 1000), // 1 second ago
       };
       jest.spyOn(refreshTokenRepository, 'findOne').mockResolvedValueOnce(expiredToken);
-      await expect(service.findToken('expired_token'))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(service.findToken('expired_token')).rejects.toThrow(UnauthorizedException);
     });
   });
 
@@ -136,4 +132,4 @@ describe('RefreshTokenService', () => {
       );
     });
   });
-}); 
+});

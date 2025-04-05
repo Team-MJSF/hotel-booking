@@ -12,4 +12,4 @@ export class AdminGuard implements CanActivate {
 
     return user && user.role === UserRole.ADMIN;
   }
-} 
+}

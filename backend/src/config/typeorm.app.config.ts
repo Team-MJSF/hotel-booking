@@ -5,7 +5,9 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
  * Get TypeORM configuration options for the application module
  * This file is separate from typeorm.config.ts which is used for migrations
  */
-export async function getTypeOrmConfig(configService: ConfigService): Promise<TypeOrmModuleOptions> {
+export async function getTypeOrmConfig(
+  configService: ConfigService,
+): Promise<TypeOrmModuleOptions> {
   const options: TypeOrmModuleOptions = {
     type: 'mysql',
     host: configService.get<string>('DB_HOST'),
@@ -23,4 +25,4 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Ty
   };
 
   return options;
-} 
+}

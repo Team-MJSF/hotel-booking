@@ -7,7 +7,7 @@
     "build": "npm run build:app && npm run build:migrations",
     "build:app": "nest build",
     "build:migrations": "tsc -p tsconfig.migrations.json",
-    "format": "prettier --write \"src/**/*.ts\"",
+    "format": "prettier --write \"src/**/*.ts\" && eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "start": "nest start",
     "start:dev": "cross-env NODE_ENV=development nest start --watch",
     "start:debug": "cross-env NODE_ENV=development nest start --debug --watch",

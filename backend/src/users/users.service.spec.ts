@@ -1,11 +1,11 @@
 // Mock bcrypt before any imports
 jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockImplementation((password) => Promise.resolve(`hashed_${password}`)),
+  hash: jest.fn().mockImplementation(password => Promise.resolve(`hashed_${password}`)),
   compare: jest.fn().mockImplementation((password, hash) => {
     // Extract the original password from the hashed value
     const originalPassword = hash.replace('hashed_', '');
     return Promise.resolve(password === originalPassword);
-  })
+  }),
 }));
 
 import { Test, TestingModule } from '@nestjs/testing';
@@ -15,7 +15,11 @@ import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  ConflictException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import * as bcrypt from 'bcrypt';
 import { Logger } from '@nestjs/common';
 
@@ -49,7 +53,7 @@ describe('UsersService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const createUserDto: CreateUserDto = {
@@ -57,7 +61,7 @@ describe('UsersService', () => {
     lastName: 'Doe',
     email: 'john@example.com',
     password: 'password123',
-    confirmPassword: 'password123'
+    confirmPassword: 'password123',
   };
 
   beforeEach(async () => {
@@ -291,7 +295,7 @@ describe('UsersService', () => {
     it('should handle all password validation scenarios', async () => {
       const userWithHashedPassword = {
         ...mockUser,
-        password: 'hashed_password'
+        password: 'hashed_password',
       };
 
       // Success case
@@ -305,7 +309,9 @@ describe('UsersService', () => {
 
       // Error case
       (bcrypt.compare as jest.Mock).mockRejectedValueOnce(new Error('Validation error'));
-      await expect(service.validatePassword(userWithHashedPassword, 'password')).rejects.toThrow(DatabaseException);
+      await expect(service.validatePassword(userWithHashedPassword, 'password')).rejects.toThrow(
+        DatabaseException,
+      );
     });
   });
-}); 
+});

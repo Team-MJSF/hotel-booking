@@ -16,7 +16,7 @@ describe('RefreshTokenRequestDto', () => {
     it('should handle all validation scenarios', async () => {
       // Valid data case
       refreshTokenRequestDto.refresh_token = 'a1b2c3d4e5f6g7h8i9j0...';
-      
+
       let errors = await validate(refreshTokenRequestDto);
       expect(errors).toHaveLength(0);
 
@@ -24,13 +24,13 @@ describe('RefreshTokenRequestDto', () => {
       const validTokens = [
         'a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6',
         '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c'
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c',
       ];
 
       for (const token of validTokens) {
         refreshTokenRequestDto = new RefreshTokenRequestDto();
         refreshTokenRequestDto.refresh_token = token;
-        
+
         errors = await validate(refreshTokenRequestDto);
         expect(errors).toHaveLength(0);
       }
@@ -77,22 +77,22 @@ describe('RefreshTokenRequestDto', () => {
         {
           description: 'plain object',
           data: {
-            refresh_token: 'a1b2c3d4e5f6g7h8i9j0...'
-          }
+            refresh_token: 'a1b2c3d4e5f6g7h8i9j0...',
+          },
         },
         {
           description: 'extra properties',
           data: {
             refresh_token: 'a1b2c3d4e5f6g7h8i9j0...',
-            extraField: 'extra value'
-          }
+            extraField: 'extra value',
+          },
         },
         {
           description: 'whitespace preserved',
           data: {
-            refresh_token: '  a1b2c3d4e5f6g7h8i9j0...  '
-          }
-        }
+            refresh_token: '  a1b2c3d4e5f6g7h8i9j0...  ',
+          },
+        },
       ];
 
       for (const { data } of transformationCases) {
@@ -102,4 +102,4 @@ describe('RefreshTokenRequestDto', () => {
       }
     });
   });
-}); 
+});

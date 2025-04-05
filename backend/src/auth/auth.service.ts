@@ -1,4 +1,10 @@
-import { Injectable, UnauthorizedException, NotFoundException, Logger, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  NotFoundException,
+  Logger,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -24,7 +30,7 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<Omit<User, 'password'> | null> {
     const user = await this.usersService.findByEmail(email);
     this.logger.debug(`Found user: ${user ? 'Yes' : 'No'}`);
-    
+
     if (user) {
       const isValid = await this.usersService.validatePassword(user, password);
       this.logger.debug(`Password validation result: ${isValid}`);
@@ -43,11 +49,11 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    const payload = { 
-      email: user.email, 
-      sub: user.id, 
+    const payload = {
+      email: user.email,
+      sub: user.id,
       role: user.role,
-      tokenVersion: user.tokenVersion
+      tokenVersion: user.tokenVersion,
     };
 
     const refreshToken = await this.refreshTokenService.generateRefreshToken(user as User);
@@ -63,7 +69,9 @@ export class AuthService {
     const user = token.user;
 
     // Increment the token version and get the updated user
-    const updatedUser = await this.usersService.update(user.id, { tokenVersion: user.tokenVersion + 1 });
+    const updatedUser = await this.usersService.update(user.id, {
+      tokenVersion: user.tokenVersion + 1,
+    });
 
     const payload = {
       email: updatedUser.email,
@@ -154,4 +162,4 @@ export class AuthService {
 
     return profile;
   }
-} 
+}

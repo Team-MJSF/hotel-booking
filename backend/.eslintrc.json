@@ -6,7 +6,8 @@
   },
   "extends": [
     "eslint:recommended",
-    "plugin:@typescript-eslint/recommended"
+    "plugin:@typescript-eslint/recommended",
+    "prettier"
   ],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
@@ -15,16 +16,12 @@
   },
   "plugins": ["@typescript-eslint"],
   "rules": {
-    "indent": ["error", 2, { "SwitchCase": 1 }],
-    "quotes": ["error", "single"],
-    "semi": ["error", "always"],
     "no-unused-vars": "off",
     "@typescript-eslint/no-unused-vars": ["warn", {
       "argsIgnorePattern": "^_"
     }],
     "no-console": ["warn"],
-    "no-undef": "off",
-    "object-curly-spacing": ["error", "always"]
+    "no-undef": "off"
   },
   "overrides": [
     {

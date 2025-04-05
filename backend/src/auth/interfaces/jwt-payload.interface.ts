@@ -5,4 +5,4 @@ export interface JwtPayload {
   sub: number;
   role: UserRole;
   tokenVersion: number;
-} 
+}

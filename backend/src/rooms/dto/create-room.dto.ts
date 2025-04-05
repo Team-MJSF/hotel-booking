@@ -28,7 +28,7 @@ export class CreateRoomDto {
     }
     return value;
   })
-    type: RoomType;
+  type: RoomType;
 
   /**
    * The room number or identifier
@@ -36,7 +36,7 @@ export class CreateRoomDto {
   @ApiProperty({ description: 'The room number or identifier' })
   @IsNotEmpty()
   @IsString()
-    roomNumber: string;
+  roomNumber: string;
 
   /**
    * The price per night for the room
@@ -50,7 +50,7 @@ export class CreateRoomDto {
     }
     return Number(value);
   })
-    pricePerNight: number;
+  pricePerNight: number;
 
   /**
    * The maximum number of guests allowed in the room
@@ -64,24 +64,24 @@ export class CreateRoomDto {
     }
     return Number(value);
   })
-    maxGuests: number;
+  maxGuests: number;
 
   /**
    * Optional description of the room's features or amenities
    */
-  @ApiPropertyOptional({ description: 'Optional description of the room\'s features or amenities' })
+  @ApiPropertyOptional({ description: "Optional description of the room's features or amenities" })
   @IsOptional()
   @IsString()
-    description?: string;
+  description?: string;
 
-  @ApiProperty({ 
-    description: 'Room amenities', 
+  @ApiProperty({
+    description: 'Room amenities',
     required: false,
-    type: 'string'
+    type: 'string',
   })
   @IsOptional()
   @IsString()
-  @ValidateIf((o) => o.amenities !== '')
+  @ValidateIf(o => o.amenities !== '')
   @IsJSON()
   @Transform(({ value }) => {
     if (value === '') {
@@ -118,5 +118,5 @@ export class CreateRoomDto {
     }
     return value;
   })
-    availabilityStatus: AvailabilityStatus;
+  availabilityStatus: AvailabilityStatus;
 }

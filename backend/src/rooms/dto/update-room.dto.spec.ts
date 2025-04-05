@@ -17,7 +17,7 @@ type UpdateRoomDtoInput = Partial<{
 
 describe('UpdateRoomDto', () => {
   const createDto = (data: UpdateRoomDtoInput) => plainToClass(UpdateRoomDto, data);
-  
+
   const validateDto = async (dto: UpdateRoomDto) => {
     const errors = await validate(dto);
     return { errors, hasErrors: errors.length > 0 };
@@ -39,7 +39,7 @@ describe('UpdateRoomDto', () => {
       const multipleFieldsDto = createDto({
         roomNumber: '101',
         pricePerNight: 100,
-        maxGuests: 2
+        maxGuests: 2,
       });
       const { errors: multipleFieldsErrors } = await validateDto(multipleFieldsDto);
       expect(multipleFieldsErrors.length).toBe(0);
@@ -52,7 +52,7 @@ describe('UpdateRoomDto', () => {
         maxGuests: 2,
         description: 'A comfortable room with a view',
         amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning']),
-        availabilityStatus: AvailabilityStatus.AVAILABLE
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
       });
       const { errors: allFieldsErrors } = await validateDto(allFieldsDto);
       expect(allFieldsErrors.length).toBe(0);
@@ -106,7 +106,7 @@ describe('UpdateRoomDto', () => {
       // Test partial update of required fields
       const partialUpdateDto = createDto({
         roomNumber: '101',
-        pricePerNight: 100
+        pricePerNight: 100,
       });
       const { errors: partialUpdateErrors } = await validateDto(partialUpdateDto);
       expect(partialUpdateErrors.length).toBe(0);
@@ -119,11 +119,11 @@ describe('UpdateRoomDto', () => {
       const allFieldsDto = createDto({
         type: RoomType.SINGLE,
         roomNumber: '101',
-        pricePerNight: 100.50,
+        pricePerNight: 100.5,
         maxGuests: 2,
         description: 'A comfortable room with a view',
         amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning']),
-        availabilityStatus: AvailabilityStatus.AVAILABLE
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
       });
 
       expect(allFieldsDto).toBeInstanceOf(UpdateRoomDto);
@@ -143,7 +143,7 @@ describe('UpdateRoomDto', () => {
         maxGuests: undefined,
         description: undefined,
         amenities: undefined,
-        availabilityStatus: undefined
+        availabilityStatus: undefined,
       });
 
       expect(undefinedDto).toBeInstanceOf(UpdateRoomDto);
@@ -163,7 +163,7 @@ describe('UpdateRoomDto', () => {
         maxGuests: null,
         description: null,
         amenities: null,
-        availabilityStatus: null
+        availabilityStatus: null,
       });
 
       expect(nullDto).toBeInstanceOf(UpdateRoomDto);
@@ -183,7 +183,7 @@ describe('UpdateRoomDto', () => {
         maxGuests: '',
         description: '',
         amenities: '',
-        availabilityStatus: ''
+        availabilityStatus: '',
       });
 
       expect(emptyStringDto).toBeInstanceOf(UpdateRoomDto);
@@ -198,19 +198,19 @@ describe('UpdateRoomDto', () => {
       // Test number conversion
       const numberConversionDto = createDto({
         pricePerNight: '100.50',
-        maxGuests: '2'
+        maxGuests: '2',
       });
 
       expect(numberConversionDto).toBeInstanceOf(UpdateRoomDto);
       expect(typeof numberConversionDto.pricePerNight).toBe('number');
       expect(typeof numberConversionDto.maxGuests).toBe('number');
-      expect(numberConversionDto.pricePerNight).toBe(100.50);
+      expect(numberConversionDto.pricePerNight).toBe(100.5);
       expect(numberConversionDto.maxGuests).toBe(2);
 
       // Test enum values with case transformation
       const enumDto = createDto({
         type: 'SINGLE',
-        availabilityStatus: 'AVAILABLE'
+        availabilityStatus: 'AVAILABLE',
       });
 
       expect(enumDto).toBeInstanceOf(UpdateRoomDto);
@@ -221,13 +221,13 @@ describe('UpdateRoomDto', () => {
       const updates = [
         { pricePerNight: 150.75 },
         { maxGuests: 3 },
-        { description: 'Updated description' }
+        { description: 'Updated description' },
       ];
 
       updates.forEach(update => {
         const dto = createDto(update);
         expect(dto).toBeInstanceOf(UpdateRoomDto);
-        
+
         if (update.pricePerNight !== undefined) {
           expect(typeof dto.pricePerNight).toBe('number');
           expect(dto.pricePerNight).toBe(update.pricePerNight);
@@ -244,7 +244,7 @@ describe('UpdateRoomDto', () => {
 
       // Test JSON string for amenities
       const amenitiesDto = createDto({
-        amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning'])
+        amenities: JSON.stringify(['wifi', 'tv', 'air-conditioning']),
       });
 
       expect(amenitiesDto).toBeInstanceOf(UpdateRoomDto);
@@ -255,15 +255,15 @@ describe('UpdateRoomDto', () => {
       const extraPropsDto = createDto({
         type: RoomType.SINGLE,
         roomNumber: '101',
-        pricePerNight: 100.50,
-        extraField: 'extra value'
+        pricePerNight: 100.5,
+        extraField: 'extra value',
       });
 
       expect(extraPropsDto).toBeInstanceOf(UpdateRoomDto);
       expect(extraPropsDto.type).toBe(RoomType.SINGLE);
       expect(extraPropsDto.roomNumber).toBe('101');
-      expect(extraPropsDto.pricePerNight).toBe(100.50);
+      expect(extraPropsDto.pricePerNight).toBe(100.5);
       // Extra properties are automatically ignored by class-transformer
     });
   });
-}); 
+});

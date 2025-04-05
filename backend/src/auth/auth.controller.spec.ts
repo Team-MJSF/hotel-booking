@@ -20,7 +20,7 @@ describe('AuthController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const mockAuthService = {
@@ -64,7 +64,12 @@ describe('AuthController', () => {
           mockError: null,
           expectedError: null,
           assertions: (result: Record<string, unknown>) => {
-            expect(result).toEqual({ id: 1, firstName: 'John', lastName: 'Doe', email: 'john@example.com' });
+            expect(result).toEqual({
+              id: 1,
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+            });
             expect(authService.register).toHaveBeenCalledWith({
               firstName: 'John',
               lastName: 'Doe',
@@ -72,7 +77,7 @@ describe('AuthController', () => {
               password: 'password123',
               confirmPassword: 'password123',
             });
-          }
+          },
         },
         {
           description: 'throw UnauthorizedException when passwords do not match',
@@ -94,17 +99,17 @@ describe('AuthController', () => {
               password: 'password123',
               confirmPassword: 'different',
             });
-          }
-        }
+          },
+        },
       ];
 
-      for (const { 
-        description, 
-        registerDto, 
-        mockResult, 
-        mockError, 
-        expectedError, 
-        assertions 
+      for (const {
+        description,
+        registerDto,
+        mockResult,
+        mockError,
+        expectedError,
+        assertions,
       } of testCases) {
         if (mockError) {
           mockAuthService.register.mockRejectedValue(mockError);
@@ -118,7 +123,7 @@ describe('AuthController', () => {
           const result = await controller.register(registerDto);
           expect(result).toEqual(mockResult);
         }
-        
+
         assertions(mockResult);
       }
     });
@@ -142,7 +147,7 @@ describe('AuthController', () => {
               email: 'test@example.com',
               password: 'password123',
             });
-          }
+          },
         },
         {
           description: 'throw UnauthorizedException with invalid credentials',
@@ -158,17 +163,17 @@ describe('AuthController', () => {
               email: 'test@example.com',
               password: 'wrongpassword',
             });
-          }
-        }
+          },
+        },
       ];
 
-      for (const { 
-        description, 
-        loginDto, 
-        mockResult, 
-        mockError, 
-        expectedError, 
-        assertions 
+      for (const {
+        description,
+        loginDto,
+        mockResult,
+        mockError,
+        expectedError,
+        assertions,
       } of testCases) {
         if (mockError) {
           mockAuthService.login.mockRejectedValue(mockError);
@@ -182,7 +187,7 @@ describe('AuthController', () => {
           const result = await controller.login(loginDto);
           expect(result).toEqual(mockResult);
         }
-        
+
         assertions(mockResult);
       }
     });
@@ -203,7 +208,7 @@ describe('AuthController', () => {
             phoneNumber: '1234567890',
             address: '123 Test St',
             createdAt: new Date(),
-            updatedAt: new Date()
+            updatedAt: new Date(),
           },
           mockError: null,
           expectedError: null,
@@ -217,20 +222,20 @@ describe('AuthController', () => {
               phoneNumber: '1234567890',
               address: '123 Test St',
               createdAt: expect.any(Date),
-              updatedAt: expect.any(Date)
+              updatedAt: expect.any(Date),
             });
             expect(authService.getProfile).toHaveBeenCalledWith(1);
-          }
-        }
+          },
+        },
       ];
 
-      for (const { 
-        description, 
-        user, 
-        mockResult, 
-        mockError, 
-        expectedError, 
-        assertions 
+      for (const {
+        description,
+        user,
+        mockResult,
+        mockError,
+        expectedError,
+        assertions,
       } of testCases) {
         if (mockError) {
           mockAuthService.getProfile.mockRejectedValue(mockError);
@@ -244,9 +249,9 @@ describe('AuthController', () => {
           const result = await controller.getProfile(user);
           expect(result).toEqual(mockResult);
         }
-        
+
         assertions(mockResult);
       }
     });
   });
-}); 
+});

@@ -4,19 +4,19 @@ import { UserRole } from '../entities/user.entity';
 import { Transform } from 'class-transformer';
 
 export class BaseUserDto {
-  @ApiProperty({ description: 'The user\'s first name' })
+  @ApiProperty({ description: "The user's first name" })
   @IsString()
-    firstName: string;
+  firstName: string;
 
-  @ApiProperty({ description: 'The user\'s last name' })
+  @ApiProperty({ description: "The user's last name" })
   @IsString()
-    lastName: string;
+  lastName: string;
 
-  @ApiProperty({ description: 'The user\'s email address' })
+  @ApiProperty({ description: "The user's email address" })
   @IsEmail()
-    email: string;
+  email: string;
 
-  @ApiProperty({ description: 'The user\'s role', enum: UserRole })
+  @ApiProperty({ description: "The user's role", enum: UserRole })
   @IsEnum(UserRole)
   @IsOptional()
   @Transform(({ value }) => {
@@ -25,15 +25,15 @@ export class BaseUserDto {
     }
     return value;
   })
-    role?: UserRole;
+  role?: UserRole;
 
-  @ApiPropertyOptional({ description: 'The user\'s phone number' })
+  @ApiPropertyOptional({ description: "The user's phone number" })
   @IsOptional()
   @IsString()
-    phoneNumber?: string;
+  phoneNumber?: string;
 
-  @ApiPropertyOptional({ description: 'The user\'s address' })
+  @ApiPropertyOptional({ description: "The user's address" })
   @IsOptional()
   @IsString()
-    address?: string;
-} 
+  address?: string;
+}

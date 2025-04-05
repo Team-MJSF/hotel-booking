@@ -4,7 +4,11 @@ import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  ConflictException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import { ForbiddenException } from '@nestjs/common';
 
 // Increase timeout for all tests
@@ -38,7 +42,7 @@ describe('UsersController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const createUserDto: CreateUserDto = {
@@ -47,7 +51,7 @@ describe('UsersController', () => {
     email: 'john@example.com',
     password: 'password123',
     confirmPassword: 'password123',
-    role: UserRole.USER
+    role: UserRole.USER,
   };
 
   beforeEach(async () => {
@@ -165,24 +169,34 @@ describe('UsersController', () => {
 
       // User trying to update another user's profile
       const otherUser = { ...mockUser, id: 2, role: UserRole.USER };
-      await expect(controller.update('1', updateUserDto, otherUser)).rejects.toThrow(ForbiddenException);
+      await expect(controller.update('1', updateUserDto, otherUser)).rejects.toThrow(
+        ForbiddenException,
+      );
 
       // Regular user trying to update role
-      await expect(controller.update('1', { role: UserRole.ADMIN }, regularUser)).rejects.toThrow(ForbiddenException);
+      await expect(controller.update('1', { role: UserRole.ADMIN }, regularUser)).rejects.toThrow(
+        ForbiddenException,
+      );
 
       // Not found case
       mockUsersService.update.mockRejectedValueOnce(new ResourceNotFoundException('User', 1));
-      await expect(controller.update('1', updateUserDto, adminUser)).rejects.toThrow(ResourceNotFoundException);
+      await expect(controller.update('1', updateUserDto, adminUser)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Email exists case
       mockUsersService.update.mockRejectedValueOnce(
         new ConflictException('User with email jane@example.com already exists'),
       );
-      await expect(controller.update('1', updateUserDto, adminUser)).rejects.toThrow(ConflictException);
+      await expect(controller.update('1', updateUserDto, adminUser)).rejects.toThrow(
+        ConflictException,
+      );
 
       // Error case
       mockUsersService.update.mockRejectedValueOnce(new Error('Database error'));
-      await expect(controller.update('1', updateUserDto, adminUser)).rejects.toThrow(DatabaseException);
+      await expect(controller.update('1', updateUserDto, adminUser)).rejects.toThrow(
+        DatabaseException,
+      );
     });
   });
 
@@ -193,7 +207,7 @@ describe('UsersController', () => {
       mockUsersService.remove.mockResolvedValueOnce(undefined);
       await controller.remove('1', adminUser);
       expect(mockUsersService.remove).toHaveBeenCalledWith(1);
-      
+
       // Admin trying to remove own account
       await expect(controller.remove('2', adminUser)).rejects.toThrow(ForbiddenException);
 

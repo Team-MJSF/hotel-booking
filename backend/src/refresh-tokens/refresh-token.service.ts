@@ -14,7 +14,7 @@ export class RefreshTokenService {
 
   async generateRefreshToken(user: User): Promise<RefreshToken> {
     const token = crypto.randomBytes(40).toString('hex');
-    
+
     // Ensure a valid date format by using current date + 7 days
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7); // 7 days expiration
@@ -23,7 +23,7 @@ export class RefreshTokenService {
       token,
       user,
       expiresAt,
-      isActive: true
+      isActive: true,
     });
 
     return this.refreshTokenRepository.save(refreshToken);
@@ -67,4 +67,4 @@ export class RefreshTokenService {
       { isActive: false },
     );
   }
-} 
+}

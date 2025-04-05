@@ -37,7 +37,7 @@ class MockAdminGuard {
 async function initTestApp(): Promise<INestApplication> {
   // Ensure TypeORM can find the entities
   process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-  
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -65,8 +65,8 @@ async function initTestApp(): Promise<INestApplication> {
       {
         provide: APP_GUARD,
         useClass: MockJwtAuthGuard,
-      }
-    ]
+      },
+    ],
   })
     .overrideGuard(JwtAuthGuard)
     .useClass(MockJwtAuthGuard)
@@ -126,38 +126,38 @@ describe('Payment Flow Integration Tests', () => {
     const setup = await initTestApp();
     app = setup;
     dataSource = app.get(DataSource);
-    
+
     // Check database tables
     await checkDatabaseTables(app);
-    
+
     configService = app.get(ConfigService);
     jwtService = app.get(JwtService);
     userRepository = app.get(getRepositoryToken(User));
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
-    
+
     // Authentication is already bypassed via the MockJwtAuthGuard in the module setup
   }, 30000);
 
   afterAll(async () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
-    
+
     // Close database connections and query runners
     if (queryRunner && queryRunner.isReleased === false) {
       await queryRunner.release();
     }
-    
+
     if (dataSource && dataSource.isInitialized) {
       await dataSource.destroy();
     }
-    
+
     // Close the application
     if (app) {
       await app.close();
@@ -172,7 +172,7 @@ describe('Payment Flow Integration Tests', () => {
     await dataSource.query('DELETE FROM refresh_tokens');
     await dataSource.query('DELETE FROM users');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -214,18 +214,18 @@ describe('Payment Flow Integration Tests', () => {
 
       // Step 3: Create a room (as admin)
       await userRepository.update({ id: userId }, { role: UserRole.ADMIN });
-      
+
       // Get the updated user with tokenVersion
       const updatedUser = await userRepository.findOne({ where: { id: userId } });
-      
+
       adminToken = jwtService.sign(
-        { 
-          sub: userId, 
+        {
+          sub: userId,
           email: updatedUser.email,
           role: updatedUser.role,
-          tokenVersion: updatedUser.tokenVersion
+          tokenVersion: updatedUser.tokenVersion,
         },
-        { secret: configService.get('JWT_SECRET') }
+        { secret: configService.get('JWT_SECRET') },
       );
 
       // Step 4: Create a room
@@ -278,4 +278,4 @@ describe('Payment Flow Integration Tests', () => {
       expect(verifyPaymentResponse.body.paymentMethod).toBe('credit_card');
     });
   });
-}); 
+});

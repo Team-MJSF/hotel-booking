@@ -1,27 +1,35 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  ManyToOne,
+  CreateDateColumn,
+  UpdateDateColumn,
+  JoinColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('refresh_tokens')
 export class RefreshToken {
   @PrimaryGeneratedColumn({ name: 'id' })
-    id: number;
+  id: number;
 
   @Column({ name: 'token' })
-    token: string;
+  token: string;
 
   @Column({ name: 'is_active', default: true })
-    isActive: boolean;
+  isActive: boolean;
 
   @Column({ name: 'expires_at', nullable: true, type: 'timestamp' })
-    expiresAt: Date;
+  expiresAt: Date;
 
   @ManyToOne(() => User, user => user.refreshTokens)
   @JoinColumn({ name: 'user_id' })
-    user: User;
+  user: User;
 
   @CreateDateColumn({ name: 'created_at' })
-    createdAt: Date;
+  createdAt: Date;
 
   @UpdateDateColumn({ name: 'updated_at' })
-    updatedAt: Date;
-} 
+  updatedAt: Date;
+}

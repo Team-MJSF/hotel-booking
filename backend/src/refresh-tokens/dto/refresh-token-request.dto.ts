@@ -10,5 +10,5 @@ export class RefreshTokenRequestDto {
   @IsNotEmpty()
   @MinLength(1)
   @Matches(/^\S+$/, { message: 'Refresh token cannot contain whitespace' })
-    refresh_token: string;
-} 
+  refresh_token: string;
+}

@@ -13,7 +13,7 @@ import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 async function initTestApp(): Promise<INestApplication> {
   // Ensure TypeORM can find the entities
   process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-  
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -95,11 +95,11 @@ describe('User Flow Integration Tests', () => {
     if (queryRunner && queryRunner.isReleased === false) {
       await queryRunner.release();
     }
-    
+
     if (dataSource && dataSource.isInitialized) {
       await dataSource.destroy();
     }
-    
+
     // Close the application
     if (app) {
       await app.close();
@@ -114,7 +114,7 @@ describe('User Flow Integration Tests', () => {
     await dataSource.query('DELETE FROM refresh_tokens');
     await dataSource.query('DELETE FROM users');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -201,13 +201,13 @@ describe('User Flow Integration Tests', () => {
                 '$2b$10$2xGcGik0JTzYDbU3E628Seqgqd2EYMnhXMmFPi.ovz3DQKWQu5acq', 
                 '${UserRole.ADMIN}', '${testAdmin.phoneNumber}', '${testAdmin.address}', NOW(), NOW(), 0, true)
       `);
-      
+
       // Get the admin ID from the insert result
       const [adminIdResult] = await dataSource.query(`
         SELECT user_id as id FROM users WHERE email = '${testAdmin.email}'
       `);
       adminId = adminIdResult.id;
-      
+
       // Add a small delay to ensure the transaction is complete
       await delay(500);
 
@@ -292,4 +292,4 @@ describe('User Flow Integration Tests', () => {
         .expect(404);
     });
   });
-}); 
+});

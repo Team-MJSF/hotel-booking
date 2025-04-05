@@ -1,5 +1,24 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, HttpCode, HttpStatus, UseGuards } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiBody, ApiBearerAuth, ApiExtraModels } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  HttpCode,
+  HttpStatus,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiBearerAuth,
+  ApiExtraModels,
+} from '@nestjs/swagger';
 import { PaymentsService } from './payments.service';
 import { Payment, PaymentStatus } from './entities/payment.entity';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -25,9 +44,10 @@ export class PaymentsController {
    */
   @Get()
   @UseGuards(AdminGuard)
-  @ApiOperation({ 
-    summary: 'Get all payments', 
-    description: 'Retrieves a list of all payments in the system. This endpoint is useful for administrators to monitor payment activity. (Admin only)'
+  @ApiOperation({
+    summary: 'Get all payments',
+    description:
+      'Retrieves a list of all payments in the system. This endpoint is useful for administrators to monitor payment activity. (Admin only)',
   })
   @ApiResponse({
     status: 200,
@@ -46,14 +66,14 @@ export class PaymentsController {
             refundReason: null,
             booking: {
               bookingId: 101,
-              status: 'confirmed'
+              status: 'confirmed',
             },
             createdAt: '2023-06-15T08:30:00Z',
-            updatedAt: '2023-06-15T08:35:00Z'
+            updatedAt: '2023-06-15T08:35:00Z',
           },
           {
             paymentId: 2,
-            amount: 349.50,
+            amount: 349.5,
             currency: 'USD',
             paymentMethod: 'debit_card',
             transactionId: 'txn_1K2PcvCZ6qsJgndJ7bAs95Ln',
@@ -61,14 +81,14 @@ export class PaymentsController {
             refundReason: null,
             booking: {
               bookingId: 102,
-              status: 'pending'
+              status: 'pending',
             },
             createdAt: '2023-06-16T14:20:00Z',
-            updatedAt: '2023-06-16T14:20:00Z'
-          }
-        ]
-      }
-    }
+            updatedAt: '2023-06-16T14:20:00Z',
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
@@ -84,12 +104,13 @@ export class PaymentsController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get a payment by ID',
-    description: 'Retrieves detailed information about a specific payment using its unique identifier.'
+    description:
+      'Retrieves detailed information about a specific payment using its unique identifier.',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'The unique identifier of the payment',
-    example: 1
+    example: 1,
   })
   @ApiResponse({
     status: 200,
@@ -116,19 +137,19 @@ export class PaymentsController {
               id: 42,
               firstName: 'John',
               lastName: 'Doe',
-              email: 'john.doe@example.com'
+              email: 'john.doe@example.com',
             },
             room: {
               id: 15,
               roomNumber: '301',
-              type: 'deluxe'
-            }
+              type: 'deluxe',
+            },
           },
           createdAt: '2023-06-15T08:30:00Z',
-          updatedAt: '2023-06-15T08:35:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-06-15T08:35:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 404, description: 'Payment not found' })
@@ -145,7 +166,8 @@ export class PaymentsController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Create a new payment',
-    description: 'Creates a new payment record for a booking. This endpoint processes payment information and associates it with the specified booking. (Admin only)'
+    description:
+      'Creates a new payment record for a booking. This endpoint processes payment information and associates it with the specified booking. (Admin only)',
   })
   @ApiBody({
     type: CreatePaymentDto,
@@ -159,21 +181,21 @@ export class PaymentsController {
           currency: 'USD',
           paymentMethod: 'credit_card',
           transactionId: 'txn_1K2OnjCZ6qsJgndJQbEGy95K',
-          status: 'completed'
-        }
+          status: 'completed',
+        },
       },
       bankTransferPayment: {
         summary: 'Bank Transfer Payment',
         value: {
           bookingId: 102,
-          amount: 349.50,
+          amount: 349.5,
           currency: 'EUR',
           paymentMethod: 'bank_transfer',
           transactionId: 'bt_9876543210',
-          status: 'pending'
-        }
-      }
-    }
+          status: 'pending',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 201,
@@ -191,10 +213,10 @@ export class PaymentsController {
           status: 'completed',
           refundReason: null,
           createdAt: '2023-06-17T10:25:00Z',
-          updatedAt: '2023-06-17T10:25:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-06-17T10:25:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
@@ -215,12 +237,13 @@ export class PaymentsController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Update a payment',
-    description: 'Updates the details of an existing payment. This can be used to modify payment information or status. (Admin only)'
+    description:
+      'Updates the details of an existing payment. This can be used to modify payment information or status. (Admin only)',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'The unique identifier of the payment to update',
-    example: 1
+    example: 1,
   })
   @ApiBody({
     type: UpdatePaymentDto,
@@ -230,17 +253,17 @@ export class PaymentsController {
         summary: 'Update payment status',
         value: {
           status: 'completed',
-          transactionId: 'txn_updated_12345'
-        }
+          transactionId: 'txn_updated_12345',
+        },
       },
       refundUpdate: {
         summary: 'Update with refund information',
         value: {
           status: 'refunded',
-          refundReason: 'Customer requested cancellation'
-        }
-      }
-    }
+          refundReason: 'Customer requested cancellation',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -258,22 +281,19 @@ export class PaymentsController {
           refundReason: null,
           booking: {
             bookingId: 101,
-            status: 'confirmed'
+            status: 'confirmed',
           },
           createdAt: '2023-06-15T08:30:00Z',
-          updatedAt: '2023-06-17T15:45:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-06-17T15:45:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
   @ApiResponse({ status: 404, description: 'Payment not found' })
-  update(
-    @Param('id') id: string,
-    @Body() updatePaymentDto: UpdatePaymentDto,
-  ): Promise<Payment> {
+  update(@Param('id') id: string, @Body() updatePaymentDto: UpdatePaymentDto): Promise<Payment> {
     return this.paymentsService.update(+id, updatePaymentDto);
   }
 
@@ -287,12 +307,13 @@ export class PaymentsController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Delete a payment',
-    description: 'Removes a payment record from the system. This is typically used for administrative purposes or when correcting errors. (Admin only)'
+    description:
+      'Removes a payment record from the system. This is typically used for administrative purposes or when correcting errors. (Admin only)',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'The unique identifier of the payment to delete',
-    example: 1
+    example: 1,
   })
   @ApiResponse({ status: 204, description: 'Payment deleted successfully' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
@@ -310,12 +331,13 @@ export class PaymentsController {
   @Get('booking/:bookingId')
   @ApiOperation({
     summary: 'Get payment by booking ID',
-    description: 'Retrieves payment information associated with a specific booking. This is useful for checking payment status of a reservation.'
+    description:
+      'Retrieves payment information associated with a specific booking. This is useful for checking payment status of a reservation.',
   })
-  @ApiParam({ 
-    name: 'bookingId', 
+  @ApiParam({
+    name: 'bookingId',
     description: 'The unique identifier of the booking',
-    example: 101
+    example: 101,
   })
   @ApiResponse({
     status: 200,
@@ -333,13 +355,13 @@ export class PaymentsController {
           refundReason: null,
           booking: {
             bookingId: 101,
-            status: 'confirmed'
+            status: 'confirmed',
           },
           createdAt: '2023-06-15T08:30:00Z',
-          updatedAt: '2023-06-15T08:35:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-06-15T08:35:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 404, description: 'Payment not found for the specified booking' })
@@ -357,24 +379,25 @@ export class PaymentsController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Process a refund for a payment',
-    description: 'Initiates a refund process for an existing payment. This endpoint is used when a customer cancels their booking or requests a refund for other reasons. (Admin only)'
+    description:
+      'Initiates a refund process for an existing payment. This endpoint is used when a customer cancels their booking or requests a refund for other reasons. (Admin only)',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'The unique identifier of the payment to refund',
-    example: 1
+    example: 1,
   })
   @ApiBody({
     description: 'Refund details',
-    schema: { 
-      properties: { 
-        refundReason: { 
+    schema: {
+      properties: {
+        refundReason: {
           type: 'string',
           description: 'The reason for the refund',
-          example: 'Customer requested cancellation due to change of plans'
-        }
-      }
-    }
+          example: 'Customer requested cancellation due to change of plans',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -392,15 +415,18 @@ export class PaymentsController {
           refundReason: 'Customer requested cancellation due to change of plans',
           booking: {
             bookingId: 101,
-            status: 'cancelled'
+            status: 'cancelled',
           },
           createdAt: '2023-06-15T08:30:00Z',
-          updatedAt: '2023-06-18T11:20:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-06-18T11:20:00Z',
+        },
+      },
+    },
   })
-  @ApiResponse({ status: 400, description: 'Bad Request - Invalid input or payment cannot be refunded' })
+  @ApiResponse({
+    status: 400,
+    description: 'Bad Request - Invalid input or payment cannot be refunded',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
   @ApiResponse({ status: 404, description: 'Payment not found' })
@@ -421,44 +447,45 @@ export class PaymentsController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Update payment status',
-    description: 'Updates the status of a payment. This is used to reflect changes in the payment lifecycle, such as when a pending payment is completed or when a payment fails. (Admin only)'
+    description:
+      'Updates the status of a payment. This is used to reflect changes in the payment lifecycle, such as when a pending payment is completed or when a payment fails. (Admin only)',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'The unique identifier of the payment',
-    example: 1
+    example: 1,
   })
   @ApiBody({
     description: 'Payment status update',
-    schema: { 
-      properties: { 
-        status: { 
+    schema: {
+      properties: {
+        status: {
           enum: Object.values(PaymentStatus),
           description: 'The new status for the payment',
-          example: 'completed'
-        }
-      }
+          example: 'completed',
+        },
+      },
     },
     examples: {
       completed: {
         summary: 'Mark as completed',
         value: {
-          status: 'completed'
-        }
+          status: 'completed',
+        },
       },
       failed: {
         summary: 'Mark as failed',
         value: {
-          status: 'failed'
-        }
+          status: 'failed',
+        },
       },
       refunded: {
         summary: 'Mark as refunded',
         value: {
-          status: 'refunded'
-        }
-      }
-    }
+          status: 'refunded',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -468,7 +495,7 @@ export class PaymentsController {
       'application/json': {
         example: {
           paymentId: 2,
-          amount: 349.50,
+          amount: 349.5,
           currency: 'USD',
           paymentMethod: 'debit_card',
           transactionId: 'txn_1K2PcvCZ6qsJgndJ7bAs95Ln',
@@ -476,13 +503,13 @@ export class PaymentsController {
           refundReason: null,
           booking: {
             bookingId: 102,
-            status: 'confirmed'
+            status: 'confirmed',
           },
           createdAt: '2023-06-16T14:20:00Z',
-          updatedAt: '2023-06-18T09:15:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-06-18T09:15:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid status' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })

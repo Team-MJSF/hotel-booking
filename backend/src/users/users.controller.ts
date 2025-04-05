@@ -9,20 +9,24 @@ import {
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
-import { 
-  ApiTags, 
-  ApiOperation, 
-  ApiResponse, 
-  ApiBearerAuth, 
-  ApiParam, 
-  ApiBody, 
-  ApiExtraModels 
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiParam,
+  ApiBody,
+  ApiExtraModels,
 } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  ConflictException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../auth/guards/admin.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -37,9 +41,9 @@ export class UsersController {
 
   @Get()
   @UseGuards(AdminGuard)
-  @ApiOperation({ 
-    summary: 'Get all users', 
-    description: 'Retrieves a list of all users. Only accessible by administrators.'
+  @ApiOperation({
+    summary: 'Get all users',
+    description: 'Retrieves a list of all users. Only accessible by administrators.',
   })
   @ApiResponse({
     status: 200,
@@ -58,7 +62,7 @@ export class UsersController {
             address: '123 Main St',
             isActive: true,
             createdAt: '2023-01-01T12:00:00Z',
-            updatedAt: '2023-01-02T12:00:00Z'
+            updatedAt: '2023-01-02T12:00:00Z',
           },
           {
             id: 2,
@@ -70,11 +74,11 @@ export class UsersController {
             address: '456 Elm St',
             isActive: true,
             createdAt: '2023-01-03T12:00:00Z',
-            updatedAt: '2023-01-04T12:00:00Z'
-          }
-        ]
-      }
-    }
+            updatedAt: '2023-01-04T12:00:00Z',
+          },
+        ],
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
@@ -89,12 +93,13 @@ export class UsersController {
   @Get(':id')
   @ApiOperation({
     summary: 'Get user by ID',
-    description: 'Retrieves detailed information for a specific user. Users can only access their own profile, while admins can access any profile.'
+    description:
+      'Retrieves detailed information for a specific user. Users can only access their own profile, while admins can access any profile.',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'User ID',
-    example: 1
+    example: 1,
   })
   @ApiResponse({
     status: 200,
@@ -119,22 +124,19 @@ export class UsersController {
               numberOfGuests: 2,
               status: 'confirmed',
               createdAt: '2023-04-05T12:00:00Z',
-              updatedAt: '2023-04-05T12:00:00Z'
-            }
+              updatedAt: '2023-04-05T12:00:00Z',
+            },
           ],
           createdAt: '2023-01-01T12:00:00Z',
-          updatedAt: '2023-01-02T12:00:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-01-02T12:00:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 403, description: 'Forbidden - Can only access own profile unless admin' })
   @ApiResponse({ status: 404, description: 'User not found' })
-  async findOne(
-    @Param('id') id: string,
-    @CurrentUser() currentUser?: User,
-  ): Promise<User> {
+  async findOne(@Param('id') id: string, @CurrentUser() currentUser?: User): Promise<User> {
     try {
       // Only allow users to access their own profile or admins to access any profile
       if (currentUser?.role !== UserRole.ADMIN && currentUser?.id !== +id) {
@@ -153,7 +155,8 @@ export class UsersController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Create a new user',
-    description: 'Creates a new user with the specified details. Only accessible by administrators.'
+    description:
+      'Creates a new user with the specified details. Only accessible by administrators.',
   })
   @ApiBody({
     type: CreateUserDto,
@@ -169,8 +172,8 @@ export class UsersController {
           confirmPassword: 'Password123!',
           role: 'user',
           phoneNumber: '+1234567890',
-          address: '123 Main St'
-        }
+          address: '123 Main St',
+        },
       },
       adminUser: {
         summary: 'Admin user',
@@ -182,10 +185,10 @@ export class UsersController {
           confirmPassword: 'AdminPass123!',
           role: 'admin',
           phoneNumber: '+0987654321',
-          address: '456 Elm St'
-        }
-      }
-    }
+          address: '456 Elm St',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 201,
@@ -203,10 +206,10 @@ export class UsersController {
           address: '123 Main St',
           isActive: true,
           createdAt: '2023-01-01T12:00:00Z',
-          updatedAt: '2023-01-01T12:00:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-01-01T12:00:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
@@ -226,12 +229,13 @@ export class UsersController {
   @Patch(':id')
   @ApiOperation({
     summary: 'Update user',
-    description: 'Updates an existing user with the provided details. Users can only update their own profile, while admins can update any profile.'
+    description:
+      'Updates an existing user with the provided details. Users can only update their own profile, while admins can update any profile.',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'User ID',
-    example: 1
+    example: 1,
   })
   @ApiBody({
     type: UpdateUserDto,
@@ -243,28 +247,28 @@ export class UsersController {
           firstName: 'Updated',
           lastName: 'Name',
           phoneNumber: '+9876543210',
-          address: 'New Address, City'
-        }
+          address: 'New Address, City',
+        },
       },
       emailUpdate: {
         summary: 'Update email',
         value: {
-          email: 'new.email@example.com'
-        }
+          email: 'new.email@example.com',
+        },
       },
       passwordUpdate: {
         summary: 'Update password',
         value: {
-          password: 'NewPassword123!'
-        }
+          password: 'NewPassword123!',
+        },
       },
       roleUpdate: {
         summary: 'Update role (admin only)',
         value: {
-          role: 'admin'
-        }
-      }
-    }
+          role: 'admin',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: 200,
@@ -282,10 +286,10 @@ export class UsersController {
           address: 'New Address, City',
           isActive: true,
           createdAt: '2023-01-01T12:00:00Z',
-          updatedAt: '2023-01-05T12:00:00Z'
-        }
-      }
-    }
+          updatedAt: '2023-01-05T12:00:00Z',
+        },
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
@@ -302,15 +306,19 @@ export class UsersController {
       if (currentUser?.role !== UserRole.ADMIN && currentUser?.id !== +id) {
         throw new ForbiddenException('You can only update your own profile');
       }
-      
+
       // Only admins can update roles
       if (updateUserDto.role && currentUser?.role !== UserRole.ADMIN) {
         throw new ForbiddenException('Only administrators can change user roles');
       }
-      
+
       return await this.usersService.update(+id, updateUserDto);
     } catch (error) {
-      if (error instanceof ResourceNotFoundException || error instanceof ConflictException || error instanceof ForbiddenException) {
+      if (
+        error instanceof ResourceNotFoundException ||
+        error instanceof ConflictException ||
+        error instanceof ForbiddenException
+      ) {
         throw error;
       }
       throw new DatabaseException('Failed to update user', error as Error);
@@ -321,30 +329,28 @@ export class UsersController {
   @UseGuards(AdminGuard)
   @ApiOperation({
     summary: 'Delete user',
-    description: 'Soft-deletes a user. The record remains in the database but is marked as inactive. Only accessible by administrators.'
+    description:
+      'Soft-deletes a user. The record remains in the database but is marked as inactive. Only accessible by administrators.',
   })
-  @ApiParam({ 
-    name: 'id', 
+  @ApiParam({
+    name: 'id',
     description: 'User ID',
-    example: 1
+    example: 1,
   })
   @ApiResponse({
     status: 200,
-    description: 'User deleted successfully'
+    description: 'User deleted successfully',
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
   @ApiResponse({ status: 404, description: 'Not Found - User not found' })
-  async remove(
-    @Param('id') id: string,
-    @CurrentUser() currentUser?: User
-  ): Promise<void> {
+  async remove(@Param('id') id: string, @CurrentUser() currentUser?: User): Promise<void> {
     try {
       // Prevent deletion of own account
       if (currentUser?.id === +id) {
         throw new ForbiddenException('You cannot delete your own account');
       }
-      
+
       await this.usersService.remove(+id);
     } catch (error) {
       if (error instanceof ResourceNotFoundException || error instanceof ForbiddenException) {

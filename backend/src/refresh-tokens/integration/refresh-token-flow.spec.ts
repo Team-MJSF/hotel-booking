@@ -20,7 +20,7 @@ let safetyTimeout: NodeJS.Timeout;
 async function initTestApp(): Promise<INestApplication> {
   // Ensure TypeORM can find the entities
   process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
-  
+
   const moduleFixture: TestingModule = await Test.createTestingModule({
     imports: [
       ConfigModule.forRoot({
@@ -75,7 +75,7 @@ const testUser = {
   confirmPassword: 'P@ssw0rd123!',
   phoneNumber: '+1234567890',
   address: '123 Test St',
-  role: UserRole.USER
+  role: UserRole.USER,
 };
 
 describe('Refresh Token Flow Integration Tests', () => {
@@ -83,25 +83,29 @@ describe('Refresh Token Flow Integration Tests', () => {
   let dataSource: DataSource;
   let queryRunner: QueryRunner;
   // Use a single description object to hold unused items
-  const description: { jwtService?: JwtService; userRepo?: Repository<User>; configService?: ConfigService } = {};
+  const description: {
+    jwtService?: JwtService;
+    userRepo?: Repository<User>;
+    configService?: ConfigService;
+  } = {};
 
   beforeAll(async () => {
     const setup = await initTestApp();
     app = setup;
     dataSource = app.get(DataSource);
-    
+
     // Check database tables
     await checkDatabaseTables(app);
-    
+
     // Store unused services in description object
     description.userRepo = app.get(getRepositoryToken(User));
     description.jwtService = app.get(JwtService);
     description.configService = app.get(ConfigService);
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
-    
+
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
@@ -110,16 +114,16 @@ describe('Refresh Token Flow Integration Tests', () => {
   afterAll(async () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
-    
+
     // Close database connections and query runners
     if (queryRunner && queryRunner.isReleased === false) {
       await queryRunner.release();
     }
-    
+
     if (dataSource && dataSource.isInitialized) {
       await dataSource.destroy();
     }
-    
+
     // Close the application
     if (app) {
       await app.close();
@@ -134,7 +138,7 @@ describe('Refresh Token Flow Integration Tests', () => {
     await dataSource.query('DELETE FROM refresh_tokens');
     await dataSource.query('DELETE FROM users');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-    
+
     queryRunner = dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -214,4 +218,4 @@ describe('Refresh Token Flow Integration Tests', () => {
         .expect(401);
     });
   });
-}); 
+});

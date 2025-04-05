@@ -30,4 +30,4 @@ import { RefreshTokenModule } from '../refresh-tokens/refresh-token.module';
   providers: [AuthService, LocalStrategy, JwtStrategy, AdminGuard],
   exports: [AuthService, JwtModule],
 })
-export class AuthModule {} 
+export class AuthModule {}

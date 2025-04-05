@@ -25,14 +25,14 @@ describe('JwtStrategy', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const mockPayload: JwtPayload = {
     email: 'john@example.com',
     sub: 1,
     role: UserRole.USER,
-    tokenVersion: 0
+    tokenVersion: 0,
   };
 
   beforeEach(async () => {
@@ -72,23 +72,21 @@ describe('JwtStrategy', () => {
 
       // Test user not found
       mockUsersService.findOne.mockResolvedValueOnce(null);
-      await expect(strategy.validate(mockPayload))
-        .rejects
-        .toThrow(UnauthorizedException);
+      await expect(strategy.validate(mockPayload)).rejects.toThrow(UnauthorizedException);
 
       // Test role mismatch
       const userWithDifferentRole = { ...mockUser, role: UserRole.ADMIN };
       mockUsersService.findOne.mockResolvedValueOnce(userWithDifferentRole);
-      await expect(strategy.validate(mockPayload))
-        .rejects
-        .toThrow(new UnauthorizedException('User role mismatch'));
+      await expect(strategy.validate(mockPayload)).rejects.toThrow(
+        new UnauthorizedException('User role mismatch'),
+      );
 
       // Test token version mismatch
       const userWithDifferentTokenVersion = { ...mockUser, tokenVersion: 1 };
       mockUsersService.findOne.mockResolvedValueOnce(userWithDifferentTokenVersion);
-      await expect(strategy.validate(mockPayload))
-        .rejects
-        .toThrow(new UnauthorizedException('Token version mismatch'));
+      await expect(strategy.validate(mockPayload)).rejects.toThrow(
+        new UnauthorizedException('Token version mismatch'),
+      );
     });
   });
-}); 
+});

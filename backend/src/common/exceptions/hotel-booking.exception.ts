@@ -25,26 +25,18 @@ export class HotelBookingException extends HttpException {
 
 export class ResourceNotFoundException extends HotelBookingException {
   constructor(resource: string, id: string | number) {
-    super(
-      `${resource} with ID ${id} not found`,
-      HttpStatus.NOT_FOUND,
-      {
-        code: 'RESOURCE_NOT_FOUND',
-      },
-    );
+    super(`${resource} with ID ${id} not found`, HttpStatus.NOT_FOUND, {
+      code: 'RESOURCE_NOT_FOUND',
+    });
   }
 }
 
 export class ValidationException extends HotelBookingException {
   constructor(message: string, errors?: Array<{ field: string; message: string }>) {
-    super(
-      message,
-      HttpStatus.BAD_REQUEST,
-      {
-        code: 'VALIDATION_ERROR',
-        details: errors,
-      },
-    );
+    super(message, HttpStatus.BAD_REQUEST, {
+      code: 'VALIDATION_ERROR',
+      details: errors,
+    });
   }
 }
 
@@ -74,40 +66,28 @@ export class ForbiddenException extends HotelBookingException {
 
 export class DatabaseException extends HotelBookingException {
   constructor(message: string, error?: Error) {
-    super(
-      message,
-      HttpStatus.INTERNAL_SERVER_ERROR,
-      {
-        code: 'DATABASE_ERROR',
-        details: error?.message,
-      },
-    );
+    super(message, HttpStatus.INTERNAL_SERVER_ERROR, {
+      code: 'DATABASE_ERROR',
+      details: error?.message,
+    });
   }
 }
 
 export class PaymentProcessingException extends HotelBookingException {
   constructor(message: string, error?: Error) {
-    super(
-      message,
-      HttpStatus.BAD_REQUEST,
-      {
-        code: 'PAYMENT_ERROR',
-        details: error?.message,
-      },
-    );
+    super(message, HttpStatus.BAD_REQUEST, {
+      code: 'PAYMENT_ERROR',
+      details: error?.message,
+    });
   }
 }
 
 export class BookingValidationException extends HotelBookingException {
   constructor(message: string, errors?: Array<{ field: string; message: string }>) {
-    super(
-      message,
-      HttpStatus.BAD_REQUEST,
-      {
-        code: 'BOOKING_VALIDATION_ERROR',
-        details: errors,
-      },
-    );
+    super(message, HttpStatus.BAD_REQUEST, {
+      code: 'BOOKING_VALIDATION_ERROR',
+      details: errors,
+    });
   }
 }
 
@@ -117,4 +97,4 @@ export class RoomAvailabilityException extends HotelBookingException {
       code: 'ROOM_UNAVAILABLE',
     });
   }
-} 
+}

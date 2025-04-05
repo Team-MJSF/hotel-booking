@@ -4,7 +4,11 @@ import { Repository } from 'typeorm';
 import { User, UserRole } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ResourceNotFoundException, ConflictException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  ConflictException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
@@ -116,15 +120,17 @@ export class UsersService {
 
       // Create a new object with only the fields that are being updated
       const updateData: Partial<User> = {};
-      
+
       if (updateUserDto.firstName !== undefined) updateData.firstName = updateUserDto.firstName;
       if (updateUserDto.lastName !== undefined) updateData.lastName = updateUserDto.lastName;
       if (updateUserDto.email !== undefined) updateData.email = updateUserDto.email;
       if (updateUserDto.password !== undefined) updateData.password = updateUserDto.password;
       if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
-      if (updateUserDto.phoneNumber !== undefined) updateData.phoneNumber = updateUserDto.phoneNumber;
+      if (updateUserDto.phoneNumber !== undefined)
+        updateData.phoneNumber = updateUserDto.phoneNumber;
       if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address;
-      if (updateUserDto.tokenVersion !== undefined) updateData.tokenVersion = updateUserDto.tokenVersion;
+      if (updateUserDto.tokenVersion !== undefined)
+        updateData.tokenVersion = updateUserDto.tokenVersion;
 
       // Only perform update if there are fields to update
       if (Object.keys(updateData).length > 0) {

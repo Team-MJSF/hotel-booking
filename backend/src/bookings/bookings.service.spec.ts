@@ -7,7 +7,11 @@ import { User, UserRole } from '../users/entities/user.entity';
 import { Room, RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
 import { CreateBookingDto } from './dto/create-booking.dto';
 import { UpdateBookingDto } from './dto/update-booking.dto';
-import { ResourceNotFoundException, DatabaseException, BookingValidationException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  DatabaseException,
+  BookingValidationException,
+} from '../common/exceptions/hotel-booking.exception';
 
 describe('BookingsService', () => {
   let service: BookingsService;
@@ -47,7 +51,7 @@ describe('BookingsService', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const mockRoom: Room = {
@@ -171,8 +175,12 @@ describe('BookingsService', () => {
       mockBookingRepository.save.mockResolvedValueOnce(mockBooking);
       const result = await service.create(validBookingDto);
       expect(result).toEqual(mockBooking);
-      expect(userRepository.findOne).toHaveBeenCalledWith({ where: { id: validBookingDto.userId } });
-      expect(roomRepository.findOne).toHaveBeenCalledWith({ where: { id: validBookingDto.roomId } });
+      expect(userRepository.findOne).toHaveBeenCalledWith({
+        where: { id: validBookingDto.userId },
+      });
+      expect(roomRepository.findOne).toHaveBeenCalledWith({
+        where: { id: validBookingDto.roomId },
+      });
       expect(bookingRepository.create).toHaveBeenCalledWith({
         ...validBookingDto,
         user: mockUser,
@@ -274,19 +282,19 @@ describe('BookingsService', () => {
       // Success case
       mockBookingRepository.findOne.mockResolvedValueOnce({
         ...mockBooking,
-        room: mockRoom
+        room: mockRoom,
       });
       mockBookingRepository.save.mockResolvedValueOnce({
         ...mockBooking,
-        status: BookingStatus.CANCELLED
+        status: BookingStatus.CANCELLED,
       });
       mockRoomRepository.save.mockResolvedValueOnce({
         ...mockRoom,
-        availabilityStatus: AvailabilityStatus.AVAILABLE
+        availabilityStatus: AvailabilityStatus.AVAILABLE,
       });
 
       await service.remove(1);
-      
+
       expect(bookingRepository.findOne).toHaveBeenCalledWith({
         where: { bookingId: 1 },
         relations: ['user', 'room', 'payment'],
@@ -302,10 +310,10 @@ describe('BookingsService', () => {
       const error = new Error('Database error');
       mockBookingRepository.findOne.mockResolvedValueOnce({
         ...mockBooking,
-        room: mockRoom
+        room: mockRoom,
       });
       mockBookingRepository.save.mockRejectedValueOnce(error);
       await expect(service.remove(1)).rejects.toThrow(DatabaseException);
     });
   });
-}); 
+});

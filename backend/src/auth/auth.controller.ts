@@ -6,7 +6,14 @@ import { ProfileDto } from './dto/profile.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { AdminGuard } from './guards/admin.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth, ApiBody, ApiExtraModels } from '@nestjs/swagger';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiBearerAuth,
+  ApiBody,
+  ApiExtraModels,
+} from '@nestjs/swagger';
 import { User } from '../users/entities/user.entity';
 import { LoginResponseDto } from '../refresh-tokens/dto/login-response.dto';
 import { RefreshTokenRequestDto } from '../refresh-tokens/dto/refresh-token-request.dto';
@@ -14,7 +21,15 @@ import { RefreshTokenResponseDto } from '../refresh-tokens/dto/refresh-token-res
 import { CreateAdminDto } from './dto/create-admin.dto';
 
 @ApiTags('Authentication')
-@ApiExtraModels(RegisterDto, LoginDto, LoginResponseDto, RefreshTokenRequestDto, RefreshTokenResponseDto, ProfileDto, CreateAdminDto)
+@ApiExtraModels(
+  RegisterDto,
+  LoginDto,
+  LoginResponseDto,
+  RefreshTokenRequestDto,
+  RefreshTokenResponseDto,
+  ProfileDto,
+  CreateAdminDto,
+)
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -22,7 +37,8 @@ export class AuthController {
   @Post('register')
   @ApiOperation({
     summary: 'Register a new user',
-    description: 'Creates a new user account with the provided information. All user accounts created through this endpoint are assigned the USER role. Admin accounts can only be created by existing administrators.'
+    description:
+      'Creates a new user account with the provided information. All user accounts created through this endpoint are assigned the USER role. Admin accounts can only be created by existing administrators.',
   })
   @ApiBody({
     type: RegisterDto,
@@ -52,8 +68,8 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User successfully registered',
     schema: {
       properties: {
@@ -64,8 +80,8 @@ export class AuthController {
         role: { type: 'string', enum: ['user', 'admin'], example: 'user' },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
-      }
-    }
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
   @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
@@ -78,7 +94,8 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Create a new admin user',
-    description: 'Creates a new admin user account with the provided information. Only accessible by administrators. (Admin only)'
+    description:
+      'Creates a new admin user account with the provided information. Only accessible by administrators. (Admin only)',
   })
   @ApiBody({
     type: CreateAdminDto,
@@ -108,8 +125,8 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Admin user successfully created',
     schema: {
       properties: {
@@ -120,8 +137,8 @@ export class AuthController {
         role: { type: 'string', enum: ['user', 'admin'], example: 'admin' },
         createdAt: { type: 'string', format: 'date-time' },
         updatedAt: { type: 'string', format: 'date-time' },
-      }
-    }
+      },
+    },
   })
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
@@ -134,7 +151,7 @@ export class AuthController {
   @Post('login')
   @ApiOperation({
     summary: 'Login user',
-    description: 'Authenticates a user and returns access and refresh tokens'
+    description: 'Authenticates a user and returns access and refresh tokens',
   })
   @ApiBody({
     type: LoginDto,
@@ -149,8 +166,8 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'User successfully logged in',
     type: LoginResponseDto,
     content: {
@@ -170,7 +187,8 @@ export class AuthController {
   @Post('refresh')
   @ApiOperation({
     summary: 'Refresh access token',
-    description: 'Creates a new access token (and optionally a new refresh token) using a valid refresh token'
+    description:
+      'Creates a new access token (and optionally a new refresh token) using a valid refresh token',
   })
   @ApiBody({
     type: RefreshTokenRequestDto,
@@ -184,8 +202,8 @@ export class AuthController {
       },
     },
   })
-  @ApiResponse({ 
-    status: 201, 
+  @ApiResponse({
+    status: 201,
     description: 'Access token successfully refreshed',
     type: RefreshTokenResponseDto,
     content: {
@@ -198,7 +216,9 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired refresh token' })
-  async refreshToken(@Body() refreshTokenDto: RefreshTokenRequestDto): Promise<RefreshTokenResponseDto> {
+  async refreshToken(
+    @Body() refreshTokenDto: RefreshTokenRequestDto,
+  ): Promise<RefreshTokenResponseDto> {
     return this.authService.refreshAccessToken(refreshTokenDto.refresh_token);
   }
 
@@ -207,7 +227,8 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Logout user',
-    description: 'Invalidates the provided refresh token, effectively logging out the user from that session'
+    description:
+      'Invalidates the provided refresh token, effectively logging out the user from that session',
   })
   @ApiBody({
     type: RefreshTokenRequestDto,
@@ -222,7 +243,10 @@ export class AuthController {
     },
   })
   @ApiResponse({ status: 200, description: 'User successfully logged out' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid token or user not authenticated' })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized - Invalid token or user not authenticated',
+  })
   @ApiResponse({ status: 404, description: 'Not Found - Refresh token not found' })
   @HttpCode(200)
   async logout(@Body() refreshTokenDto: RefreshTokenRequestDto) {
@@ -234,11 +258,11 @@ export class AuthController {
   @ApiBearerAuth('JWT-auth')
   @ApiOperation({
     summary: 'Get current user profile',
-    description: 'Returns the profile information of the currently authenticated user'
+    description: 'Returns the profile information of the currently authenticated user',
   })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Profile retrieved successfully', 
+  @ApiResponse({
+    status: 200,
+    description: 'Profile retrieved successfully',
     type: ProfileDto,
     content: {
       'application/json': {
@@ -261,4 +285,4 @@ export class AuthController {
   async getProfile(@CurrentUser() user: User): Promise<ProfileDto> {
     return this.authService.getProfile(user.id);
   }
-} 
+}

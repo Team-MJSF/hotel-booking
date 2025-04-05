@@ -11,10 +11,12 @@ export async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
   // Enable Helmet for security headers
-  app.use(helmet({
-    crossOriginResourcePolicy: { policy: 'cross-origin' }, // Needed for Swagger UI
-    crossOriginEmbedderPolicy: false, // Needed for Swagger UI
-  }));
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' }, // Needed for Swagger UI
+      crossOriginEmbedderPolicy: false, // Needed for Swagger UI
+    }),
+  );
 
   // Enable CORS
   app.enableCors();

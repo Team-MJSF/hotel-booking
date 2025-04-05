@@ -8,7 +8,7 @@ export class LoginResponseDto {
   })
   @IsString()
   @IsNotEmpty()
-    access_token: string;
+  access_token: string;
 
   @ApiProperty({
     description: 'The refresh token',
@@ -16,5 +16,5 @@ export class LoginResponseDto {
   })
   @IsString()
   @IsNotEmpty()
-    refresh_token: string;
-} 
+  refresh_token: string;
+}

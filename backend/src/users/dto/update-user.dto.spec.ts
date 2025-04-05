@@ -92,4 +92,4 @@ describe('UpdateUserDto', () => {
       expect(emptyErrors).toHaveLength(0);
     });
   });
-}); 
+});

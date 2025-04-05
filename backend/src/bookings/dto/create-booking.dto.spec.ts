@@ -79,7 +79,7 @@ describe('CreateBookingDto', () => {
         roomId: 101,
         checkInDate: '2024-03-20',
         checkOutDate: '2024-03-25',
-        numberOfGuests: 2
+        numberOfGuests: 2,
       };
 
       const dtoObject1 = plainToClass(CreateBookingDto, dataWithDateStrings);
@@ -94,7 +94,7 @@ describe('CreateBookingDto', () => {
         roomId: '101',
         checkInDate: new Date('2024-03-20'),
         checkOutDate: new Date('2024-03-25'),
-        numberOfGuests: '2'
+        numberOfGuests: '2',
       };
 
       const dtoObject2 = plainToClass(CreateBookingDto, dataWithNumberStrings);
@@ -112,7 +112,7 @@ describe('CreateBookingDto', () => {
         checkInDate: new Date('2024-03-20'),
         checkOutDate: new Date('2024-03-25'),
         numberOfGuests: 2,
-        specialRequests: undefined
+        specialRequests: undefined,
       };
 
       const dtoObject3 = plainToClass(CreateBookingDto, dataWithOptionalFields);
@@ -124,7 +124,7 @@ describe('CreateBookingDto', () => {
         checkInDate: new Date('2024-03-20'),
         checkOutDate: new Date('2024-03-25'),
         numberOfGuests: 2,
-        specialRequests: null
+        specialRequests: null,
       };
 
       const dtoObject4 = plainToClass(CreateBookingDto, dataWithNullOptionalField);
@@ -136,11 +136,11 @@ describe('CreateBookingDto', () => {
         checkInDate: new Date('2024-03-20'),
         checkOutDate: new Date('2024-03-25'),
         numberOfGuests: 2,
-        specialRequests: ''
+        specialRequests: '',
       };
 
       const dtoObject5 = plainToClass(CreateBookingDto, dataWithEmptyStringOptionalField);
       expect(dtoObject5.specialRequests).toBe('');
     });
   });
-}); 
+});

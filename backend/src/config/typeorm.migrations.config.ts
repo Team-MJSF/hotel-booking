@@ -16,8 +16,12 @@ config({ path: envPath });
 
 // Flag for migration mode vs application mode
 const isMigrationMode = process.env.TYPEORM_MIGRATION_MODE === 'true';
-const entitiesDir = isMigrationMode ? 'dist-migrations/src/**/entities/*.entity.js' : 'dist/**/*.entity.js';
-const migrationsDir = isMigrationMode ? 'dist-migrations/src/database/migrations/*.js' : 'dist/src/database/migrations/*.js';
+const entitiesDir = isMigrationMode
+  ? 'dist-migrations/src/**/entities/*.entity.js'
+  : 'dist/**/*.entity.js';
+const migrationsDir = isMigrationMode
+  ? 'dist-migrations/src/database/migrations/*.js'
+  : 'dist/src/database/migrations/*.js';
 
 /**
  * Create database if it doesn't exist
@@ -39,11 +43,11 @@ async function createDatabaseIfNotExists(options: MysqlConnectionOptions): Promi
   try {
     // Check if database exists
     const [rows] = await connection.execute(
-      `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${database}'`
+      `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${database}'`,
     );
-    
+
     const databaseExists = Array.isArray(rows) && rows.length > 0;
-    
+
     if (!databaseExists) {
       logger.log(`Creating database ${database}`);
       await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${database}\``);
@@ -112,4 +116,4 @@ export default new DataSource({
   migrationsRun: false,
   dropSchema: false,
   logging: process.env.NODE_ENV === 'development',
-}); 
+});

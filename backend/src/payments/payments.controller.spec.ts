@@ -2,7 +2,10 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { PaymentsController } from './payments.controller';
 import { PaymentsService } from './payments.service';
 import { Payment, PaymentStatus, PaymentMethod, Currency } from './entities/payment.entity';
-import { ResourceNotFoundException, DatabaseException } from '../common/exceptions/hotel-booking.exception';
+import {
+  ResourceNotFoundException,
+  DatabaseException,
+} from '../common/exceptions/hotel-booking.exception';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { Booking, BookingStatus } from '../bookings/entities/booking.entity';
 import { Room, RoomType, AvailabilityStatus } from '../rooms/entities/room.entity';
@@ -13,7 +16,19 @@ jest.setTimeout(10000);
 
 describe('PaymentsController', () => {
   let controller: PaymentsController;
-  let mockPaymentsService: jest.Mocked<Pick<PaymentsService, 'findAll' | 'findOne' | 'create' | 'update' | 'remove' | 'findByBookingId' | 'processRefund' | 'updatePaymentStatus'>>;
+  let mockPaymentsService: jest.Mocked<
+    Pick<
+      PaymentsService,
+      | 'findAll'
+      | 'findOne'
+      | 'create'
+      | 'update'
+      | 'remove'
+      | 'findByBookingId'
+      | 'processRefund'
+      | 'updatePaymentStatus'
+    >
+  >;
 
   const mockRoom: Room = {
     id: 1,
@@ -44,7 +59,7 @@ describe('PaymentsController', () => {
     createdAt: new Date(),
     updatedAt: new Date(),
     tokenVersion: 0,
-    isActive: true
+    isActive: true,
   };
 
   const mockBooking: Booking = {
@@ -63,7 +78,7 @@ describe('PaymentsController', () => {
   const mockPayment: Payment = {
     paymentId: 1,
     booking: mockBooking,
-    amount: 100.00,
+    amount: 100.0,
     paymentMethod: PaymentMethod.CREDIT_CARD,
     status: PaymentStatus.PENDING,
     currency: Currency.USD,
@@ -129,7 +144,9 @@ describe('PaymentsController', () => {
       expect(mockPaymentsService.findOne).toHaveBeenCalledWith(1);
 
       // Test not found error
-      mockPaymentsService.findOne.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
+      mockPaymentsService.findOne.mockRejectedValueOnce(
+        new ResourceNotFoundException('Payment', 1),
+      );
       await expect(controller.findOne('1')).rejects.toThrow(ResourceNotFoundException);
 
       // Test database error
@@ -143,7 +160,7 @@ describe('PaymentsController', () => {
     it('should handle all create scenarios', async () => {
       const createPaymentDto: CreatePaymentDto = {
         bookingId: 1,
-        amount: 100.00,
+        amount: 100.0,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         currency: Currency.USD,
         status: PaymentStatus.PENDING,
@@ -166,7 +183,7 @@ describe('PaymentsController', () => {
     it('should handle all update scenarios', async () => {
       const updatePaymentDto: CreatePaymentDto = {
         bookingId: 1,
-        amount: 150.00,
+        amount: 150.0,
         paymentMethod: PaymentMethod.CREDIT_CARD,
         status: PaymentStatus.COMPLETED,
         currency: Currency.USD,
@@ -181,7 +198,9 @@ describe('PaymentsController', () => {
 
       // Test not found error
       mockPaymentsService.update.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
-      await expect(controller.update('1', updatePaymentDto)).rejects.toThrow(ResourceNotFoundException);
+      await expect(controller.update('1', updatePaymentDto)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
       const error = new DatabaseException('Failed to update payment', new Error('Database error'));
@@ -217,7 +236,9 @@ describe('PaymentsController', () => {
       expect(mockPaymentsService.findByBookingId).toHaveBeenCalledWith(1);
 
       // Test not found error
-      mockPaymentsService.findByBookingId.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
+      mockPaymentsService.findByBookingId.mockRejectedValueOnce(
+        new ResourceNotFoundException('Payment', 1),
+      );
       await expect(controller.findByBookingId('1')).rejects.toThrow(ResourceNotFoundException);
 
       // Test database error
@@ -239,8 +260,12 @@ describe('PaymentsController', () => {
       expect(mockPaymentsService.processRefund).toHaveBeenCalledWith(1, refundReason);
 
       // Test not found error
-      mockPaymentsService.processRefund.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
-      await expect(controller.processRefund('1', refundReason)).rejects.toThrow(ResourceNotFoundException);
+      mockPaymentsService.processRefund.mockRejectedValueOnce(
+        new ResourceNotFoundException('Payment', 1),
+      );
+      await expect(controller.processRefund('1', refundReason)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
       const error = new DatabaseException('Failed to process refund', new Error('Database error'));
@@ -261,13 +286,22 @@ describe('PaymentsController', () => {
       expect(mockPaymentsService.updatePaymentStatus).toHaveBeenCalledWith(1, newStatus);
 
       // Test not found error
-      mockPaymentsService.updatePaymentStatus.mockRejectedValueOnce(new ResourceNotFoundException('Payment', 1));
-      await expect(controller.updatePaymentStatus('1', newStatus)).rejects.toThrow(ResourceNotFoundException);
+      mockPaymentsService.updatePaymentStatus.mockRejectedValueOnce(
+        new ResourceNotFoundException('Payment', 1),
+      );
+      await expect(controller.updatePaymentStatus('1', newStatus)).rejects.toThrow(
+        ResourceNotFoundException,
+      );
 
       // Test database error
-      const error = new DatabaseException('Failed to update payment status', new Error('Database error'));
+      const error = new DatabaseException(
+        'Failed to update payment status',
+        new Error('Database error'),
+      );
       mockPaymentsService.updatePaymentStatus.mockRejectedValueOnce(error);
-      await expect(controller.updatePaymentStatus('1', newStatus)).rejects.toThrow(DatabaseException);
+      await expect(controller.updatePaymentStatus('1', newStatus)).rejects.toThrow(
+        DatabaseException,
+      );
     });
   });
 });
