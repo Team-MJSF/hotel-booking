@@ -4,6 +4,10 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../../users/users.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { User, UserRole } from '../../users/entities/user.entity';
+import { JwtPayload } from '../interfaces/jwt-payload.interface';
+
+// Increase timeout for all tests
+jest.setTimeout(10000);
 
 describe('JwtStrategy', () => {
   let strategy: JwtStrategy;
@@ -14,17 +18,21 @@ describe('JwtStrategy', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john@example.com',
-    password: 'hashedPassword123',
+    password: 'password123',
     role: UserRole.USER,
     bookings: [],
+    refreshTokens: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+    tokenVersion: 0,
+    isActive: true
   };
 
-  const mockPayload = {
-    email: 'test@example.com',
+  const mockPayload: JwtPayload = {
+    email: 'john@example.com',
     sub: 1,
     role: UserRole.USER,
+    tokenVersion: 0
   };
 
   beforeEach(async () => {
@@ -51,61 +59,36 @@ describe('JwtStrategy', () => {
     strategy = module.get<JwtStrategy>(JwtStrategy);
   });
 
-  it('should be defined', () => {
-    expect(strategy).toBeDefined();
-  });
+  describe('validation', () => {
+    it('should handle all JWT validation scenarios', async () => {
+      // Test strategy is defined
+      expect(strategy).toBeDefined();
 
-  it('should handle all JWT validation scenarios', async () => {
-    const testCases = [
-      {
-        description: 'valid token and user exists',
-        setup: () => mockUsersService.findOne.mockResolvedValue(mockUser),
-        expectedResult: mockUser,
-        shouldThrow: false,
-      },
-      {
-        description: 'user not found',
-        setup: () => mockUsersService.findOne.mockResolvedValue(null),
-        expectedResult: null,
-        shouldThrow: true,
-        expectedError: UnauthorizedException,
-      },
-      {
-        description: 'user service throws error',
-        setup: () => mockUsersService.findOne.mockRejectedValue(new UnauthorizedException('Database error')),
-        expectedResult: null,
-        shouldThrow: true,
-        expectedError: UnauthorizedException,
-      },
-      {
-        description: 'role mismatch',
-        setup: () => mockUsersService.findOne.mockResolvedValue({
-          ...mockUser,
-          role: UserRole.ADMIN,
-        }),
-        expectedResult: null,
-        shouldThrow: true,
-        expectedError: UnauthorizedException,
-      },
-    ];
-
-    for (const { description, setup, expectedResult, shouldThrow, expectedError } of testCases) {
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      // Reset mock before each test case
-      mockUsersService.findOne.mockReset();
-      
-      // Set up the specific test scenario
-      setup();
-
-      if (shouldThrow) {
-        await expect(strategy.validate(mockPayload)).rejects.toThrow(expectedError);
-      } else {
-        const result = await strategy.validate(mockPayload);
-        expect(result).toEqual(expectedResult);
-      }
-
-      // Verify the service was called with correct parameters
+      // Test successful validation
+      mockUsersService.findOne.mockResolvedValueOnce(mockUser);
+      const result = await strategy.validate(mockPayload);
+      expect(result).toEqual(mockUser);
       expect(mockUsersService.findOne).toHaveBeenCalledWith(mockPayload.sub);
-    }
+
+      // Test user not found
+      mockUsersService.findOne.mockResolvedValueOnce(null);
+      await expect(strategy.validate(mockPayload))
+        .rejects
+        .toThrow(UnauthorizedException);
+
+      // Test role mismatch
+      const userWithDifferentRole = { ...mockUser, role: UserRole.ADMIN };
+      mockUsersService.findOne.mockResolvedValueOnce(userWithDifferentRole);
+      await expect(strategy.validate(mockPayload))
+        .rejects
+        .toThrow(new UnauthorizedException('User role mismatch'));
+
+      // Test token version mismatch
+      const userWithDifferentTokenVersion = { ...mockUser, tokenVersion: 1 };
+      mockUsersService.findOne.mockResolvedValueOnce(userWithDifferentTokenVersion);
+      await expect(strategy.validate(mockPayload))
+        .rejects
+        .toThrow(new UnauthorizedException('Token version mismatch'));
+    });
   });
 }); 

@@ -53,6 +53,18 @@ export class CreateUsers1709913600000 implements MigrationInterface {
             isNullable: true,
           },
           {
+            name: 'token_version',
+            type: 'int',
+            default: 0,
+            isNullable: false,
+          },
+          {
+            name: 'is_active',
+            type: 'boolean',
+            default: true,
+            isNullable: false,
+          },
+          {
             name: 'created_at',
             type: 'timestamp',
             default: 'CURRENT_TIMESTAMP',

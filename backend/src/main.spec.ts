@@ -1,14 +1,36 @@
-import { INestApplication, ValidationPipe } from '@nestjs/common';
+import { INestApplication, ValidationPipe, Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { NestFactory } from '@nestjs/core';
 import { bootstrap } from './main';
 
-// Mock NestFactory
+// Mock Logger
+jest.mock('@nestjs/common', () => ({
+  ...jest.requireActual('@nestjs/common'),
+  Logger: jest.fn().mockImplementation(() => ({
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    verbose: jest.fn(),
+  })),
+}));
+
+// Mock helmet
+jest.mock('helmet', () => ({
+  __esModule: true,
+  default: jest.fn().mockReturnValue((req, res, next) => next())
+}));
+
+// Mock NestFactory and AppModule
 jest.mock('@nestjs/core', () => ({
   NestFactory: {
     create: jest.fn(),
   },
+}));
+
+jest.mock('./app.module', () => ({
+  AppModule: class AppModule {},
 }));
 
 // Mock Swagger
@@ -67,8 +89,12 @@ describe('Bootstrap', () => {
       use: jest.fn().mockReturnThis(),
     };
 
-    // Setup NestFactory mock
+    // Setup NestFactory mock to return our mock app
     (NestFactory.create as jest.Mock).mockResolvedValue(mockApp);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   it('should create the application with correct configuration', async () => {

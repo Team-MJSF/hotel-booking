@@ -29,11 +29,25 @@ describe('UsersController', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john@example.com',
-    password: 'hashedPassword123',
+    password: 'hashed_password',
     role: UserRole.USER,
+    phoneNumber: '1234567890',
+    address: '123 Test St',
     bookings: [],
+    refreshTokens: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+    tokenVersion: 0,
+    isActive: true
+  };
+
+  const createUserDto: CreateUserDto = {
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    password: 'password123',
+    confirmPassword: 'password123',
+    role: UserRole.USER
   };
 
   beforeEach(async () => {
@@ -108,14 +122,6 @@ describe('UsersController', () => {
 
   describe('create', () => {
     it('should handle all create scenarios', async () => {
-      const createUserDto: CreateUserDto = {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        password: 'password123',
-        role: UserRole.USER,
-      };
-
       // Success case
       mockUsersService.create.mockResolvedValueOnce(mockUser);
       const result = await controller.create(createUserDto);

@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist-migrations",
+    "sourceMap": true,
+    "declaration": true,
+    "composite": true
+  },
+  "include": [
+    "src/database/migrations/**/*", 
+    "src/config/typeorm.migrations.config.ts",
+    "src/database/seeds/**/*",
+    "src/**/entities/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+} 

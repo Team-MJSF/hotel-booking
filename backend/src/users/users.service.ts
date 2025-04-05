@@ -78,6 +78,7 @@ export class UsersService {
       const user = this.usersRepository.create({
         ...createUserDto,
         role: createUserDto.role || UserRole.USER,
+        tokenVersion: 0, // Initialize token version to 0
       });
 
       return await this.usersRepository.save(user);
@@ -123,6 +124,7 @@ export class UsersService {
       if (updateUserDto.role !== undefined) updateData.role = updateUserDto.role;
       if (updateUserDto.phoneNumber !== undefined) updateData.phoneNumber = updateUserDto.phoneNumber;
       if (updateUserDto.address !== undefined) updateData.address = updateUserDto.address;
+      if (updateUserDto.tokenVersion !== undefined) updateData.tokenVersion = updateUserDto.tokenVersion;
 
       // Only perform update if there are fields to update
       if (Object.keys(updateData).length > 0) {

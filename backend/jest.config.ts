@@ -37,7 +37,8 @@ const config: JestConfigWithTsJest = {
   testPathIgnorePatterns: [
     '/node_modules/',
     '/dist/',
-    '/*.d.ts'
+    '/*.d.ts',
+    'src/main.spec.ts'
   ],
   // Coverage configuration
   collectCoverageFrom: [

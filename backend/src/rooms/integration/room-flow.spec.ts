@@ -7,9 +7,84 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { Room } from '../entities/room.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, QueryRunner } from 'typeorm';
 import * as path from 'path';
 import { JwtStrategy } from '../../auth/strategies/jwt.strategy';
+import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
+
+// Maximum duration for the test
+const MAX_TEST_DURATION = 30000; // 30 seconds
+let safetyTimeout: NodeJS.Timeout;
+
+// Define delay function directly
+const delay = (ms: number): Promise<void> => {
+  return new Promise<void>(resolve => setTimeout(resolve, ms));
+};
+
+// Define initTestApp function directly
+async function initTestApp(): Promise<INestApplication> {
+  try {
+    // Ensure TypeORM can find the entities
+    process.env.TYPEORM_ENTITIES = 'src/**/*.entity.ts';
+    
+    const moduleFixture: TestingModule = await Test.createTestingModule({
+      imports: [
+        ConfigModule.forRoot({
+          isGlobal: true,
+          envFilePath: path.resolve(process.cwd(), '.env.test'),
+        }),
+        TypeOrmModule.forRootAsync({
+          imports: [ConfigModule],
+          useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
+            const config = await getTypeOrmConfig(configService);
+            return {
+              ...config,
+              logging: true,
+              synchronize: true, // Enable synchronize for tests
+              autoLoadEntities: true, // Make sure entities are auto-loaded
+              entities: ['src/**/*.entity.ts'], // Explicitly define entities pattern
+            };
+          },
+          inject: [ConfigService],
+        }),
+        AppModule,
+      ],
+    }).compile();
+
+    const app = moduleFixture.createNestApplication();
+    await app.init();
+
+    const dataSource = moduleFixture.get(DataSource);
+    await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
+    await dataSource.query('SET SESSION time_zone = "+00:00"');
+    await dataSource.query('SET NAMES utf8mb4');
+
+    return app;
+  } catch (error) {
+    console.error('Failed to initialize test app:', error);
+    throw error;
+  }
+}
+
+async function checkDatabaseTables(app: INestApplication) {
+  try {
+    const dataSource = app.get(DataSource);
+    const queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    
+    console.log('Database connection info:', {
+      database: dataSource.options.database,
+      isConnected: dataSource.isInitialized
+    });
+    
+    const tables = await queryRunner.query('SHOW TABLES');
+    console.log('Available tables:', tables.map(t => Object.values(t)[0]));
+    
+    await queryRunner.release();
+  } catch (error) {
+    console.error('Failed to check database tables:', error);
+  }
+}
 
 interface JwtPayload {
   sub: number;
@@ -21,9 +96,10 @@ describe('Room Flow Integration Tests', () => {
   let app: INestApplication;
   let userRepository: Repository<User>;
   let dataSource: DataSource;
+  let queryRunner: QueryRunner;
 
   const testUser = {
-    email: 'test@example.com',
+    email: 'room-flow-test@example.com',
     password: 'password123',
     confirmPassword: 'password123',
     firstName: 'Test',
@@ -44,79 +120,71 @@ describe('Room Flow Integration Tests', () => {
   };
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-          envFilePath: path.resolve(process.cwd(), '.env.test'),
-        }),
-        TypeOrmModule.forRootAsync({
-          imports: [ConfigModule],
-          useFactory: async (configService: ConfigService): Promise<TypeOrmModuleOptions> => {
-            const config: TypeOrmModuleOptions = {
-              type: 'mysql',
-              host: configService.get('DB_HOST'),
-              port: parseInt(configService.get('DB_PORT', '3306'), 10),
-              username: configService.get('DB_USERNAME'),
-              password: configService.get('DB_PASSWORD'),
-              database: configService.get('DB_NAME'),
-              entities: [User, Room],
-              synchronize: true,
-              dropSchema: true,
-              logging: false,
-              driver: require('mysql2'),
-              extra: {
-                connectionLimit: 10,
-                waitForConnections: true,
-                queueLimit: 0,
-                dateStrings: true,
-                timezone: 'local'
-              },
-              retryAttempts: 3,
-              retryDelay: 3000,
-              autoLoadEntities: true,
-              keepConnectionAlive: true
-            };
-            return config;
-          },
-          inject: [ConfigService],
-        }),
-        AppModule,
-      ],
-    })
-      .overrideProvider(JwtStrategy)
-      .useValue({
-        validate: async (payload: JwtPayload) => {
-          const user = await userRepository.findOne({ where: { id: payload.sub } });
-          if (!user) {
-            throw new Error('User not found');
-          }
-          return user;
-        },
-      })
-      .compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-
-    dataSource = moduleFixture.get(DataSource);
-    await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
-    await dataSource.query('SET SESSION time_zone = "+00:00"');
-
-    userRepository = moduleFixture.get(getRepositoryToken(User));
+    console.log('Starting room flow tests with enhanced cleanup...');
+    
+    try {
+      const setup = await initTestApp();
+      app = setup;
+      dataSource = app.get(DataSource);
+      
+      // Check database tables
+      await checkDatabaseTables(app);
+      
+      userRepository = app.get(getRepositoryToken(User));
+      
+      queryRunner = dataSource.createQueryRunner();
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+      
+      safetyTimeout = setTimeout(() => {
+        console.error('Test exceeded maximum duration!');
+        process.exit(1); // Force exit if tests hang
+      }, MAX_TEST_DURATION);
+    } catch (error) {
+      console.error('Setup error:', error);
+      throw error;
+    }
   }, 30000);
 
   afterAll(async () => {
+    // Clear the safety timeout
+    clearTimeout(safetyTimeout);
+    
+    // Close database connections and query runners
+    if (queryRunner && queryRunner.isReleased === false) {
+      await queryRunner.release();
+    }
+    
+    if (dataSource && dataSource.isInitialized) {
+      await dataSource.destroy();
+    }
+    
+    // Close the application
     if (app) {
       await app.close();
     }
   });
 
   beforeEach(async () => {
+    // Clean up tables before each test in the correct order
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 0');
-    await dataSource.query('TRUNCATE TABLE rooms');
-    await dataSource.query('TRUNCATE TABLE users');
+    await dataSource.query('DELETE FROM payments');
+    await dataSource.query('DELETE FROM bookings');
+    await dataSource.query('DELETE FROM refresh_tokens');
+    await dataSource.query('DELETE FROM users');
+    await dataSource.query('DELETE FROM rooms');
     await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
+    
+    queryRunner = dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+  });
+
+  afterEach(async () => {
+    if (queryRunner) {
+      await queryRunner.rollbackTransaction();
+      await queryRunner.release();
+    }
   });
 
   describe('Complete Room Flow', () => {

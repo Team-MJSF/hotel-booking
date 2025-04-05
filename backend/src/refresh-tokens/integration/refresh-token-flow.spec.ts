@@ -1,19 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import * as request from 'supertest';
-import { AppModule } from '../../app.module';
-import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { User, UserRole } from '../../users/entities/user.entity';
-import { Room } from '../../rooms/entities/room.entity';
-import { Booking } from '../entities/booking.entity';
-import { Payment } from '../../payments/entities/payment.entity';
-import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
-import { JwtService } from '@nestjs/jwt';
-import { ConfigService as NestConfigService } from '@nestjs/config';
-import * as path from 'path';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { DataSource, QueryRunner, Repository } from 'typeorm';
+import { AppModule } from '../../app.module';
 import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
+import { JwtService } from '@nestjs/jwt';
+import { getRepositoryToken } from '@nestjs/typeorm';
+import { User, UserRole } from '../../users/entities/user.entity';
+import * as path from 'path';
 
 // Maximum duration for the test
 const MAX_TEST_DURATION = 30000; // 30 seconds
@@ -92,37 +89,27 @@ async function checkDatabaseTables(app: INestApplication) {
   }
 }
 
-describe('Booking Flow Integration Tests', () => {
+const testUser = {
+  firstName: 'Test',
+  lastName: 'User',
+  email: 'test@example.com',
+  password: 'P@ssw0rd123!',
+  confirmPassword: 'P@ssw0rd123!',
+  phoneNumber: '+1234567890',
+  address: '123 Test St',
+  role: UserRole.USER
+};
+
+describe('Refresh Token Flow Integration Tests', () => {
   let app: INestApplication;
-  let userRepository: Repository<User>;
-  let jwtService: JwtService;
-  let configService: NestConfigService;
   let dataSource: DataSource;
   let queryRunner: QueryRunner;
-
-  const testUser = {
-    email: 'booking-flow-test@example.com',
-    password: 'password123',
-    confirmPassword: 'password123',
-    firstName: 'Test',
-    lastName: 'User',
-    role: UserRole.USER,
-    phoneNumber: '1234567890',
-    address: '123 Test St',
-  };
-
-  const testRoom = {
-    roomNumber: `101-${Date.now()}`,
-    type: 'DOUBLE',
-    pricePerNight: 100,
-    maxGuests: 2,
-    availabilityStatus: 'AVAILABLE',
-    description: 'Test room',
-    amenities: ['WiFi', 'TV'],
-  };
+  let jwtService: JwtService;
+  let userRepository: Repository<User>;
+  let configService: ConfigService;
 
   beforeAll(async () => {
-    console.log('Starting booking flow tests with enhanced cleanup...');
+    console.log('Starting refresh token flow tests with enhanced cleanup...');
     
     try {
       const setup = await initTestApp();
@@ -134,7 +121,7 @@ describe('Booking Flow Integration Tests', () => {
       
       userRepository = app.get(getRepositoryToken(User));
       jwtService = app.get(JwtService);
-      configService = app.get(NestConfigService);
+      configService = app.get(ConfigService);
       
       queryRunner = dataSource.createQueryRunner();
       await queryRunner.connect();
@@ -190,14 +177,12 @@ describe('Booking Flow Integration Tests', () => {
     }
   });
 
-  describe('Complete Booking Flow', () => {
-    let userToken: string;
-    let adminToken: string;
+  describe('Complete Refresh Token Flow', () => {
     let userId: number;
-    let roomId: number;
-    let bookingId: number;
+    let accessToken: string;
+    let refreshToken: string;
 
-    it('should complete the full booking flow', async () => {
+    it('should complete the full refresh token flow', async () => {
       // Step 1: Register a new user
       const registerResponse = await request(app.getHttpServer())
         .post('/auth/register')
@@ -206,7 +191,7 @@ describe('Booking Flow Integration Tests', () => {
 
       userId = registerResponse.body.id;
 
-      // Step 2: Login to get JWT token
+      // Step 2: Login to get JWT tokens
       const loginResponse = await request(app.getHttpServer())
         .post('/auth/login')
         .send({
@@ -215,60 +200,48 @@ describe('Booking Flow Integration Tests', () => {
         })
         .expect(201);
 
-      userToken = loginResponse.body.access_token;
+      accessToken = loginResponse.body.access_token;
+      refreshToken = loginResponse.body.refresh_token;
 
-      // Step 3: Create a room (as admin)
-      await userRepository.update({ id: userId }, { role: UserRole.ADMIN });
-      
-      // Get the updated user with tokenVersion
-      const updatedUser = await userRepository.findOne({ where: { id: userId } });
-      
-      adminToken = jwtService.sign(
-        { 
-          sub: userId, 
-          email: updatedUser.email,
-          role: updatedUser.role,
-          tokenVersion: updatedUser.tokenVersion
-        },
-        { secret: configService.get('JWT_SECRET') }
-      );
-
-      // Step 4: Create a room
-      const createRoomResponse = await request(app.getHttpServer())
-        .post('/rooms')
-        .set('Authorization', `Bearer ${adminToken}`)
-        .send(testRoom)
-        .expect(201);
-
-      roomId = createRoomResponse.body.id;
-
-      // Step 5: Create a booking
-      const createBookingResponse = await request(app.getHttpServer())
-        .post('/bookings')
-        .set('Authorization', `Bearer ${userToken}`)
-        .send({
-          userId,
-          roomId,
-          checkInDate: new Date(Date.now() + 86400000).toISOString(), // Tomorrow
-          checkOutDate: new Date(Date.now() + 172800000).toISOString(), // Day after tomorrow
-          numberOfGuests: 2,
-        })
-        .expect(201);
-
-      bookingId = createBookingResponse.body.bookingId;
-
-      // Step 6: Verify the booking was created
-      const verifyBookingResponse = await request(app.getHttpServer())
-        .get(`/bookings/${bookingId}`)
-        .set('Authorization', `Bearer ${userToken}`)
+      // Step 3: Use the access token to access a protected endpoint
+      const profileResponse = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${accessToken}`)
         .expect(200);
 
-      expect(verifyBookingResponse.body).toBeDefined();
-      expect(verifyBookingResponse.body.bookingId).toBe(bookingId);
-      expect(verifyBookingResponse.body.room.id).toBe(roomId);
-      expect(verifyBookingResponse.body.user.id).toBe(userId);
-      expect(verifyBookingResponse.body.status).toBe('pending');
-      expect(verifyBookingResponse.body.numberOfGuests).toBe(2);
+      expect(profileResponse.body).toBeDefined();
+      expect(profileResponse.body.id).toBe(userId);
+
+      // Step 4: Refresh the access token
+      const refreshResponse = await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refresh_token: refreshToken })
+        .expect(201);
+
+      const newAccessToken = refreshResponse.body.access_token;
+      const newRefreshToken = refreshResponse.body.refresh_token;
+
+      // Step 5: Use the new access token to access a protected endpoint
+      const newProfileResponse = await request(app.getHttpServer())
+        .get('/auth/profile')
+        .set('Authorization', `Bearer ${newAccessToken}`)
+        .expect(200);
+
+      expect(newProfileResponse.body).toBeDefined();
+      expect(newProfileResponse.body.id).toBe(userId);
+
+      // Step 6: Logout to invalidate the refresh token
+      await request(app.getHttpServer())
+        .post('/auth/logout')
+        .set('Authorization', `Bearer ${newAccessToken}`)
+        .send({ refresh_token: newRefreshToken })
+        .expect(200);
+
+      // Step 7: Try to refresh the token again (should fail)
+      await request(app.getHttpServer())
+        .post('/auth/refresh')
+        .send({ refresh_token: newRefreshToken })
+        .expect(401);
     });
   });
 }); 

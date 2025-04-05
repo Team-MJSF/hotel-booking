@@ -20,8 +20,9 @@ describe('CreateUserDto', () => {
       createUserDto.lastName = 'Doe';
       createUserDto.email = 'john@example.com';
       createUserDto.password = 'Password123!';
+      createUserDto.confirmPassword = 'Password123!';
       createUserDto.role = UserRole.USER;
-      createUserDto.phoneNumber = '+1234567890';
+      createUserDto.phoneNumber = '+12345678901';
       createUserDto.address = '123 Main St';
 
       const errors = await validate(createUserDto);
@@ -58,16 +59,17 @@ describe('CreateUserDto', () => {
       createUserDto.phoneNumber = '123';
       const phoneErrors = await validate(createUserDto);
       expect(phoneErrors).toHaveLength(1);
-      expect(phoneErrors[0].constraints).toHaveProperty('matches');
+      expect(phoneErrors[0].constraints).toHaveProperty('isPhoneNumber');
 
       // Missing required fields case
       createUserDto = new CreateUserDto();
       const missingFieldsErrors = await validate(createUserDto);
-      expect(missingFieldsErrors).toHaveLength(4);
+      expect(missingFieldsErrors).toHaveLength(5);
       expect(missingFieldsErrors.some(error => error.property === 'firstName')).toBe(true);
       expect(missingFieldsErrors.some(error => error.property === 'lastName')).toBe(true);
       expect(missingFieldsErrors.some(error => error.property === 'email')).toBe(true);
       expect(missingFieldsErrors.some(error => error.property === 'password')).toBe(true);
+      expect(missingFieldsErrors.some(error => error.property === 'confirmPassword')).toBe(true);
     });
   });
 

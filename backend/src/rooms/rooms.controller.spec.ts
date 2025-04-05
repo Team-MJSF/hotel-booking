@@ -1,9 +1,9 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { RoomsController } from './rooms.controller.js';
-import { RoomsService } from './rooms.service.js';
+import { RoomsController } from './rooms.controller';
+import { RoomsService } from './rooms.service';
 import { CreateRoomDto } from './dto/create-room.dto.js';
 import { UpdateRoomDto } from './dto/update-room.dto.js';
-import { Room, RoomType, AvailabilityStatus } from './entities/room.entity.js';
+import { Room, RoomType, AvailabilityStatus } from './entities/room.entity';
 import { ResourceNotFoundException, DatabaseException, ConflictException } from '../common/exceptions/hotel-booking.exception';
 import { SearchRoomsDto } from './dto/search-rooms.dto';
 

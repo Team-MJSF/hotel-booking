@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsEmail, MinLength, IsOptional, IsEnum, Matches } from 'class-validator';
+import { IsNotEmpty, IsString, IsEmail, MinLength, IsOptional, IsEnum, Matches, IsPhoneNumber, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { UserRole } from '../entities/user.entity';
 import { Transform } from 'class-transformer';
@@ -49,6 +49,14 @@ export class CreateUserDto {
     password: string;
 
   /**
+   * The user's confirm password
+   */
+  @ApiProperty({ description: 'The user\'s confirm password' })
+  @IsNotEmpty()
+  @IsString()
+    confirmPassword: string;
+
+  /**
    * The user's role
    */
   @ApiProperty({ description: 'The user\'s role', enum: UserRole, default: UserRole.USER })
@@ -67,10 +75,7 @@ export class CreateUserDto {
    */
   @ApiPropertyOptional({ description: 'The user\'s phone number' })
   @IsOptional()
-  @IsString()
-  @Matches(/^\+?[1-9]\d{9,14}$/, {
-    message: 'Phone number must be a valid international format (e.g., +1234567890)',
-  })
+  @IsPhoneNumber()
     phoneNumber?: string;
 
   /**
@@ -80,4 +85,12 @@ export class CreateUserDto {
   @IsOptional()
   @IsString()
     address?: string;
+
+  /**
+   * The user's token version
+   */
+  @ApiProperty({ description: 'The user\'s token version', required: false, default: 0 })
+  @IsNumber()
+  @IsOptional()
+    tokenVersion?: number;
 }

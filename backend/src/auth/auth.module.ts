@@ -8,16 +8,18 @@ import { UsersModule } from '../users/users.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { AdminGuard } from './guards/admin.guard';
+import { RefreshTokenModule } from '../refresh-tokens/refresh-token.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
+    RefreshTokenModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET', 'your-secret-key'),
-        signOptions: { expiresIn: '1d' },
+        signOptions: { expiresIn: '15m' }, // Access token expires in 15 minutes
       }),
       inject: [ConfigService],
     }),

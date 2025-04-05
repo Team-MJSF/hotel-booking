@@ -4,10 +4,13 @@ import {
   Column,
   OneToMany,
   Index,
+  CreateDateColumn,
+  UpdateDateColumn,
 } from 'typeorm';
 import { Booking } from '../../bookings/entities/booking.entity';
 import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
+import { RefreshToken } from '../../refresh-tokens/entities/refresh-token.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -49,7 +52,27 @@ export class User extends BaseEntity {
   @ApiProperty({ description: 'The user\'s address', required: false })
     address?: string;
 
+  @Column({ name: 'token_version', default: 0 })
+  @ApiProperty({ description: 'The version of the user\'s tokens', default: 0 })
+    tokenVersion: number;
+
+  @Column({ name: 'is_active', default: true })
+  @ApiProperty({ description: 'Whether the user account is active', default: true })
+    isActive: boolean;
+
   @OneToMany(() => Booking, (booking) => booking.user)
   @ApiProperty({ description: 'The bookings made by the user' })
     bookings: Booking[];
+
+  @OneToMany(() => RefreshToken, refreshToken => refreshToken.user)
+  @ApiProperty({ description: 'The refresh tokens associated with the user' })
+    refreshTokens: RefreshToken[];
+
+  @CreateDateColumn()
+  @ApiProperty({ description: 'The creation date of the user' })
+    createdAt: Date;
+
+  @UpdateDateColumn()
+  @ApiProperty({ description: 'The last update date of the user' })
+    updatedAt: Date;
 }

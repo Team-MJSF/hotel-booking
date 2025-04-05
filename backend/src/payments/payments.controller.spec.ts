@@ -35,13 +35,16 @@ describe('PaymentsController', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john@example.com',
-    password: 'hashedPassword',
+    password: 'password123',
     role: UserRole.USER,
     phoneNumber: '1234567890',
-    address: '123 Main St',
+    address: '123 Test St',
     bookings: [],
+    refreshTokens: [],
     createdAt: new Date(),
     updatedAt: new Date(),
+    tokenVersion: 0,
+    isActive: true
   };
 
   const mockBooking: Booking = {

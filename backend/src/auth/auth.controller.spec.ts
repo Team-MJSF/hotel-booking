@@ -3,11 +3,26 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { UnauthorizedException } from '@nestjs/common';
 import { ProfileDto } from './dto/profile.dto';
-import { UserRole } from '../users/entities/user.entity';
+import { UserRole, User } from '../users/entities/user.entity';
 
 describe('AuthController', () => {
   let controller: AuthController;
   let authService: AuthService;
+
+  const mockUser: User = {
+    id: 1,
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john@example.com',
+    password: 'password123',
+    role: UserRole.USER,
+    bookings: [],
+    refreshTokens: [],
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    tokenVersion: 0,
+    isActive: true
+  };
 
   const mockAuthService = {
     register: jest.fn(),
@@ -92,8 +107,6 @@ describe('AuthController', () => {
         expectedError, 
         assertions 
       } of testCases) {
-        console.log(`Testing: ${description}`);
-        
         if (mockError) {
           mockAuthService.register.mockRejectedValue(mockError);
         } else {
@@ -121,11 +134,11 @@ describe('AuthController', () => {
             email: 'test@example.com',
             password: 'password123',
           },
-          mockResult: { access_token: 'jwt-token' },
+          mockResult: { access_token: 'jwt-token', refresh_token: 'refresh-token' },
           mockError: null,
           expectedError: null,
           assertions: (result: Record<string, unknown>) => {
-            expect(result).toEqual({ access_token: 'jwt-token' });
+            expect(result).toEqual({ access_token: 'jwt-token', refresh_token: 'refresh-token' });
             expect(authService.login).toHaveBeenCalledWith({
               email: 'test@example.com',
               password: 'password123',
@@ -133,7 +146,7 @@ describe('AuthController', () => {
           }
         },
         {
-          description: 'throw UnauthorizedException for invalid credentials',
+          description: 'throw UnauthorizedException with invalid credentials',
           loginDto: {
             email: 'test@example.com',
             password: 'wrongpassword',
@@ -158,8 +171,6 @@ describe('AuthController', () => {
         expectedError, 
         assertions 
       } of testCases) {
-        console.log(`Testing: ${description}`);
-        
         if (mockError) {
           mockAuthService.login.mockRejectedValue(mockError);
         } else {
@@ -180,37 +191,36 @@ describe('AuthController', () => {
 
   describe('getProfile', () => {
     it('should handle getProfile operations correctly', async () => {
-      const mockUser = {
-        id: 1,
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john@example.com',
-        role: UserRole.USER,
-        password: 'hashedPassword',
-        bookings: [],
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      const expectedProfile: ProfileDto = {
-        id: mockUser.id,
-        firstName: mockUser.firstName,
-        lastName: mockUser.lastName,
-        email: mockUser.email,
-        role: mockUser.role,
-        createdAt: mockUser.createdAt,
-        updatedAt: mockUser.updatedAt,
-      };
-
       const testCases = [
         {
-          description: 'return the current user profile',
+          description: 'get user profile',
           user: mockUser,
-          mockResult: expectedProfile,
+          mockResult: {
+            id: 1,
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+            role: UserRole.USER,
+            phoneNumber: '1234567890',
+            address: '123 Test St',
+            createdAt: new Date(),
+            updatedAt: new Date()
+          },
           mockError: null,
           expectedError: null,
-          assertions: (result: ProfileDto) => {
-            expect(result).toEqual(expectedProfile);
-            expect(authService.getProfile).toHaveBeenCalledWith(mockUser.id);
+          assertions: (result: Record<string, unknown>) => {
+            expect(result).toEqual({
+              id: 1,
+              firstName: 'John',
+              lastName: 'Doe',
+              email: 'john@example.com',
+              role: UserRole.USER,
+              phoneNumber: '1234567890',
+              address: '123 Test St',
+              createdAt: expect.any(Date),
+              updatedAt: expect.any(Date)
+            });
+            expect(authService.getProfile).toHaveBeenCalledWith(1);
           }
         }
       ];
@@ -223,8 +233,6 @@ describe('AuthController', () => {
         expectedError, 
         assertions 
       } of testCases) {
-        console.log(`Testing: ${description}`);
-        
         if (mockError) {
           mockAuthService.getProfile.mockRejectedValue(mockError);
         } else {
