@@ -9,6 +9,15 @@ import { DataSource, QueryRunner } from 'typeorm';
 import * as path from 'path';
 import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 
+// Add type declaration for supertest
+declare module 'supertest' {
+  interface Test {
+    expect(status: number): this;
+    send(data: any): this;
+    set(field: string, val: string): this;
+  }
+}
+
 // Maximum duration for the test
 const MAX_TEST_DURATION = 30000; // 30 seconds
 let safetyTimeout: NodeJS.Timeout;

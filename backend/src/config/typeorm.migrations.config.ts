@@ -16,12 +16,43 @@ config({ path: envPath });
 
 // Flag for migration mode vs application mode
 const isMigrationMode = process.env.TYPEORM_MIGRATION_MODE === 'true';
-const entitiesDir = isMigrationMode
-  ? 'dist-migrations/src/**/entities/*.entity.js'
-  : 'dist/**/*.entity.js';
-const migrationsDir = isMigrationMode
-  ? 'dist-migrations/src/database/migrations/*.js'
-  : 'dist/src/database/migrations/*.js';
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Set paths based on environment
+const entitiesDir = isDevelopment
+  ? join(process.cwd(), 'src/**/*.entity.ts')
+  : join(process.cwd(), 'dist/**/*.entity.js');
+
+const migrationsDir = isDevelopment
+  ? join(process.cwd(), 'src/database/migrations/*.ts')
+  : join(process.cwd(), 'dist/src/database/migrations/*.js');
+
+// For CLI migrations
+const dataSource = new DataSource({
+  type: 'mysql',
+  host: process.env.DB_HOST,
+  port: +process.env.DB_PORT,
+  username: process.env.DB_USERNAME,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  entities: [entitiesDir],
+  migrations: [migrationsDir],
+  synchronize: false,
+  migrationsRun: false,
+  dropSchema: false,
+  logging: isDevelopment,
+});
+
+// Handle CLI arguments
+const args = process.argv.slice(2);
+if (args.includes('--create-db')) {
+  (async () => {
+    const configService = new ConfigService();
+    const config = await getTypeOrmConfig(configService);
+    await createDatabaseIfNotExists(config as MysqlConnectionOptions);
+    process.exit(0);
+  })();
+}
 
 /**
  * Create database if it doesn't exist
@@ -68,8 +99,6 @@ async function createDatabaseIfNotExists(options: MysqlConnectionOptions): Promi
  * This is used by TypeORM CLI for generating and running migrations
  */
 export async function getTypeOrmConfig(configService: ConfigService): Promise<DataSourceOptions> {
-  const isDevelopment = process.env.NODE_ENV === 'development';
-
   // Create database options
   const options: MysqlConnectionOptions = {
     type: 'mysql',
@@ -91,29 +120,4 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Da
   return options;
 }
 
-// Handle CLI arguments
-const args = process.argv.slice(2);
-if (args.includes('--create-db')) {
-  (async () => {
-    const configService = new ConfigService();
-    const config = await getTypeOrmConfig(configService);
-    await createDatabaseIfNotExists(config as MysqlConnectionOptions);
-    process.exit(0);
-  })();
-}
-
-// For CLI migrations
-export default new DataSource({
-  type: 'mysql',
-  host: process.env.DB_HOST,
-  port: +process.env.DB_PORT,
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  entities: [entitiesDir],
-  migrations: [migrationsDir],
-  synchronize: false,
-  migrationsRun: false,
-  dropSchema: false,
-  logging: process.env.NODE_ENV === 'development',
-});
+export default dataSource;

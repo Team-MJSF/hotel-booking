@@ -35,7 +35,7 @@ export class Seeder {
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_NAME,
-      entities: ['dist-migrations/src/**/entities/*.entity.js'],
+      entities: [join(process.cwd(), 'src/**/*.entity.ts')],
       synchronize: false,
     });
   }
