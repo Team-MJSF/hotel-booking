@@ -1,6 +1,6 @@
-import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex, TableForeignKey } from 'typeorm';
 
-export class CreateRefreshTokens1709913600004 implements MigrationInterface {
+export class CreateRefreshTokens1710090700000 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.createTable(
       new Table({
@@ -8,7 +8,7 @@ export class CreateRefreshTokens1709913600004 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'int',
+            type: 'integer',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
@@ -17,7 +17,10 @@ export class CreateRefreshTokens1709913600004 implements MigrationInterface {
             name: 'token',
             type: 'varchar',
             length: '255',
-            isNullable: false,
+          },
+          {
+            name: 'user_id',
+            type: 'integer',
           },
           {
             name: 'is_active',
@@ -26,66 +29,75 @@ export class CreateRefreshTokens1709913600004 implements MigrationInterface {
           },
           {
             name: 'expires_at',
-            type: 'timestamp',
+            type: 'datetime',
             isNullable: true,
-            default: null,
-          },
-          {
-            name: 'user_id',
-            type: 'int',
-            isNullable: false,
           },
           {
             name: 'created_at',
-            type: 'timestamp',
+            type: 'datetime',
             default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'updated_at',
-            type: 'timestamp',
+            type: 'datetime',
             default: 'CURRENT_TIMESTAMP',
-            onUpdate: 'CURRENT_TIMESTAMP',
-          },
-        ],
-        indices: [
-          {
-            name: 'IDX_REFRESH_TOKEN_USER',
-            columnNames: ['user_id'],
-          },
-          {
-            name: 'IDX_REFRESH_TOKEN_TOKEN',
-            columnNames: ['token'],
-            isUnique: true,
-          },
-          {
-            name: 'IDX_REFRESH_TOKEN_ACTIVE',
-            columnNames: ['is_active'],
           },
         ],
       }),
       true,
     );
 
+    // Add trigger for updated_at timestamp
+    await queryRunner.query(
+      `CREATE TRIGGER update_refresh_tokens_timestamp 
+       AFTER UPDATE ON refresh_tokens 
+       FOR EACH ROW 
+       BEGIN 
+         UPDATE refresh_tokens SET updated_at = CURRENT_TIMESTAMP WHERE id = OLD.id; 
+       END`
+    );
+
+    // Create foreign key to users
     await queryRunner.createForeignKey(
       'refresh_tokens',
       new TableForeignKey({
         name: 'FK_REFRESH_TOKENS_USER',
         columnNames: ['user_id'],
-        referencedColumnNames: ['user_id'],
         referencedTableName: 'users',
+        referencedColumnNames: ['user_id'],
         onDelete: 'CASCADE',
+      }),
+    );
+
+    // Create indexes
+    await queryRunner.createIndex(
+      'refresh_tokens',
+      new TableIndex({
+        name: 'IDX_REFRESH_TOKENS_USER',
+        columnNames: ['user_id'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'refresh_tokens',
+      new TableIndex({
+        name: 'IDX_REFRESH_TOKENS_TOKEN',
+        columnNames: ['token'],
       }),
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('refresh_tokens');
-    if (table) {
-      const foreignKey = table.foreignKeys.find(fk => fk.name === 'FK_REFRESH_TOKENS_USER');
-      if (foreignKey) {
-        await queryRunner.dropForeignKey('refresh_tokens', foreignKey);
-      }
-    }
+    // Drop triggers
+    await queryRunner.query(`DROP TRIGGER IF EXISTS update_refresh_tokens_timestamp`);
+
+    // Drop the table (will also drop foreign keys and indexes)
+    await queryRunner.dropTable('refresh_tokens');
+  }
+}
+
+
+    // Drop the table (will also drop foreign keys and indexes)
     await queryRunner.dropTable('refresh_tokens');
   }
 }

@@ -1,5 +1,6 @@
 import { ConfigService } from '@nestjs/config';
 import { TypeOrmModuleOptions } from '@nestjs/typeorm';
+import { join } from 'path';
 
 /**
  * Get TypeORM configuration options for the application module
@@ -8,20 +9,27 @@ import { TypeOrmModuleOptions } from '@nestjs/typeorm';
 export async function getTypeOrmConfig(
   configService: ConfigService,
 ): Promise<TypeOrmModuleOptions> {
+  // Define base directory for better path resolution
+  const baseDir = join(__dirname, '..');
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  
+  // Check if we're running in "no migrations" mode
+  const skipMigrations = process.env.SKIP_MIGRATIONS === 'true';
+  
   const options: TypeOrmModuleOptions = {
-    type: 'mysql',
-    host: configService.get<string>('DB_HOST'),
-    port: configService.get<number>('DB_PORT'),
-    username: configService.get<string>('DB_USERNAME'),
-    password: configService.get<string>('DB_PASSWORD'),
-    database: configService.get<string>('DB_NAME'),
-    entities: ['dist/**/*.entity.js'],
-    // Never use synchronize in any environment - always use migrations
-    synchronize: false,
-    // Run migrations when explicitly requested through the CLI
-    migrationsRun: false,
-    logging: process.env.NODE_ENV === 'development',
+    type: 'sqlite',
+    database: join(process.cwd(), 'data', 'hotel_booking_dev.sqlite'),
+    entities: [
+      join(baseDir, '**', '*.entity.{ts,js}'),
+      'dist/**/*.entity.js'
+    ],
+    // Enable synchronize for development or when migrations are skipped
+    synchronize: isDevelopment || skipMigrations,
+    // Disable migrations when in "no migrations" mode
+    migrationsRun: !skipMigrations && false,
+    logging: isDevelopment,
     entitySkipConstructor: true,
+    autoLoadEntities: true,
   };
 
   return options;

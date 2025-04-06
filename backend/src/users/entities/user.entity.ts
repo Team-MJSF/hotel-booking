@@ -40,7 +40,7 @@ export class User extends BaseEntity {
   @ApiProperty({ description: 'The hashed password of the user' })
   password: string;
 
-  @Column({ name: 'role', type: 'enum', enum: UserRole, default: UserRole.USER })
+  @Column({ name: 'role', type: 'varchar', length: 10 })
   @ApiProperty({ description: 'The role of the user', enum: UserRole })
   role: UserRole;
 

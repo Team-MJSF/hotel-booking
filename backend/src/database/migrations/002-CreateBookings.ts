@@ -1,4 +1,4 @@
-import { MigrationInterface, QueryRunner, Table, TableIndex } from 'typeorm';
+import { MigrationInterface, QueryRunner, Table, TableIndex, TableForeignKey } from 'typeorm';
 
 export class CreateBookings1709913600002 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
@@ -8,33 +8,36 @@ export class CreateBookings1709913600002 implements MigrationInterface {
         columns: [
           {
             name: 'booking_id',
-            type: 'int',
+            type: 'integer',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
           },
           {
             name: 'user_id',
-            type: 'int',
+            type: 'integer',
           },
           {
             name: 'room_id',
-            type: 'int',
+            type: 'integer',
           },
           {
             name: 'check_in_date',
             type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'check_out_date',
             type: 'datetime',
-            default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'number_of_guests',
-            type: 'int',
-            isNullable: true,
+            type: 'integer',
+          },
+          {
+            name: 'status',
+            type: 'varchar',
+            length: '20',
+            default: "'pending'",
           },
           {
             name: 'special_requests',
@@ -42,24 +45,18 @@ export class CreateBookings1709913600002 implements MigrationInterface {
             isNullable: true,
           },
           {
-            name: 'status',
-            type: 'enum',
-            enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-            default: `'pending'`,
-          },
-          {
             name: 'created_at',
-            type: 'timestamp',
+            type: 'datetime',
             default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'updated_at',
-            type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'deleted_at',
-            type: 'timestamp',
+            type: 'datetime',
             isNullable: true,
           },
         ],
@@ -67,12 +64,79 @@ export class CreateBookings1709913600002 implements MigrationInterface {
       true,
     );
 
-    // Create indexes for bookings
+    // Add trigger for updated_at
+    await queryRunner.query(
+      `CREATE TRIGGER update_bookings_timestamp 
+       AFTER UPDATE ON bookings 
+       FOR EACH ROW 
+       BEGIN 
+         UPDATE bookings SET updated_at = CURRENT_TIMESTAMP WHERE booking_id = OLD.booking_id; 
+       END`
+    );
+
+    // Add CHECK constraints for status using triggers
+    await queryRunner.query(
+      `CREATE TRIGGER check_booking_status
+       BEFORE INSERT ON bookings
+       FOR EACH ROW
+       BEGIN
+         SELECT CASE
+           WHEN NEW.status NOT IN ('pending', 'confirmed', 'cancelled', 'completed') THEN
+             RAISE(ABORT, 'Invalid booking status')
+         END;
+       END`
+    );
+
+    await queryRunner.query(
+      `CREATE TRIGGER check_booking_status_update
+       BEFORE UPDATE ON bookings
+       FOR EACH ROW
+       WHEN NEW.status IS NOT OLD.status
+       BEGIN
+         SELECT CASE
+           WHEN NEW.status NOT IN ('pending', 'confirmed', 'cancelled', 'completed') THEN
+             RAISE(ABORT, 'Invalid booking status')
+         END;
+       END`
+    );
+
+    // Create foreign keys
+    await queryRunner.createForeignKey(
+      'bookings',
+      new TableForeignKey({
+        name: 'FK_BOOKINGS_USER',
+        columnNames: ['user_id'],
+        referencedTableName: 'users',
+        referencedColumnNames: ['user_id'],
+        onDelete: 'CASCADE',
+      }),
+    );
+
+    await queryRunner.createForeignKey(
+      'bookings',
+      new TableForeignKey({
+        name: 'FK_BOOKINGS_ROOM',
+        columnNames: ['room_id'],
+        referencedTableName: 'rooms',
+        referencedColumnNames: ['room_id'],
+        onDelete: 'CASCADE',
+      }),
+    );
+
+    // Create indexes
     await queryRunner.createIndex(
       'bookings',
       new TableIndex({
-        name: 'IDX_BOOKINGS_DATES',
-        columnNames: ['check_in_date', 'check_out_date'],
+        name: 'IDX_BOOKINGS_USER',
+        columnNames: ['user_id'],
+      }),
+    );
+
+    await queryRunner.createIndex(
+      'bookings',
+      new TableIndex({
+        name: 'IDX_BOOKINGS_ROOM',
+        columnNames: ['room_id'],
       }),
     );
 
@@ -87,56 +151,46 @@ export class CreateBookings1709913600002 implements MigrationInterface {
     await queryRunner.createIndex(
       'bookings',
       new TableIndex({
-        name: 'IDX_BOOKINGS_USER_STATUS',
-        columnNames: ['user_id', 'status'],
+        name: 'IDX_BOOKINGS_DATES',
+        columnNames: ['check_in_date', 'check_out_date'],
       }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'IDX_BOOKINGS_ROOM_STATUS',
-        columnNames: ['room_id', 'status'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'IDX_BOOKINGS_ACTIVE',
-        columnNames: ['status'],
-      }),
-    );
-
-    // Add foreign key constraints
-    await queryRunner.query(
-      'ALTER TABLE `bookings` ADD CONSTRAINT `FK_9154ba42728899ce737b81fb694` FOREIGN KEY (`user_id`) REFERENCES `users`(`user_id`) ON DELETE CASCADE',
-    );
-    await queryRunner.query(
-      'ALTER TABLE `bookings` ADD CONSTRAINT `FK_9643fa98c94e908f6ea51f0c559` FOREIGN KEY (`room_id`) REFERENCES `rooms`(`room_id`) ON DELETE CASCADE',
     );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('bookings');
-    if (table) {
-      const indices = table.indices.filter(index =>
-        [
-          'IDX_BOOKINGS_DATES',
-          'IDX_BOOKINGS_STATUS',
-          'IDX_BOOKINGS_USER_STATUS',
-          'IDX_BOOKINGS_ROOM_STATUS',
-          'IDX_BOOKINGS_ACTIVE',
-        ].includes(index.name),
-      );
-      await Promise.all(indices.map(index => queryRunner.dropIndex('bookings', index)));
-    }
-    await queryRunner.query(
-      'ALTER TABLE `bookings` DROP FOREIGN KEY `FK_9643fa98c94e908f6ea51f0c559`',
+    // Drop triggers
+    await queryRunner.query(`DROP TRIGGER IF EXISTS update_bookings_timestamp`);
+    await queryRunner.query(`DROP TRIGGER IF EXISTS check_booking_status`);
+    await queryRunner.query(`DROP TRIGGER IF EXISTS check_booking_status_update`);
+
+    // Drop the table (will also drop foreign keys, indexes, and constraints)
+    await queryRunner.dropTable('bookings');
+  }
+}
+
+      'bookings',
+      new TableIndex({
+        name: 'IDX_BOOKINGS_STATUS',
+        columnNames: ['status'],
+      }),
     );
-    await queryRunner.query(
-      'ALTER TABLE `bookings` DROP FOREIGN KEY `FK_9154ba42728899ce737b81fb694`',
+
+    await queryRunner.createIndex(
+      'bookings',
+      new TableIndex({
+        name: 'IDX_BOOKINGS_DATES',
+        columnNames: ['check_in_date', 'check_out_date'],
+      }),
     );
+  }
+
+  public async down(queryRunner: QueryRunner): Promise<void> {
+    // Drop triggers
+    await queryRunner.query(`DROP TRIGGER IF EXISTS update_bookings_timestamp`);
+    await queryRunner.query(`DROP TRIGGER IF EXISTS check_booking_status`);
+    await queryRunner.query(`DROP TRIGGER IF EXISTS check_booking_status_update`);
+
+    // Drop the table (will also drop foreign keys, indexes, and constraints)
     await queryRunner.dropTable('bookings');
   }
 }

@@ -27,7 +27,7 @@ export enum PaymentMethod {
 @Index('IDX_PAYMENTS_STATUS', ['status'])
 export class Payment extends BaseEntity {
   @PrimaryGeneratedColumn({ name: 'payment_id' })
-  @ApiProperty({ description: 'The unique identifier of the payment' })
+  @ApiProperty({ description: 'Unique identifier for the payment' })
   paymentId: number;
 
   @OneToOne(() => Booking, booking => booking.payment)
@@ -41,9 +41,8 @@ export class Payment extends BaseEntity {
 
   @Column({
     name: 'currency',
-    type: 'enum',
-    enum: Currency,
-    default: Currency.USD,
+    type: 'varchar',
+    length: 3,
   })
   @ApiProperty({
     description: 'The currency code for the payment',
@@ -53,9 +52,8 @@ export class Payment extends BaseEntity {
 
   @Column({
     name: 'payment_method',
-    type: 'enum',
-    enum: PaymentMethod,
-    default: PaymentMethod.CREDIT_CARD,
+    type: 'varchar',
+    length: 20,
   })
   @ApiProperty({ description: 'The method used for payment', enum: PaymentMethod })
   paymentMethod: PaymentMethod;
@@ -66,9 +64,8 @@ export class Payment extends BaseEntity {
 
   @Column({
     name: 'status',
-    type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
+    type: 'varchar',
+    length: 20,
   })
   @ApiProperty({ description: 'The current status of the payment', enum: PaymentStatus })
   status: PaymentStatus;

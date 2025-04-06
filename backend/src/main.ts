@@ -5,9 +5,20 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import helmet from 'helmet';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as cookieParser from 'cookie-parser';
 
 export async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  
+  // Ensure the SQLite data directory exists before starting
+  const dataDir = path.join(process.cwd(), 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    logger.log(`Created data directory: ${dataDir}`);
+  }
+  
   const app = await NestFactory.create(AppModule);
 
   // Enable Helmet for security headers
@@ -18,8 +29,14 @@ export async function bootstrap() {
     }),
   );
 
+  // Enable cookie parser
+  app.use(cookieParser());
+
   // Enable CORS
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN || '*',
+    credentials: true,
+  });
 
   // Enable validation pipes globally
   app.useGlobalPipes(

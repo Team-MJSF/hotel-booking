@@ -20,7 +20,7 @@ export class RefreshToken {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
-  @Column({ name: 'expires_at', nullable: true, type: 'timestamp' })
+  @Column({ name: 'expires_at', nullable: true, type: 'datetime' })
   expiresAt: Date;
 
   @ManyToOne(() => User, user => user.refreshTokens)

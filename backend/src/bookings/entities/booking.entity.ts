@@ -21,56 +21,56 @@ export enum BookingStatus {
 }
 
 @Entity('bookings')
-@Index('IDX_BOOKINGS_DATES', ['checkInDate', 'checkOutDate'])
+@Index('IDX_BOOKINGS_USER', ['user'])
+@Index('IDX_BOOKINGS_ROOM', ['room'])
 @Index('IDX_BOOKINGS_STATUS', ['status'])
-@Index('IDX_BOOKINGS_USER_STATUS', ['user', 'status'])
-@Index('IDX_BOOKINGS_ROOM_STATUS', ['room', 'status'])
-@Index('IDX_BOOKINGS_ACTIVE', ['status'])
+@Index('IDX_BOOKINGS_DATES', ['checkInDate', 'checkOutDate'])
 export class Booking extends BaseEntity {
-  @ApiProperty({ description: 'The unique identifier of the booking' })
   @PrimaryGeneratedColumn({ name: 'booking_id' })
+  @ApiProperty({ description: 'Unique identifier for the booking' })
   bookingId: number;
 
+  @ManyToOne(() => User, user => user.bookings)
+  @JoinColumn({ name: 'user_id' })
+  @ApiProperty({ description: 'The user who made the booking' })
+  user: User;
+
+  @ManyToOne(() => Room, room => room.bookings)
+  @JoinColumn({ name: 'room_id' })
+  @ApiProperty({ description: 'The room associated with the booking' })
+  room: Room;
+
+  @Column({ name: 'check_in_date', type: 'datetime' })
   @ApiProperty({ description: 'The check-in date for the booking' })
-  @Column({ name: 'check_in_date' })
   checkInDate: Date;
 
+  @Column({ name: 'check_out_date', type: 'datetime' })
   @ApiProperty({ description: 'The check-out date for the booking' })
-  @Column({ name: 'check_out_date' })
   checkOutDate: Date;
 
+  @Column({ name: 'number_of_guests' })
   @ApiProperty({ description: 'The number of guests for the booking' })
-  @Column({ name: 'number_of_guests', nullable: true })
-  numberOfGuests?: number;
+  numberOfGuests: number;
 
-  @ApiProperty({ description: 'Special requests or notes for the booking' })
-  @Column({ name: 'special_requests', nullable: true })
-  specialRequests?: string;
-
+  @Column({
+    name: 'status',
+    type: 'varchar',
+    length: 20,
+  })
   @ApiProperty({
     description: 'The current status of the booking',
     enum: BookingStatus,
-    default: BookingStatus.PENDING,
-  })
-  @Column({
-    name: 'status',
-    type: 'enum',
-    enum: BookingStatus,
-    default: BookingStatus.PENDING,
   })
   status: BookingStatus;
 
-  @ApiProperty({ description: 'The user who made the booking' })
-  @ManyToOne(() => User, user => user.bookings)
-  @JoinColumn({ name: 'user_id' })
-  user: User;
+  @Column({ name: 'special_requests', nullable: true })
+  @ApiProperty({
+    description: 'Any special requests for the booking',
+    required: false,
+  })
+  specialRequests?: string;
 
-  @ApiProperty({ description: 'The room being booked' })
-  @ManyToOne(() => Room, room => room.bookings)
-  @JoinColumn({ name: 'room_id' })
-  room: Room;
-
+  @OneToOne(() => Payment, payment => payment.booking, { nullable: true })
   @ApiProperty({ description: 'The payment associated with this booking' })
-  @OneToOne(() => Payment, payment => payment.booking)
   payment: Payment;
 }
