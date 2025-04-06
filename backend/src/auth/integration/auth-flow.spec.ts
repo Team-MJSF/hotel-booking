@@ -13,7 +13,7 @@ import { getTypeOrmConfig } from '../../config/typeorm.migrations.config';
 declare module 'supertest' {
   interface Test {
     expect(status: number): this;
-    send(data: any): this;
+    send(data: Record<string, unknown>): this;
     set(field: string, val: string): this;
   }
 }
