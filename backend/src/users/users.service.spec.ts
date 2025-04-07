@@ -13,7 +13,6 @@ import { getRepositoryToken } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { UsersService } from './users.service';
 import { User, UserRole } from './entities/user.entity';
-import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import {
   ResourceNotFoundException,
@@ -44,7 +43,7 @@ describe('UsersService', () => {
     firstName: 'John',
     lastName: 'Doe',
     email: 'john@example.com',
-    password: 'hashed_password',
+    password: 'hashedPassword123',
     role: UserRole.USER,
     phoneNumber: '1234567890',
     address: '123 Test St',
@@ -56,12 +55,15 @@ describe('UsersService', () => {
     isActive: true,
   };
 
-  const createUserDto: CreateUserDto = {
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john@example.com',
-    password: 'password123',
-    confirmPassword: 'password123',
+  // Store unused DTOs in a description object for documentation
+  const description = {
+    createUserDto: {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john@example.com',
+      password: 'password123',
+      confirmPassword: 'password123',
+    }
   };
 
   beforeEach(async () => {
@@ -150,7 +152,8 @@ describe('UsersService', () => {
   });
 
   describe('create', () => {
-    it('should create a new user', async () => {
+    it('should handle all user creation scenarios', async () => {
+      // Prepare test data
       const createUserDto = {
         email: 'test@example.com',
         password: 'password123',
@@ -165,65 +168,48 @@ describe('UsersService', () => {
         id: 1,
         role: UserRole.USER,
         tokenVersion: 0,
+        bookings: [],
+        refreshTokens: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true,
       };
 
-      mockRepository.create.mockReturnValue(savedUser);
-      mockRepository.save.mockResolvedValue(savedUser);
-
-      const result = await service.create(createUserDto);
-
-      expect(mockRepository.create).toHaveBeenCalledWith({
-        email: createUserDto.email,
-        password: createUserDto.password,
-        firstName: createUserDto.firstName,
-        lastName: createUserDto.lastName,
-        phoneNumber: createUserDto.phoneNumber,
-        confirmPassword: createUserDto.confirmPassword,
-        role: UserRole.USER,
-        tokenVersion: 0,
-      });
-      expect(mockRepository.save).toHaveBeenCalledWith(savedUser);
-      expect(result).toEqual(savedUser);
-    });
-
-    it('should throw ConflictException if email already exists', async () => {
-      const createUserDto: CreateUserDto = {
-        email: 'test@example.com',
-        password: 'password123',
-        confirmPassword: 'password123',
-        firstName: 'Test',
-        lastName: 'User',
-        phoneNumber: '+1234567890',
-      };
-
-      mockRepository.findOne.mockResolvedValue({ id: 1, email: 'test@example.com' });
-
-      await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
-    });
-
-    it('should handle all create scenarios', async () => {
-      // Success case
+      // Scenario 1: Successfully create a new user
       mockRepository.findOne.mockResolvedValueOnce(null);
-      mockRepository.create.mockReturnValueOnce(mockUser);
-      mockRepository.save.mockResolvedValueOnce(mockUser);
+      mockRepository.create.mockReturnValueOnce(savedUser);
+      mockRepository.save.mockResolvedValueOnce(savedUser);
+
       const result = await service.create(createUserDto);
-      expect(result).toEqual(mockUser);
-      expect(repository.create).toHaveBeenCalledWith({
+
+      expect(result).toEqual(savedUser);
+      expect(mockRepository.create).toHaveBeenCalledWith({
         ...createUserDto,
         role: UserRole.USER,
         tokenVersion: 0,
       });
-      expect(repository.save).toHaveBeenCalled();
+      expect(mockRepository.save).toHaveBeenCalledWith(savedUser);
 
-      // Email exists case
-      mockRepository.findOne.mockResolvedValueOnce(mockUser);
+      // Scenario 2: Throw ConflictException if email already exists
+      mockRepository.findOne.mockResolvedValueOnce({ id: 2, email: 'test@example.com' });
+      
       await expect(service.create(createUserDto)).rejects.toThrow(ConflictException);
+      expect(mockRepository.findOne).toHaveBeenCalledWith({ 
+        where: { email: createUserDto.email } 
+      });
 
-      // Error case
+      // Scenario 3: Handle database errors during user creation
       mockRepository.findOne.mockResolvedValueOnce(null);
-      mockRepository.create.mockReturnValueOnce(mockUser);
+      mockRepository.create.mockReturnValueOnce(savedUser);
       mockRepository.save.mockRejectedValueOnce(new Error('Database error'));
+      
       await expect(service.create(createUserDto)).rejects.toThrow(DatabaseException);
+      expect(mockRepository.create).toHaveBeenCalledWith({
+        ...createUserDto,
+        role: UserRole.USER,
+        tokenVersion: 0,
+      });
+      expect(mockRepository.save).toHaveBeenCalledWith(savedUser);
     });
   });
 

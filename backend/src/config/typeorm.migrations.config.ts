@@ -93,11 +93,3 @@ export default new DataSource({
   dropSchema: false,
   logging: process.env.NODE_ENV === 'development',
 });
-
-  entities: [entitiesDir],
-  migrations: [migrationsDir],
-  synchronize: false,
-  migrationsRun: false,
-  dropSchema: false,
-  logging: process.env.NODE_ENV === 'development',
-});

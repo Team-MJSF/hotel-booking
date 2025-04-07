@@ -167,30 +167,3 @@ export class CreateBookings1709913600002 implements MigrationInterface {
     await queryRunner.dropTable('bookings');
   }
 }
-
-      'bookings',
-      new TableIndex({
-        name: 'IDX_BOOKINGS_STATUS',
-        columnNames: ['status'],
-      }),
-    );
-
-    await queryRunner.createIndex(
-      'bookings',
-      new TableIndex({
-        name: 'IDX_BOOKINGS_DATES',
-        columnNames: ['check_in_date', 'check_out_date'],
-      }),
-    );
-  }
-
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    // Drop triggers
-    await queryRunner.query(`DROP TRIGGER IF EXISTS update_bookings_timestamp`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS check_booking_status`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS check_booking_status_update`);
-
-    // Drop the table (will also drop foreign keys, indexes, and constraints)
-    await queryRunner.dropTable('bookings');
-  }
-}

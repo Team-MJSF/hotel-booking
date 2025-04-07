@@ -16,8 +16,24 @@ const db = new Database(dbPath);
 // Enable foreign keys
 db.run('PRAGMA foreign_keys = ON');
 
-console.log(`Connected to SQLite database at: ${dbPath}`);
-console.log('Setting up database schema...');
+// Using logger to manage console output to easily disable in production if needed
+const logger = {
+  log: (message: string): void => {
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(message);
+    }
+  },
+  error: (message: string, error?: unknown): void => {
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(message, error || '');
+    }
+  }
+};
+
+logger.log(`Connected to SQLite database at: ${dbPath}`);
+logger.log('Setting up database schema...');
 
 function createUsersTable(): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -43,7 +59,7 @@ function createUsersTable(): Promise<void> {
         reject(err);
         return;
       }
-      console.log('Users table created or already exists');
+      logger.log('Users table created or already exists');
       resolve();
     });
   });
@@ -72,7 +88,7 @@ function createRoomsTable(): Promise<void> {
         reject(err);
         return;
       }
-      console.log('Rooms table created or already exists');
+      logger.log('Rooms table created or already exists');
       resolve();
     });
   });
@@ -103,7 +119,7 @@ function createBookingsTable(): Promise<void> {
         reject(err);
         return;
       }
-      console.log('Bookings table created or already exists');
+      logger.log('Bookings table created or already exists');
       resolve();
     });
   });
@@ -129,7 +145,7 @@ function createRefreshTokensTable(): Promise<void> {
         reject(err);
         return;
       }
-      console.log('Refresh tokens table created or already exists');
+      logger.log('Refresh tokens table created or already exists');
       resolve();
     });
   });
@@ -158,57 +174,55 @@ function createPaymentsTable(): Promise<void> {
         reject(err);
         return;
       }
-      console.log('Payments table created or already exists');
+      logger.log('Payments table created or already exists');
       resolve();
     });
   });
 }
 
-async function seedAdminUser(): Promise<void> {
-  return new Promise(async (resolve, reject) => {
+function seedAdminUser(): Promise<void> {
+  return new Promise((resolve, reject) => {
     // Check if admin user already exists
-    db.get("SELECT * FROM users WHERE email = 'admin@hotel.com'", async (err, row) => {
+    db.get("SELECT * FROM users WHERE email = 'admin@hotel.com'", (err, row) => {
       if (err) {
         reject(err);
         return;
       }
       
       if (row) {
-        console.log('Admin user already exists');
+        logger.log('Admin user already exists');
         resolve();
         return;
       }
       
-      // Hash password
-      try {
-        const hashedPassword = await bcrypt.hash('Admin@123', 10);
-        
-        // Insert admin user
-        const sql = `
-          INSERT INTO users (email, password, first_name, last_name, role, phone_number, address, is_active)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `;
-        
-        db.run(sql, [
-          'admin@hotel.com',
-          hashedPassword,
-          'Admin',
-          'User',
-          'admin',
-          '+1234567890',
-          '123 Admin Street, Admin City',
-          1
-        ], function(err) {
-          if (err) {
-            reject(err);
-            return;
-          }
-          console.log(`Admin user created with ID: ${this.lastID}`);
-          resolve();
-        });
-      } catch (error) {
-        reject(error);
-      }
+      // Hash password and insert user
+      bcrypt.hash('Admin@123', 10)
+        .then(hashedPassword => {
+          // Insert admin user
+          const sql = `
+            INSERT INTO users (email, password, first_name, last_name, role, phone_number, address, is_active)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `;
+          
+          db.run(sql, [
+            'admin@hotel.com',
+            hashedPassword,
+            'Admin',
+            'User',
+            'admin',
+            '+1234567890',
+            '123 Admin Street, Admin City',
+            1
+          ], function(this: { lastID: number }, err) {
+            if (err) {
+              reject(err);
+              return;
+            }
+            logger.log(`Admin user created with ID: ${this.lastID}`);
+            resolve();
+          });
+        })
+        .catch(error => reject(error));
     });
   });
 }
@@ -221,9 +235,9 @@ async function setupDatabase(): Promise<void> {
     await createRefreshTokensTable();
     await createPaymentsTable();
     await seedAdminUser();
-    console.log('Database setup completed successfully');
+    logger.log('Database setup completed successfully');
   } catch (error) {
-    console.error('Error setting up database:', error);
+    logger.error('Error setting up database:', error);
   } finally {
     db.close();
   }

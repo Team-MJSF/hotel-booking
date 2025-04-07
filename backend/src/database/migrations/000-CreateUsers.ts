@@ -141,19 +141,3 @@ export class CreateUsers1709913600000 implements MigrationInterface {
     await queryRunner.dropTable('users');
   }
 }
-
-        isUnique: true,
-      }),
-    );
-  }
-
-  public async down(queryRunner: QueryRunner): Promise<void> {
-    // Drop triggers
-    await queryRunner.query(`DROP TRIGGER IF EXISTS update_users_timestamp`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS check_user_role`);
-    await queryRunner.query(`DROP TRIGGER IF EXISTS check_user_role_update`);
-
-    // Drop the table (will also drop indexes and constraints)
-    await queryRunner.dropTable('users');
-  }
-}

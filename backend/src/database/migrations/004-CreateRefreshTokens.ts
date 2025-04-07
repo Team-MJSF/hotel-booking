@@ -95,9 +95,3 @@ export class CreateRefreshTokens1710090700000 implements MigrationInterface {
     await queryRunner.dropTable('refresh_tokens');
   }
 }
-
-
-    // Drop the table (will also drop foreign keys and indexes)
-    await queryRunner.dropTable('refresh_tokens');
-  }
-}

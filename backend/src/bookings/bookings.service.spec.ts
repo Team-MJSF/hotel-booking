@@ -185,6 +185,7 @@ describe('BookingsService', () => {
         ...validBookingDto,
         user: mockUser,
         room: mockRoom,
+        status: BookingStatus.PENDING,
       });
       expect(bookingRepository.save).toHaveBeenCalled();
 

@@ -37,6 +37,7 @@
           "varsIgnorePattern": "^description$",
           "argsIgnorePattern": "^(_|description)$"
         }],
+        "@typescript-eslint/no-namespace": "off",
         "no-console": "off"
       }
     }

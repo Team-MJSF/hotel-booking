@@ -104,6 +104,14 @@ export class Room extends BaseEntity {
   availabilityStatus: AvailabilityStatus;
 
   @OneToMany(() => Booking, booking => booking.room)
-  @ApiProperty({ description: 'The bookings associated with this room' })
+  @ApiProperty({ 
+    description: 'The bookings associated with this room',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {}
+    },
+    required: false
+  })
   bookings: Booking[];
 }

@@ -33,12 +33,33 @@ const baseConfig: JestConfigWithTsJest = {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.spec.ts',
-    '!src/**/*.test.ts'
+    '!src/**/*.test.ts',
+    // Exclude infrastructure files
+    '!src/**/*.module.ts',
+    '!src/main.ts',
+    '!src/database/migrations/**',
+    '!src/config/**',
+    '!src/database/test-utils.ts',
+    '!src/database/quick-seed.ts',
+    '!src/common/filters/**',
+    '!**/decorators/**',
+    '!**/node_modules/**',
+    // Exclude entity files from coverage
+    '!src/**/*.entity.ts'
   ],
   // Coverage directory
   coverageDirectory: 'coverage',
   // Coverage reporters
   coverageReporters: ['text', 'lcov'],
+  // Coverage thresholds
+  coverageThreshold: {
+    global: {
+      statements: 80,
+      branches: 70,
+      functions: 80,
+      lines: 80,
+    }
+  },
   // Test environment setup
   testEnvironmentOptions: {
     url: 'http://localhost',

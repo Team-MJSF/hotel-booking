@@ -8,8 +8,8 @@ import { PaymentsModule } from './payments/payments.module';
 import { AuthModule } from './auth/auth.module';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
-import { getTypeOrmConfig } from './config/typeorm.app.config';
 import { DataSource } from 'typeorm';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -26,8 +26,14 @@ import { DataSource } from 'typeorm';
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: async (configService: ConfigService) => {
-        return await getTypeOrmConfig(configService);
+      useFactory: async (_configService: ConfigService) => {
+        return {
+          type: 'sqlite',
+          database: join(process.cwd(), 'data', 'hotel_booking_dev.sqlite'),
+          autoLoadEntities: true,
+          synchronize: process.env.NODE_ENV === 'development',
+          logging: process.env.NODE_ENV === 'development',
+        };
       },
     }),
     AuthModule,
@@ -50,12 +56,7 @@ export class AppModule implements OnModuleInit {
   async onModuleInit() {
     // Only run this for SQLite connections
     if (this.dataSource.options.type === 'sqlite') {
-      try {
-        await this.dataSource.query('PRAGMA foreign_keys = ON;');
-        console.log('SQLite foreign keys support enabled');
-      } catch (error) {
-        console.error('Failed to enable SQLite foreign keys:', error);
-      }
+      await this.dataSource.query('PRAGMA foreign_keys=ON;');
     }
   }
 }

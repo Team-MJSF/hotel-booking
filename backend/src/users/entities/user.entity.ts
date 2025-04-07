@@ -61,11 +61,27 @@ export class User extends BaseEntity {
   isActive: boolean;
 
   @OneToMany(() => Booking, booking => booking.user)
-  @ApiProperty({ description: 'The bookings made by the user' })
+  @ApiProperty({ 
+    description: 'The bookings made by the user',
+    type: 'array',
+    items: { 
+      type: 'object',
+      properties: {} 
+    },
+    required: false 
+  })
   bookings: Booking[];
 
   @OneToMany(() => RefreshToken, refreshToken => refreshToken.user)
-  @ApiProperty({ description: 'The refresh tokens associated with the user' })
+  @ApiProperty({ 
+    description: 'The refresh tokens associated with the user',
+    type: 'array',
+    items: { 
+      type: 'object',
+      properties: {} 
+    },
+    required: false 
+  })
   refreshTokens: RefreshToken[];
 
   @CreateDateColumn()

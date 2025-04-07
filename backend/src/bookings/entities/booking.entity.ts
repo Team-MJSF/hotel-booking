@@ -32,12 +32,26 @@ export class Booking extends BaseEntity {
 
   @ManyToOne(() => User, user => user.bookings)
   @JoinColumn({ name: 'user_id' })
-  @ApiProperty({ description: 'The user who made the booking' })
+  @ApiProperty({ 
+    description: 'The user who made the booking',
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      email: { type: 'string' }
+    }
+  })
   user: User;
 
   @ManyToOne(() => Room, room => room.bookings)
   @JoinColumn({ name: 'room_id' })
-  @ApiProperty({ description: 'The room associated with the booking' })
+  @ApiProperty({ 
+    description: 'The room associated with the booking',
+    type: 'object',
+    properties: {
+      id: { type: 'number' },
+      roomNumber: { type: 'string' }
+    }
+  })
   room: Room;
 
   @Column({ name: 'check_in_date', type: 'datetime' })
@@ -71,6 +85,14 @@ export class Booking extends BaseEntity {
   specialRequests?: string;
 
   @OneToOne(() => Payment, payment => payment.booking, { nullable: true })
-  @ApiProperty({ description: 'The payment associated with this booking' })
+  @ApiProperty({ 
+    description: 'The payment associated with this booking',
+    type: 'object',
+    properties: {
+      paymentId: { type: 'number' },
+      amount: { type: 'number' }
+    },
+    required: false
+  })
   payment: Payment;
 }
