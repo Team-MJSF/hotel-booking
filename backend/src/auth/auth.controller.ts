@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, HttpCode } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, HttpCode, Patch, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -19,6 +19,7 @@ import { LoginResponseDto } from '../refresh-tokens/dto/login-response.dto';
 import { RefreshTokenRequestDto } from '../refresh-tokens/dto/refresh-token-request.dto';
 import { RefreshTokenResponseDto } from '../refresh-tokens/dto/refresh-token-response.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { UpdateUserDto } from '../users/dto/update-user.dto';
 
 @ApiTags('Authentication')
 @ApiExtraModels(
@@ -284,5 +285,130 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not Found - User not found' })
   async getProfile(@CurrentUser() user: User): Promise<ProfileDto> {
     return this.authService.getProfile(user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch('profile')
+  @ApiBearerAuth('JWT-auth')
+  @ApiOperation({
+    summary: 'Update current user profile',
+    description: 'Updates the profile information of the currently authenticated user',
+  })
+  @ApiBody({
+    description: 'User profile update data',
+    examples: {
+      basic: {
+        summary: 'Basic profile update',
+        value: {
+          firstName: 'Updated',
+          lastName: 'Name',
+        },
+      },
+      withOptional: {
+        summary: 'Update with optional fields',
+        value: {
+          firstName: 'Updated',
+          lastName: 'Name',
+          phoneNumber: '+1234567890',
+          address: '123 Main St, City, Country',
+        },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Profile updated successfully',
+    type: ProfileDto,
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
+  @ApiResponse({ status: 404, description: 'Not Found - User not found' })
+  async updateProfile(@CurrentUser() user: User, @Body() updateUserDto: UpdateUserDto): Promise<ProfileDto> {
+    // Update the user with the provided data
+    await this.authService.updateUser(user.id, updateUserDto);
+    
+    // Return the updated profile
+    return this.authService.getProfile(user.id);
+  }
+
+  /**
+   * Mock endpoint for requesting a password reset
+   * This is just a mock implementation that doesn't actually send emails
+   */
+  @Post('request-password-reset')
+  @ApiOperation({
+    summary: 'Request password reset (mock)',
+    description: 'Mock endpoint that simulates requesting a password reset email',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        email: { type: 'string', example: 'user@example.com' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset request processed',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Password reset email sent (mocked)' },
+      },
+    },
+  })
+  @HttpCode(200)
+  async requestPasswordReset(@Body('email') email: string) {
+    // Check if the user exists, but don't reveal this information in the response
+    await this.authService.mockRequestPasswordReset(email);
+    
+    // Always return success to prevent email enumeration
+    return { message: 'Password reset email sent (mocked)' };
+  }
+
+  /**
+   * Mock endpoint for resetting a password with a token
+   * This is just a mock implementation that doesn't actually change passwords
+   */
+  @Post('reset-password')
+  @ApiOperation({
+    summary: 'Reset password with token (mock)',
+    description: 'Mock endpoint that simulates resetting a password with a token',
+  })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        token: { type: 'string', example: 'reset-token-123' },
+        password: { type: 'string', example: 'NewPassword123!' },
+        confirmPassword: { type: 'string', example: 'NewPassword123!' },
+      },
+    },
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Password reset successful',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Password has been reset (mocked)' },
+      },
+    },
+  })
+  @ApiResponse({ status: 400, description: 'Bad request - Invalid input' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid or expired token' })
+  @HttpCode(200)
+  async resetPassword(
+    @Body() resetPasswordData: { token: string; password: string; confirmPassword: string },
+  ) {
+    // Check for password match
+    if (resetPasswordData.password !== resetPasswordData.confirmPassword) {
+      throw new UnauthorizedException('Passwords do not match');
+    }
+    
+    // Mock verification of token and password reset
+    await this.authService.mockResetPassword(resetPasswordData.token, resetPasswordData.password);
+    
+    return { message: 'Password has been reset (mocked)' };
   }
 }

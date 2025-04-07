@@ -85,6 +85,7 @@ export class PaymentsService {
       const payment = this.paymentsRepository.create({
         ...createPaymentDto,
         booking,
+        status: createPaymentDto.status || PaymentStatus.PENDING,
       });
 
       return await this.paymentsRepository.save(payment);

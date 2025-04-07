@@ -94,6 +94,7 @@ export class BookingsService {
         ...createBookingDto,
         user,
         room,
+        status: BookingStatus.PENDING,
       });
 
       return await this.bookingsRepository.save(booking);

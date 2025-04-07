@@ -5,7 +5,6 @@ A NestJS-based backend for a hotel booking system with authentication, room mana
 ## Prerequisites
 
 - Node.js (v16 or higher)
-- MySQL (v8.0 or higher)
 - npm
 
 ## Features
@@ -24,7 +23,7 @@ A NestJS-based backend for a hotel booking system with authentication, room mana
 - NestJS - Web framework
 - TypeScript - Programming language
 - TypeORM - Database ORM
-- MySQL - Database
+- SQLite - Database
 - JWT - Authentication
 - Passport - Authentication middleware
 - Bcrypt - Password hashing
@@ -148,11 +147,7 @@ PORT=5000
 NODE_ENV=development
 
 # Database Configuration
-DB_HOST=localhost
-DB_PORT=3306
-DB_USERNAME=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=hotel_booking_dev
+DB_NAME=data/hotel_booking_dev.sqlite
 ```
 
 ## Project Structure
@@ -231,13 +226,15 @@ These guides provide in-depth information about each API endpoint, including req
 
 ## Database Configuration
 
-The project uses TypeORM with MySQL. Different configurations are available:
+The project uses TypeORM with SQLite. Different configurations are available:
 
 - **Development**: Used for local development
 - **Test**: Used for running tests (automatically resets between test runs)
 - **Production**: Used for production deployment
 
-Migrations are handled automatically and can be run with the appropriate scripts.
+You can run with or without migrations:
+- Standard approach: Uses migrations for database versioning
+- No-migrations approach: Uses TypeORM's auto schema synchronization (development only)
 
 ## Note for School Project
 

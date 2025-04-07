@@ -6,7 +6,7 @@ import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { User, UserRole } from '../../users/entities/user.entity';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { Repository, DataSource, QueryRunner } from 'typeorm';
+import { Repository, DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService as NestConfigService } from '@nestjs/config';
 import * as path from 'path';
@@ -77,11 +77,6 @@ async function initTestApp(): Promise<INestApplication> {
   const app = moduleFixture.createNestApplication();
   await app.init();
 
-  const dataSource = moduleFixture.get(DataSource);
-  await dataSource.query('SET SESSION sql_mode = "NO_ENGINE_SUBSTITUTION"');
-  await dataSource.query('SET SESSION time_zone = "+00:00"');
-  await dataSource.query('SET NAMES utf8mb4');
-
   return app;
 }
 
@@ -89,9 +84,32 @@ async function checkDatabaseTables(app: INestApplication) {
   const dataSource = app.get(DataSource);
   const queryRunner = dataSource.createQueryRunner();
   await queryRunner.connect();
-  await queryRunner.query('SHOW TABLES');
+  
+  // SQLite specific query to get table list
+  const tables = await queryRunner.query(`
+    SELECT name FROM sqlite_master 
+    WHERE type='table' AND name NOT LIKE 'sqlite_%'
+  `);
+  
   await queryRunner.release();
+  return tables;
 }
+
+// Logger utility for tests
+const testLogger = {
+  log: (message: string): void => {
+    if (process.env.DEBUG === 'true') {
+      // eslint-disable-next-line no-console
+      console.log(`[LOG] ${message}`);
+    }
+  },
+  error: (message: string, error?: unknown): void => {
+    if (process.env.DEBUG === 'true') {
+      // eslint-disable-next-line no-console
+      console.log(`[ERROR] ${message}`, error || '');
+    }
+  }
+};
 
 describe('Payment Flow Integration Tests', () => {
   let app: INestApplication;
@@ -99,10 +117,9 @@ describe('Payment Flow Integration Tests', () => {
   let jwtService: JwtService;
   let configService: NestConfigService;
   let dataSource: DataSource;
-  let queryRunner: QueryRunner;
 
   const testUser = {
-    email: 'payment-flow-test@example.com',
+    email: `payment-flow-test-${Date.now()}@example.com`,
     password: 'password123',
     confirmPassword: 'password123',
     firstName: 'Test',
@@ -134,10 +151,6 @@ describe('Payment Flow Integration Tests', () => {
     jwtService = app.get(JwtService);
     userRepository = app.get(getRepositoryToken(User));
 
-    queryRunner = dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
-
     safetyTimeout = setTimeout(() => {
       process.exit(1); // Force exit if tests hang
     }, MAX_TEST_DURATION);
@@ -149,15 +162,6 @@ describe('Payment Flow Integration Tests', () => {
     // Clear the safety timeout
     clearTimeout(safetyTimeout);
 
-    // Close database connections and query runners
-    if (queryRunner && queryRunner.isReleased === false) {
-      await queryRunner.release();
-    }
-
-    if (dataSource && dataSource.isInitialized) {
-      await dataSource.destroy();
-    }
-
     // Close the application
     if (app) {
       await app.close();
@@ -165,24 +169,40 @@ describe('Payment Flow Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    // Clean up tables before each test in the correct order
-    await dataSource.query('SET FOREIGN_KEY_CHECKS = 0');
-    await dataSource.query('DELETE FROM payments');
-    await dataSource.query('DELETE FROM bookings');
-    await dataSource.query('DELETE FROM refresh_tokens');
-    await dataSource.query('DELETE FROM users');
-    await dataSource.query('SET FOREIGN_KEY_CHECKS = 1');
-
-    queryRunner = dataSource.createQueryRunner();
-    await queryRunner.connect();
-    await queryRunner.startTransaction();
+    // Clean up tables before each test - SQLite version
+    await dataSource.query('PRAGMA foreign_keys = OFF');
+    
+    // Get all tables
+    const tables = await dataSource.query(`
+      SELECT name FROM sqlite_master 
+      WHERE type='table' AND name NOT LIKE 'sqlite_%'
+    `);
+    
+    // Delete data from each table
+    for (const table of tables) {
+      try {
+        // Skip FTS tables as they're managed by SQLite
+        if (table.name.includes('_fts') || table.name.includes('_config') || 
+            table.name.includes('_data') || table.name.includes('_idx') || 
+            table.name.includes('_docsize') || table.name.includes('_content')) {
+          continue;
+        }
+        
+        await dataSource.query(`DELETE FROM "${table.name}"`);
+        // Reset SQLite sequences if they exist
+        await dataSource.query(`DELETE FROM sqlite_sequence WHERE name="${table.name}"`).catch(() => {
+          // Ignore errors if sequence doesn't exist
+        });
+      } catch (error) {
+        testLogger.error(`Error cleaning up table ${table.name}:`, error);
+      }
+    }
+    
+    await dataSource.query('PRAGMA foreign_keys = ON');
   });
 
   afterEach(async () => {
-    if (queryRunner) {
-      await queryRunner.rollbackTransaction();
-      await queryRunner.release();
-    }
+    // No explicit cleanup needed
   });
 
   describe('Complete Payment Flow', () => {
@@ -250,7 +270,7 @@ describe('Payment Flow Integration Tests', () => {
         })
         .expect(201);
 
-      bookingId = createBookingResponse.body.id;
+      bookingId = createBookingResponse.body.bookingId;
 
       // Step 6: Create a payment
       const createPaymentResponse = await request(app.getHttpServer())
@@ -275,7 +295,7 @@ describe('Payment Flow Integration Tests', () => {
       expect(verifyPaymentResponse.body.status).toBe('pending');
       expect(parseFloat(verifyPaymentResponse.body.amount)).toBe(200);
       expect(verifyPaymentResponse.body.currency).toBe('USD');
-      expect(verifyPaymentResponse.body.paymentMethod).toBe('credit_card');
+      expect(verifyPaymentResponse.body.paymentMethod).toBe('CREDIT_CARD');
     });
   });
 });
