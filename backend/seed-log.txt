@@ -1,4 +1,4 @@
-Seed started at 2025-04-07T01:29:35.188Z
+Seed started at 2025-04-08T15:40:45.200Z
 Connected to database
 users table exists
 rooms table exists
@@ -6,20 +6,11 @@ bookings table exists
 payments table exists
 refresh_tokens table exists
 Seeding users...
-Added user: admin@example.com (admin)
-Added user: user@example.com (user)
+Found 3 existing users - skipping seeding
 Seeding rooms...
-Added room 101 (single)
-Added room 201 (double)
-Added room 301 (suite)
-Added room 401 (deluxe)
+Found 4 existing rooms - skipping seeding
 Seeding bookings...
-Added booking for Room 1 (pending)
-Added booking for Room 2 (confirmed)
-Added payment for booking 2 (pending)
-Added booking for Room 3 (completed)
-Added payment for booking 3 (completed)
-Added booking for Room 4 (cancelled)
+Found 4 existing bookings - skipping seeding
 Seed completed successfully!
 Database connection closed
-Seed completed at 2025-04-07T01:29:35.331Z
+Seed completed at 2025-04-08T15:40:45.205Z

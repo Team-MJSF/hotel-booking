@@ -1,26 +1,118 @@
-@import "tailwindcss";
+@tailwind base; @tailwind components; @tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* Basic styles */
+body {
+  @apply text-gray-900 bg-gray-50;
+  font-feature-settings: "rlig" 1, "calt" 1;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Add animations for the enhanced homepage */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-450 {
+  animation-delay: 450ms;
+}
+
+@layer components {
+  /* Hotel layout components */
+  .hotel-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .hotel-section {
+    @apply py-16;
+  }
+  
+  /* Typography components */
+  .hotel-heading {
+    @apply text-3xl font-serif font-bold text-gray-900;
+  }
+  
+  .hotel-subheading {
+    @apply text-xl font-serif text-gray-700;
+  }
+  
+  /* UI components */
+  .hotel-card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-lg;
+  }
+  
+  .hotel-button {
+    @apply bg-yellow-500 text-white px-6 py-3 rounded font-medium transition-colors duration-300 hover:bg-yellow-600;
+  }
+  
+  .hotel-button-primary {
+    @apply bg-blue-700 text-white px-6 py-3 rounded font-medium transition-colors duration-300 hover:bg-blue-800;
+  }
+  
+  .hotel-input {
+    @apply px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+  
+  /* Visual effects */
+  .hotel-hero {
+    @apply relative bg-cover bg-center py-32 text-white;
+  }
+  
+  .hotel-hero::before {
+    content: '';
+    @apply absolute inset-0 bg-black bg-opacity-40 z-0;
+  }
+  
+  .hotel-gradient-bg {
+    background: linear-gradient(135deg, #1d4ed8 0%, #eab308 100%);
+  }
+  
+  .luxury-text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* New styles for enhanced design */
+  .aspect-w-4 {
+    position: relative;
+    padding-bottom: calc(var(--tw-aspect-h) / var(--tw-aspect-w) * 100%);
+    --tw-aspect-w: 4;
+  }
+  
+  .aspect-h-3 {
+    --tw-aspect-h: 3;
+  }
+  
+  .aspect-w-4 > * {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
 }

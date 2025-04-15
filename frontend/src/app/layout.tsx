@@ -1,13 +1,18 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import Providers from "@/providers";
+import { Inter } from 'next/font/google';
+import './globals.css';
+import type { Metadata } from 'next';
+import { AuthProvider } from '@/context/AuthContext';
+import MainLayout from '@/components/layout/MainLayout';
 
-const inter = Inter({ subsets: ["latin"] });
+// Initialize the Inter font
+const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-sans',
+});
 
 export const metadata: Metadata = {
-  title: "Hotel Booking - Find Your Perfect Stay",
-  description: "Book luxury hotel rooms at affordable prices",
+  title: 'Grand Plaza Hotel - Luxury Accommodations',
+  description: 'Experience luxury and comfort at Grand Plaza Hotel. Book your stay with us today.',
 };
 
 export default function RootLayout({
@@ -18,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <AuthProvider>
+          <MainLayout>
+            {children}
+          </MainLayout>
+        </AuthProvider>
       </body>
     </html>
   );
