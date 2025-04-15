@@ -1,15 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Mail, Lock } from 'lucide-react';
+import { Mail, Lock, CheckCircle } from 'lucide-react';
+import { debugApi } from '@/services/api';
+
+// Expose debug tools to window for browser console access
+if (typeof window !== 'undefined') {
+  (window as any).hotelBookingDebug = {
+    ...debugApi,
+    checkAuthStatus: () => {
+      const token = localStorage.getItem('token');
+      console.log('Auth token in localStorage:', !!token);
+      return !!token;
+    }
+  };
+}
 
 // Define form schema using Zod
 const loginSchema = z.object({
@@ -23,8 +36,17 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export default function LoginPage() {
   const { login } = useAuth();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Check for registered=true query parameter
+  useEffect(() => {
+    if (searchParams.get('registered') === 'true') {
+      setSuccessMessage('Registration successful! Please log in with your new account.');
+    }
+  }, [searchParams]);
 
   // Initialize form
   const {
@@ -44,6 +66,7 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       setError(null);
+      setSuccessMessage(null);
 
       const result = await login(data.email, data.password);
 
@@ -51,7 +74,7 @@ export default function LoginPage() {
         router.push('/');
         router.refresh();
       } else {
-        setError(result.message || 'Invalid credentials. Please try again.');
+        setError(typeof result.message === 'string' ? result.message : 'Invalid credentials. Please try again.');
       }
     } catch (err) {
       setError('An unexpected error occurred. Please try again.');
@@ -72,10 +95,18 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Success message */}
+          {successMessage && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-md text-sm flex items-start">
+              <CheckCircle className="h-5 w-5 mr-2 flex-shrink-0 mt-0.5" />
+              <span>{successMessage}</span>
+            </div>
+          )}
+
           {/* Error display */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
-              {error}
+              {String(error)}
             </div>
           )}
 

@@ -9,7 +9,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { Mail, Lock, User } from 'lucide-react';
+import { Mail, Lock, User, Wifi } from 'lucide-react';
+import { authService } from '@/services/api';
 
 // Define form schema using Zod
 const registerSchema = z.object({
@@ -29,8 +30,11 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 export default function RegisterPage() {
   const { register: registerUser } = useAuth();
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<string | React.ReactNode | null>(null);
+  const [debugInfo, setDebugInfo] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<{ success: boolean; message: string } | null>(null);
+  const [isTestingConnection, setIsTestingConnection] = useState(false);
 
   // Initialize form
   const {
@@ -48,27 +52,72 @@ export default function RegisterPage() {
     },
   });
 
+  // Test API connection
+  const testConnection = async () => {
+    try {
+      setIsTestingConnection(true);
+      setDebugInfo("Testing connection to backend API...");
+      
+      const result = await authService.testConnection();
+      
+      setConnectionStatus(result);
+      setDebugInfo(prev => `${prev}\nConnection test result: ${JSON.stringify(result)}`);
+    } catch (error) {
+      console.error('Connection test error:', error);
+      setConnectionStatus({
+        success: false,
+        message: 'Connection test failed with an unexpected error'
+      });
+      setDebugInfo(prev => `${prev}\nConnection test error: ${JSON.stringify(error)}`);
+    } finally {
+      setIsTestingConnection(false);
+    }
+  };
+
   // Handle form submission
   const onSubmit = async (data: RegisterFormValues) => {
     try {
       setIsLoading(true);
       setError(null);
+      setDebugInfo(`Attempting to register user: ${data.email}`);
 
-      const result = await registerUser({
+      const userData = {
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
         password: data.password,
-      });
+        confirmPassword: data.confirmPassword,
+      };
+
+      setDebugInfo(prev => `${prev}\nSending data to API...`);
+      
+      const result = await registerUser(userData);
+
+      setDebugInfo(prev => `${prev}\nAPI Response: ${JSON.stringify(result)}`);
 
       if (result.success) {
         router.push('/login?registered=true');
       } else {
-        setError(result.message || 'Registration failed. Please try again.');
+        // Check if it's an email already exists error
+        if (result.message && result.message.includes('Email already exists')) {
+          setError(
+            <div>
+              <p>{result.message}</p>
+              <p className="mt-2">
+                <Link href="/login" className="text-primary hover:text-primary-dark font-medium">
+                  Go to login page
+                </Link>
+              </p>
+            </div>
+          );
+        } else {
+          setError(result.message || 'Registration failed. Please try again.');
+        }
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
       console.error('Registration error:', err);
+      setError('An unexpected error occurred. Please try again.');
+      setDebugInfo(prev => `${prev}\nError: ${JSON.stringify(err)}`);
     } finally {
       setIsLoading(false);
     }
@@ -85,10 +134,40 @@ export default function RegisterPage() {
             </p>
           </div>
 
+          {/* Display API URL for debugging */}
+          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-sm">
+            <div className="flex justify-between items-center">
+              <span>API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}</span>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={testConnection} 
+                isLoading={isTestingConnection}
+                className="ml-4 bg-blue-100 border-blue-300 hover:bg-blue-200"
+              >
+                <Wifi className="h-4 w-4 mr-2" />
+                Test Connection
+              </Button>
+            </div>
+            
+            {connectionStatus && (
+              <div className={`mt-2 p-2 rounded ${connectionStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {connectionStatus.message}
+              </div>
+            )}
+          </div>
+
           {/* Error display */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
               {error}
+            </div>
+          )}
+
+          {/* Debug information (development only) */}
+          {debugInfo && process.env.NODE_ENV !== 'production' && (
+            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 text-gray-800 rounded-md text-sm font-mono whitespace-pre-wrap">
+              {debugInfo}
             </div>
           )}
 

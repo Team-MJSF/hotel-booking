@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
+import { RoomCard } from '@/components/ui/RoomCard';
 import { RoomType } from '@/types';
 import { roomService } from '@/services/api';
-import { formatPrice } from '@/lib/utils';
-import { Bed, Users, ArrowDown, ArrowUp, Search, Wifi, Tv, ShowerHead, Utensils } from 'lucide-react';
+import { Search } from 'lucide-react';
 
 // Temporary room types data while API integration is pending
 const dummyRoomTypes: RoomType[] = [
@@ -277,69 +275,14 @@ export default function RoomsPage() {
         {!loading && roomTypes.length > 0 && (
           <div className="grid grid-cols-1 gap-8">
             {roomTypes.map((room) => (
-              <div key={room.id} className="bg-white rounded-lg shadow-md overflow-hidden">
-                <div className="grid grid-cols-1 md:grid-cols-3">
-                  <div className="relative h-64 md:h-auto">
-                    <Image
-                      src={roomImages[room.id] || '/images/room-placeholder.jpg'}
-                      alt={room.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="p-6 col-span-2">
-                    <div className="flex flex-col h-full">
-                      <div>
-                        <div className="flex justify-between items-start">
-                          <h2 className="text-2xl font-bold text-gray-900">{room.name}</h2>
-                          <p className="text-xl font-bold text-primary">{formatPrice(room.pricePerNight)}<span className="text-sm font-normal text-gray-500"> / night</span></p>
-                        </div>
-                        <p className="text-gray-600 mt-2 mb-4">{room.description}</p>
-                        
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-800">
-                            <Bed className="h-4 w-4 mr-1" /> Comfortable Beds
-                          </span>
-                          <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-800">
-                            <Users className="h-4 w-4 mr-1" /> Sleeps {room.capacity}
-                          </span>
-                          <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-800">
-                            <Wifi className="h-4 w-4 mr-1" /> Free Wi-Fi
-                          </span>
-                          <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-800">
-                            <Tv className="h-4 w-4 mr-1" /> Smart TV
-                          </span>
-                          <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-800">
-                            <ShowerHead className="h-4 w-4 mr-1" /> Luxury Bathroom
-                          </span>
-                          <span className="inline-flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm text-gray-800">
-                            <Utensils className="h-4 w-4 mr-1" /> Breakfast
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="mt-auto flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-                        <Link href={`/room-details/${room.id}`}>
-                          <Button variant="outline">View Details</Button>
-                        </Link>
-                        
-                        <Link 
-                          href={{
-                            pathname: `/booking/${room.id}`,
-                            query: {
-                              checkIn: checkInDate,
-                              checkOut: checkOutDate,
-                              guests,
-                            },
-                          }}
-                        >
-                          <Button>Book Now</Button>
-                        </Link>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              <RoomCard 
+                key={room.id} 
+                room={{ ...room, image: roomImages[room.id] }}
+                mode="detailed"
+                checkInDate={checkInDate}
+                checkOutDate={checkOutDate}
+                guests={guests}
+              />
             ))}
           </div>
         )}

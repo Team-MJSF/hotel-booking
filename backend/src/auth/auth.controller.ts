@@ -87,7 +87,12 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request - Invalid input data' })
   @ApiResponse({ status: 409, description: 'Conflict - Email already exists' })
   async register(@Body() registerDto: RegisterDto) {
-    return this.authService.register(registerDto);
+    const user = await this.authService.register(registerDto);
+    return {
+      success: true,
+      data: user,
+      message: 'Registration successful'
+    };
   }
 
   @Post('create-admin')

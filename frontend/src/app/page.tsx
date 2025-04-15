@@ -6,6 +6,7 @@ import Image from 'next/image';
 import { Button } from '@/components/ui/Button';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { ChevronRight, Star, Utensils, Wifi, ShowerHead, Tv, MapPin, Calendar, Users } from 'lucide-react';
+import { RoomCard } from '@/components/ui/RoomCard';
 
 // Sample room types for the homepage
 const featuredRoomTypes = [
@@ -16,6 +17,8 @@ const featuredRoomTypes = [
     pricePerNight: 29900, // in cents
     capacity: 2,
     image: '/images/deluxe-suite.jpg',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: '2',
@@ -24,6 +27,8 @@ const featuredRoomTypes = [
     pricePerNight: 19900, // in cents
     capacity: 2,
     image: '/images/executive-room.jpg',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
   {
     id: '3',
@@ -32,6 +37,8 @@ const featuredRoomTypes = [
     pricePerNight: 34900, // in cents
     capacity: 4,
     image: '/images/family-suite.jpg',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
@@ -112,29 +119,9 @@ export default function Home() {
         <div className="bg-white rounded-xl shadow-2xl -mt-20 backdrop-blur-md border border-gray-100 overflow-hidden">
           <div className="p-2 md:p-6">
             <form className="grid grid-cols-1 md:grid-cols-12 gap-4">
-              <div className="md:col-span-4 lg:col-span-5 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                <div className="flex items-center">
-                  <MapPin className="h-5 w-5 text-primary mr-3" />
-                  <div className="flex-1">
-                    <label htmlFor="location" className="block text-xs text-gray-500 uppercase font-medium mb-1">
-                      Location
-                    </label>
-                    <select
-                      id="location"
-                      className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:outline-none focus:ring-0"
-                      defaultValue="grand-plaza"
-                    >
-                      <option value="grand-plaza">Grand Plaza Hotel</option>
-                      <option value="downtown">Downtown Location</option>
-                      <option value="airport">Airport Location</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-
-              <div className="md:col-span-6 lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center">
+              <div className="md:col-span-8 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="py-2 px-4 bg-gray-50 rounded-lg border border-gray-100 h-[68px] flex items-center">
+                  <div className="flex items-center w-full">
                     <Calendar className="h-5 w-5 text-primary mr-3" />
                     <div className="flex-1">
                       <label htmlFor="check-in" className="block text-xs text-gray-500 uppercase font-medium mb-1">
@@ -153,8 +140,8 @@ export default function Home() {
                   </div>
                 </div>
 
-                <div className="p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center">
+                <div className="py-2 px-4 bg-gray-50 rounded-lg border border-gray-100 h-[68px] flex items-center">
+                  <div className="flex items-center w-full">
                     <Calendar className="h-5 w-5 text-primary mr-3" />
                     <div className="flex-1">
                       <label htmlFor="check-out" className="block text-xs text-gray-500 uppercase font-medium mb-1">
@@ -174,9 +161,9 @@ export default function Home() {
                 </div>
               </div>
 
-              <div className="md:col-span-2 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-4">
-                <div className="sm:col-span-1 md:col-span-2 p-4 bg-gray-50 rounded-lg border border-gray-100">
-                  <div className="flex items-center">
+              <div className="md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-4">
+                <div className="sm:col-span-1 md:col-span-2 py-2 px-4 bg-gray-50 rounded-lg border border-gray-100 h-[68px] flex items-center">
+                  <div className="flex items-center w-full">
                     <Users className="h-5 w-5 text-primary mr-3" />
                     <div className="flex-1">
                       <label htmlFor="guests" className="block text-xs text-gray-500 uppercase font-medium mb-1">
@@ -301,69 +288,11 @@ export default function Home() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {featuredRoomTypes.map((room) => (
-              <div key={room.id} className="group relative bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-2">
-                <div className="relative h-64 w-full overflow-hidden">
-          <Image
-                    src={room.image}
-                    alt={room.name}
-                    fill
-                    className="object-cover transition-transform duration-700 group-hover:scale-110"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
-                  <div className="absolute bottom-4 left-4 right-4">
-                    <span className="bg-yellow-500 text-white text-xs font-bold uppercase tracking-wider rounded-full px-3 py-1">
-                      {room.capacity} {room.capacity > 1 ? 'Guests' : 'Guest'}
-                    </span>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  <div className="flex justify-between items-start mb-2">
-                    <h3 className="text-xl font-bold text-gray-900">{room.name}</h3>
-                    <div className="text-right">
-                      <p className="text-primary font-bold text-xl">{formatPrice(room.pricePerNight)}</p>
-                      <p className="text-gray-500 text-sm">per night</p>
-                    </div>
-                  </div>
-                  
-                  <p className="text-gray-600 mb-4 line-clamp-2">{room.description}</p>
-                  
-                  <div className="flex flex-wrap gap-2 mb-6">
-                    <span className="inline-flex items-center bg-gray-100 px-2.5 py-1 rounded-full text-sm text-gray-800">
-                      <Wifi className="h-3 w-3 mr-1" /> WiFi
-                    </span>
-                    <span className="inline-flex items-center bg-gray-100 px-2.5 py-1 rounded-full text-sm text-gray-800">
-                      <Utensils className="h-3 w-3 mr-1" /> Breakfast
-                    </span>
-                    <span className="inline-flex items-center bg-gray-100 px-2.5 py-1 rounded-full text-sm text-gray-800">
-                      <ShowerHead className="h-3 w-3 mr-1" /> Luxury Bath
-                    </span>
-                    <span className="inline-flex items-center bg-gray-100 px-2.5 py-1 rounded-full text-sm text-gray-800">
-                      <Tv className="h-3 w-3 mr-1" /> Smart TV
-                    </span>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
-                    <Link href={`/room-details/${room.id}`} className="w-full">
-                      <Button 
-                        variant="outline" 
-                        fullWidth 
-                        className="border-gray-300 hover:bg-gray-900 hover:text-white hover:border-gray-900"
-                      >
-                        Details
-                      </Button>
-                    </Link>
-                    <Link href={{
-                      pathname: '/booking',
-                      query: { room: room.id }
-                    }} className="w-full">
-                      <Button fullWidth className="bg-primary hover:bg-primary-dark">
-                        Book Now
-                      </Button>
-                    </Link>
-                  </div>
-                </div>
-              </div>
+              <RoomCard 
+                key={room.id} 
+                room={room}
+                mode="compact"
+              />
             ))}
           </div>
           

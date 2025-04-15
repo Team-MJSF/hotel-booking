@@ -12,6 +12,23 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const { user, isAuthenticated, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
 
+  // Add console logging to debug auth state
+  React.useEffect(() => {
+    console.log('Auth state in MainLayout:', { 
+      isAuthenticated, 
+      user,
+      token: typeof window !== 'undefined' ? !!localStorage.getItem('token') : null
+    });
+    
+    // Check token on mount
+    const checkToken = () => {
+      const token = localStorage.getItem('token');
+      console.log('Current auth token in localStorage:', token ? token.slice(0, 20) + '...' : 'none');
+    };
+    
+    checkToken();
+  }, [isAuthenticated, user]);
+
   // Navigation links for the header
   const navLinks = [
     { href: '/', label: 'Home', protected: false },
