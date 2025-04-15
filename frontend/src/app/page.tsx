@@ -71,11 +71,11 @@ export default function Home() {
       <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center overflow-hidden">
         {/* Background image with overlay */}
         <div className="absolute inset-0 z-0">
-          <Image 
+        <Image
             src="/images/hotel-hero.jpg" 
             alt="Grand Plaza Hotel" 
             fill 
-            priority
+          priority
             className="object-cover object-center"
           />
           <div className="absolute inset-0 bg-black bg-opacity-40"></div>
@@ -230,7 +230,7 @@ export default function Home() {
                 <div className="absolute -bottom-4 -right-4 w-24 h-24 bg-blue-100 rounded-br-2xl"></div>
                 <div className="relative rounded-lg overflow-hidden shadow-2xl transform transition-transform duration-500 hover:scale-105">
                   <div className="aspect-w-4 aspect-h-3 w-full">
-                    <Image
+          <Image
                       src="/images/hotel-lobby.jpg"
                       alt="Grand Plaza Hotel Lobby"
                       fill
@@ -303,7 +303,7 @@ export default function Home() {
             {featuredRoomTypes.map((room) => (
               <div key={room.id} className="group relative bg-white rounded-xl overflow-hidden shadow-lg transition-all duration-300 hover:shadow-2xl transform hover:-translate-y-2">
                 <div className="relative h-64 w-full overflow-hidden">
-                  <Image
+          <Image
                     src={room.image}
                     alt={room.name}
                     fill
@@ -511,7 +511,7 @@ export default function Home() {
       {/* CTA section with dynamic background */}
       <section className="relative py-24 overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <Image 
+          <Image
             src="/images/hotel-lobby.jpg" 
             alt="Grand Plaza Hotel" 
             fill 
@@ -546,7 +546,7 @@ export default function Home() {
               </Link>
             </div>
           </div>
-        </div>
+    </div>
       </section>
     </>
   );
