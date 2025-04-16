@@ -37,6 +37,99 @@ export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   /**
+   * Get mappings between room numbers and room IDs
+   * @returns Object containing mappings of room numbers to room IDs
+   */
+  @Get('mappings')
+  @ApiOperation({
+    summary: 'Get room number to ID mappings',
+    description: 'Returns a mapping of room numbers to their corresponding room IDs'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Room number to ID mappings',
+    content: {
+      'application/json': {
+        example: {
+          '101': 1,
+          '102': 2,
+          '201': 6,
+          '401': 19,
+          '409': 20
+        }
+      }
+    }
+  })
+  async getRoomMappings() {
+    try {
+      // Get all rooms, handling potential database errors
+      let rooms: Room[] = [];
+      try {
+        rooms = await this.roomsService.findAll();
+        console.log(`Successfully retrieved ${rooms.length} rooms for mapping`);
+      } catch (dbError) {
+        console.error('Error fetching rooms from database:', dbError);
+        // Return empty mappings but with success true to avoid frontend errors
+        return {
+          success: true,
+          data: {},
+          message: 'Could not fetch rooms from database, using empty mappings'
+        };
+      }
+      
+      const mappings: Record<string, number> = {};
+      
+      // Process each room safely
+      rooms.forEach((room, index) => {
+        // Skip rooms with missing data
+        if (!room || !room.roomNumber) {
+          console.warn(`Room at index ${index} has invalid roomNumber`);
+          return;
+        }
+        
+        // Safely extract room ID
+        let roomId: number | null = null;
+        
+        // Handle different ID types safely
+        if (typeof room.id === 'number') {
+          roomId = room.id;
+        } else if (typeof room.id === 'string') {
+          roomId = parseInt(room.id, 10);
+          if (isNaN(roomId)) {
+            console.warn(`Room ${room.roomNumber} has invalid string ID: "${room.id}"`);
+            return;
+          }
+        } else {
+          console.warn(`Room ${room.roomNumber} has missing or invalid ID type: ${typeof room.id}`);
+          return;
+        }
+        
+        // Only add valid mappings
+        if (roomId !== null && !isNaN(roomId)) {
+          mappings[room.roomNumber] = roomId;
+        }
+      });
+      
+      const mappingCount = Object.keys(mappings).length;
+      console.log(`Successfully created mappings for ${mappingCount} rooms`);
+      
+      return {
+        success: true,
+        data: mappings,
+        message: `Generated ${mappingCount} room mappings`
+      };
+    } catch (error) {
+      console.error('Error in getRoomMappings:', error);
+      // Return success with empty data to avoid frontend errors
+      return {
+        success: true,
+        data: {},
+        message: 'Error generating mappings, using empty mappings'
+      };
+    }
+  }
+
+  /**
    * Retrieves all rooms
    * @returns Promise<Room[]> Array of all rooms
    */

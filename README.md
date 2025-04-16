@@ -1,55 +1,63 @@
 # Hotel Booking System
 
-A full-stack hotel booking application built with NestJS (backend) and React (frontend).
+A full-stack hotel booking application built with NestJS (backend) and Next.js (frontend).
 
 ## Project Structure
 
 ```
 hotel-booking/
-├── backend/                 # NestJS backend application
-│   ├── src/                # Source code
-│   │   ├── config/        # Configuration files
+├── backend/                # NestJS backend application
+│   ├── src/               # Source code
+│   │   ├── auth/          # Authentication module
 │   │   ├── users/         # User management module
 │   │   ├── rooms/         # Room management module
 │   │   ├── bookings/      # Booking management module
-│   │   ├── payments/      # Payment processing module
-│   │   └── migrations/    # Database migrations
+│   │   ├── payments/      # Payment processing module (mocked)
+│   │   └── database/      # Database migrations and configuration
 │   └── package.json       # Backend dependencies
-└── frontend/              # React frontend application
-    ├── src/              # Source code
-    ├── public/           # Static files
-    └── package.json      # Frontend dependencies
+└── frontend/              # Next.js frontend application
+    ├── src/               # Source code
+    │   ├── app/           # Next.js App Router pages
+    │   ├── components/    # UI components
+    │   ├── services/      # API services
+    │   └── lib/           # Utility functions
+    ├── public/            # Static files
+    └── package.json       # Frontend dependencies
 ```
 
 ## Features
 
-- User authentication and authorization
-- Room management and availability tracking
-- Booking system with real-time availability
-- Payment processing integration
-- Admin dashboard for hotel management
+- User authentication and authorization with JWT
+- Room browsing and filtering
+- Real-time room availability checking
+- Booking management (create, view, cancel)
+- Mock payment processing
 - Responsive design for all devices
+- Rate limit handling with exponential backoff
 
 ## Tech Stack
 
 ### Backend
-- NestJS (Node.js framework)
-- TypeORM (ORM)
-- MySQL (Database)
-- JWT (Authentication)
-- Swagger (API Documentation)
+- [NestJS](https://nestjs.com/) (Node.js framework)
+- [TypeScript](https://www.typescriptlang.org/)
+- [TypeORM](https://typeorm.io/) (ORM)
+- [SQLite](https://www.sqlite.org/) (Database)
+- [JWT](https://jwt.io/) (Authentication)
+- [Passport](http://www.passportjs.org/) (Authentication middleware)
+- [Swagger](https://swagger.io/) (API Documentation)
 
 ### Frontend
-- React
-- TypeScript
-- Material-UI
-- Redux Toolkit
-- React Router
+- [Next.js](https://nextjs.org/) (React framework)
+- [TypeScript](https://www.typescriptlang.org/)
+- [Tailwind CSS](https://tailwindcss.com/) (Styling)
+- [shadcn/ui](https://ui.shadcn.com/) (UI Components)
+- [Axios](https://axios-http.com/) (HTTP Client)
+- [date-fns](https://date-fns.org/) (Date handling)
+- [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/) & [Jest](https://jestjs.io/) (Testing)
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
-- MySQL (v8 or higher)
+- Node.js (v18 or higher)
 - npm or yarn
 
 ## Getting Started
@@ -66,30 +74,23 @@ hotel-booking/
    npm install
    ```
 
-3. Create a `.env` file in the backend directory with the following variables:
-   ```
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=your_password
-   DB_NAME=hotel_booking
-   JWT_SECRET=your_jwt_secret
-   NODE_ENV=development
-   PORT=3000
-   ```
+3. Set up environment variables:
+   - Copy `.env.example` to `.env.development` for development
+   - Copy `.env.example` to `.env.test` for testing
+   - Update the variables with your configuration
 
-4. Run database migrations:
+4. Initialize the development database:
    ```bash
-   npm run migration:run
+   npm run init:dev
    ```
 
 5. Start the development server:
    ```bash
-   npm run start:dev
+   npm run dev
    ```
 
-The backend API will be available at `http://localhost:3000`
-API documentation will be available at `http://localhost:3000/api`
+The backend API will be available at `http://localhost:5000`
+API documentation will be available at `http://localhost:5000/api/docs`
 
 ### Frontend Setup
 
@@ -103,19 +104,37 @@ API documentation will be available at `http://localhost:3000/api`
    npm install
    ```
 
-3. Start the development server:
-   ```bash
-   npm start
+3. Create a `.env.local` file with:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:5000
    ```
 
-The frontend application will be available at `http://localhost:3001`
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+The frontend application will be available at `http://localhost:3000`
+
+## Running Both Services
+
+You can run both the frontend and backend concurrently:
+
+```bash
+# From the root directory
+npm install
+npm run dev
+```
 
 ## Testing
 
 ### Backend Tests
 ```bash
 cd backend
-npm test
+npm test          # Run all tests
+npm run test:unit # Run unit tests only
+npm run test:integration # Run integration tests only
+npm run test:cov  # Generate coverage report
 ```
 
 ### Frontend Tests
@@ -127,8 +146,7 @@ npm test
 ## API Documentation
 
 The API documentation is automatically generated using Swagger and is available at:
-- Development: `http://localhost:3000/api`
-- Production: `https://your-domain.com/api`
+- Development: `http://localhost:5000/api/docs`
 
 ## Database Schema
 
@@ -144,16 +162,23 @@ The application uses the following main entities:
 - createdAt
 - updatedAt
 
+### Room Types
+- id (Primary Key)
+- name
+- description
+- pricePerNight
+- maxGuests
+- amenities
+- imageUrl
+- createdAt
+- updatedAt
+
 ### Rooms
 - id (Primary Key)
 - roomNumber (Unique)
-- type (Enum: SINGLE, DOUBLE, SUITE, DELUXE)
-- pricePerNight
-- maxGuests
-- description
-- amenities (JSON)
-- availabilityStatus (Enum: AVAILABLE, OCCUPIED, MAINTENANCE)
-- isActive
+- roomTypeId (Foreign Key)
+- floor
+- status (Available, Occupied, Maintenance)
 - createdAt
 - updatedAt
 
@@ -164,7 +189,7 @@ The application uses the following main entities:
 - checkInDate
 - checkOutDate
 - numberOfGuests
-- specialRequests
+- totalPrice
 - status (Enum: PENDING, CONFIRMED, CANCELLED)
 - createdAt
 - updatedAt
@@ -173,23 +198,19 @@ The application uses the following main entities:
 - id (Primary Key)
 - bookingId (Foreign Key)
 - amount
-- currency
-- paymentMethod (Enum: CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER)
+- paymentMethod
 - transactionId
 - status (Enum: PENDING, COMPLETED, FAILED, REFUNDED)
-- description
 - createdAt
 - updatedAt
 
-## Contributing
+## Notes
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+- This project is designed for educational purposes
+- The payment system is mocked for demonstration
+- All data operations are stored in SQLite database files
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is part of a school assignment and is not licensed for commercial use.
 

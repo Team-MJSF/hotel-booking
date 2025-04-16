@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { RoomType, Room } from '@/types';
+import { RoomType } from '@/types';
 import { roomService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
@@ -14,10 +14,10 @@ import { CreditCard, Calendar, User, CheckCircle, ArrowRight } from 'lucide-reac
 
 // Dummy data for room types (would come from API in production)
 const ROOM_IMAGES: Record<string, string> = {
-  '1': '/images/deluxe-suite.jpg',
+  '1': '/images/standard-room.jpg',
   '2': '/images/executive-room.jpg',
   '3': '/images/family-suite.jpg',
-  '4': '/images/standard-room.jpg',
+  '4': '/images/deluxe-suite.jpg',
   '5': '/images/premium-suite.jpg',
 };
 
@@ -41,24 +41,18 @@ export default function BookingPage() {
   const [checkInDate, setCheckInDate] = useState(checkInParam);
   const [checkOutDate, setCheckOutDate] = useState(checkOutParam);
   const [guests, setGuests] = useState(guestsParam);
-  const [firstName, setFirstName] = useState(user?.firstName || '');
-  const [lastName, setLastName] = useState(user?.lastName || '');
-  const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('');
   const [specialRequests, setSpecialRequests] = useState('');
   const [step, setStep] = useState(isAuthenticated ? 2 : 1);
   
   // Validation state
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [dateError, setDateError] = useState<string | null>(null);
+  const [errors, setErrors] = useState({
+    phone: '',
+  });
   
   // Update form fields when user data changes
   useEffect(() => {
-    if (isAuthenticated && user) {
-      setFirstName(user.firstName || '');
-      setLastName(user.lastName || '');
-      setEmail(user.email || '');
-    }
+    // No need to set anything from user as those fields are displayed from context
   }, [isAuthenticated, user]);
   
   useEffect(() => {
@@ -131,7 +125,9 @@ export default function BookingPage() {
   
   // Validate form
   const validateForm = () => {
-    const newErrors: Record<string, string> = {};
+    const newErrors = {
+      phone: ''
+    };
     
     // Only validate phone number since other fields are from user account
     if (!phone.trim()) {
@@ -139,7 +135,7 @@ export default function BookingPage() {
     }
     
     setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    return Object.keys(newErrors).filter(key => newErrors[key as keyof typeof newErrors]).length === 0;
   };
   
   // Handle form submission
@@ -169,13 +165,6 @@ export default function BookingPage() {
   
   // Handle change in dates
   const handleDateChange = (type: 'checkIn' | 'checkOut', value: string) => {
-    // Reset errors first
-    setDateError(null);
-    setErrors(prevErrors => ({
-      ...prevErrors,
-      [type === 'checkIn' ? 'checkInDate' : 'checkOutDate']: ''
-    }));
-    
     // Normalize and format the date consistently
     const selectedDate = new Date(value);
     const formattedDate = selectedDate.toISOString().split('T')[0];

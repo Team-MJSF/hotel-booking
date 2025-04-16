@@ -1,8 +1,8 @@
-# Room API Documentation
+# Room Management API Documentation
 
 ## Introduction
 
-The Room API provides endpoints to manage hotel rooms and search for available rooms. It allows browsing room listings, searching with specific criteria, and managing room inventory (admin only).
+The Room Management API provides endpoints to manage both room types and individual rooms in the hotel. It allows browsing room listings, searching for available rooms, and checking real-time availability for specific date ranges.
 
 ## Authentication
 
@@ -16,9 +16,138 @@ Authorization: Bearer your_jwt_token
 
 ## API Endpoints
 
-### Get All Rooms
+### Room Types
 
-Retrieves a list of all available rooms.
+#### Get All Room Types
+
+Retrieves a list of all available room types.
+
+**Endpoint:** `GET /room-types`
+
+**Response:** `200 OK`
+```json
+[
+  {
+    "id": 1,
+    "name": "Standard Single",
+    "description": "Comfortable standard room with city view",
+    "pricePerNight": 9999, // in cents
+    "maxGuests": 2,
+    "amenities": ["TV", "WiFi", "Air Conditioning"],
+    "imageUrl": "https://example.com/rooms/standard-single.jpg",
+    "createdAt": "2023-04-01T10:00:00Z",
+    "updatedAt": "2023-04-01T10:00:00Z"
+  },
+  {
+    "id": 2,
+    "name": "Deluxe Suite",
+    "description": "Spacious deluxe room with ocean view",
+    "pricePerNight": 14999, // in cents
+    "maxGuests": 3,
+    "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar", "Ocean View"],
+    "imageUrl": "https://example.com/rooms/deluxe-suite.jpg",
+    "createdAt": "2023-04-01T10:00:00Z",
+    "updatedAt": "2023-04-01T10:00:00Z"
+  }
+]
+```
+
+#### Get Room Type Details
+
+Retrieves detailed information about a specific room type.
+
+**Endpoint:** `GET /room-types/{id}`
+
+**Response:** `200 OK`
+```json
+{
+  "id": 1,
+  "name": "Standard Single",
+  "description": "Comfortable standard room with city view",
+  "pricePerNight": 9999, // in cents
+  "maxGuests": 2,
+  "amenities": ["TV", "WiFi", "Air Conditioning"],
+  "imageUrl": "https://example.com/rooms/standard-single.jpg",
+  "createdAt": "2023-04-01T10:00:00Z",
+  "updatedAt": "2023-04-01T10:00:00Z"
+}
+```
+
+#### Create a Room Type (Admin Only)
+
+Creates a new room type in the hotel inventory.
+
+**Endpoint:** `POST /room-types`
+
+**Request Body:**
+```json
+{
+  "name": "Executive Suite",
+  "description": "Luxury suite with separate living area",
+  "pricePerNight": 19999, // in cents
+  "maxGuests": 4,
+  "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar", "Jacuzzi"],
+  "imageUrl": "https://example.com/rooms/executive-suite.jpg"
+}
+```
+
+**Response:** `201 Created`
+```json
+{
+  "id": 3,
+  "name": "Executive Suite",
+  "description": "Luxury suite with separate living area",
+  "pricePerNight": 19999,
+  "maxGuests": 4,
+  "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar", "Jacuzzi"],
+  "imageUrl": "https://example.com/rooms/executive-suite.jpg",
+  "createdAt": "2023-04-05T12:00:00Z",
+  "updatedAt": "2023-04-05T12:00:00Z"
+}
+```
+
+#### Update a Room Type (Admin Only)
+
+Updates an existing room type.
+
+**Endpoint:** `PATCH /room-types/{id}`
+
+**Request Body:**
+```json
+{
+  "pricePerNight": 22999,
+  "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar", "Jacuzzi", "Ocean View"]
+}
+```
+
+**Response:** `200 OK`
+```json
+{
+  "id": 3,
+  "name": "Executive Suite",
+  "description": "Luxury suite with separate living area",
+  "pricePerNight": 22999,
+  "maxGuests": 4,
+  "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar", "Jacuzzi", "Ocean View"],
+  "imageUrl": "https://example.com/rooms/executive-suite.jpg",
+  "createdAt": "2023-04-05T12:00:00Z",
+  "updatedAt": "2023-04-05T14:30:00Z"
+}
+```
+
+#### Delete a Room Type (Admin Only)
+
+Deletes a room type from the inventory.
+
+**Endpoint:** `DELETE /room-types/{id}`
+
+**Response:** `204 No Content`
+
+### Individual Rooms
+
+#### Get All Rooms
+
+Retrieves a list of all individual rooms.
 
 **Endpoint:** `GET /rooms`
 
@@ -28,94 +157,33 @@ Retrieves a list of all available rooms.
   {
     "id": 1,
     "roomNumber": "101",
-    "type": "single",
-    "pricePerNight": 99.99,
-    "maxGuests": 2,
-    "amenities": ["TV", "WiFi", "Air Conditioning"],
-    "availabilityStatus": "available",
-    "description": "Comfortable standard room with city view",
-    "photos": [
-      {
-        "url": "https://example.com/rooms/101/main.jpg",
-        "type": "main",
-        "caption": "Room 101 - Single",
-        "displayOrder": 1
-      }
-    ],
+    "roomType": {
+      "id": 1,
+      "name": "Standard Single",
+      "pricePerNight": 9999
+    },
+    "floor": 1,
+    "status": "available",
     "createdAt": "2023-04-01T10:00:00Z",
     "updatedAt": "2023-04-01T10:00:00Z"
   },
   {
     "id": 2,
     "roomNumber": "201",
-    "type": "deluxe",
-    "pricePerNight": 149.99,
-    "maxGuests": 3,
-    "amenities": ["TV", "WiFi", "Air Conditioning", "Mini Bar", "Ocean View"],
-    "availabilityStatus": "available",
-    "description": "Spacious deluxe room with ocean view",
-    "photos": [
-      {
-        "url": "https://example.com/rooms/201/main.jpg",
-        "type": "main",
-        "caption": "Room 201 - Deluxe",
-        "displayOrder": 1
-      }
-    ],
+    "roomType": {
+      "id": 2,
+      "name": "Deluxe Suite",
+      "pricePerNight": 14999
+    },
+    "floor": 2,
+    "status": "available",
     "createdAt": "2023-04-01T10:00:00Z",
     "updatedAt": "2023-04-01T10:00:00Z"
   }
 ]
 ```
 
-### Search for Available Rooms
-
-Search for rooms based on various criteria such as date range, capacity, price range, and room type.
-
-**Endpoint:** `GET /rooms/search`
-
-**Query Parameters:**
-- `checkInDate` (optional): ISO date string for check-in
-- `checkOutDate` (optional): ISO date string for check-out
-- `maxGuests` (optional): Minimum number of guests the room should accommodate
-- `minPrice` (optional): Minimum price per night
-- `maxPrice` (optional): Maximum price per night
-- `type` (optional): Type of room (single, double, suite, deluxe)
-- `sortBy` (optional): Field to sort by (pricePerNight, maxGuests, type)
-- `sortOrder` (optional): Sort direction (asc, desc)
-
-**Example Request:**
-```
-GET /rooms/search?checkInDate=2023-05-15T00:00:00Z&checkOutDate=2023-05-20T00:00:00Z&maxGuests=2&maxPrice=150&type=single&sortBy=pricePerNight&sortOrder=asc
-```
-
-**Response:** `200 OK`
-```json
-[
-  {
-    "id": 1,
-    "roomNumber": "101",
-    "type": "single",
-    "pricePerNight": 99.99,
-    "maxGuests": 2,
-    "amenities": ["TV", "WiFi", "Air Conditioning"],
-    "availabilityStatus": "available",
-    "description": "Comfortable standard room with city view"
-  },
-  {
-    "id": 3,
-    "roomNumber": "102",
-    "type": "single",
-    "pricePerNight": 109.99,
-    "maxGuests": 2,
-    "amenities": ["TV", "WiFi", "Air Conditioning", "Coffee Machine"],
-    "availabilityStatus": "available",
-    "description": "Comfortable standard room with garden view"
-  }
-]
-```
-
-### Get Room Details
+#### Get Room Details
 
 Retrieves detailed information about a specific room.
 
@@ -126,34 +194,25 @@ Retrieves detailed information about a specific room.
 {
   "id": 1,
   "roomNumber": "101",
-  "type": "single",
-  "pricePerNight": 99.99,
-  "maxGuests": 2,
-  "amenities": ["TV", "WiFi", "Air Conditioning"],
-  "availabilityStatus": "available",
-  "description": "Comfortable standard room with city view",
-  "photos": [
-    {
-      "url": "https://example.com/rooms/101/main.jpg",
-      "type": "main",
-      "caption": "Room 101 - Single",
-      "displayOrder": 1
-    },
-    {
-      "url": "https://example.com/rooms/101/gallery1.jpg",
-      "type": "gallery",
-      "caption": "Bathroom",
-      "displayOrder": 2
-    }
-  ],
+  "roomType": {
+    "id": 1,
+    "name": "Standard Single",
+    "description": "Comfortable standard room with city view",
+    "pricePerNight": 9999,
+    "maxGuests": 2,
+    "amenities": ["TV", "WiFi", "Air Conditioning"],
+    "imageUrl": "https://example.com/rooms/standard-single.jpg"
+  },
+  "floor": 1,
+  "status": "available",
   "createdAt": "2023-04-01T10:00:00Z",
   "updatedAt": "2023-04-01T10:00:00Z"
 }
 ```
 
-### Create a Room (Admin Only)
+#### Create a Room (Admin Only)
 
-Creates a new room in the hotel inventory.
+Creates a new individual room in the hotel inventory.
 
 **Endpoint:** `POST /rooms`
 
@@ -161,19 +220,9 @@ Creates a new room in the hotel inventory.
 ```json
 {
   "roomNumber": "102",
-  "type": "single",
-  "pricePerNight": 99.99,
-  "maxGuests": 2,
-  "amenities": ["TV", "WiFi", "Air Conditioning"],
-  "description": "Comfortable standard room with city view",
-  "photos": [
-    {
-      "url": "https://example.com/rooms/102/main.jpg",
-      "type": "main",
-      "caption": "Room 102 - Single",
-      "displayOrder": 1
-    }
-  ]
+  "roomTypeId": 1,
+  "floor": 1,
+  "status": "available"
 }
 ```
 
@@ -182,196 +231,138 @@ Creates a new room in the hotel inventory.
 {
   "id": 3,
   "roomNumber": "102",
-  "type": "single",
-  "pricePerNight": 99.99,
-  "maxGuests": 2,
-  "amenities": ["TV", "WiFi", "Air Conditioning"],
-  "availabilityStatus": "available",
-  "description": "Comfortable standard room with city view",
-  "photos": [
-    {
-      "url": "https://example.com/rooms/102/main.jpg",
-      "type": "main",
-      "caption": "Room 102 - Single",
-      "displayOrder": 1
-    }
-  ],
+  "roomType": {
+    "id": 1,
+    "name": "Standard Single"
+  },
+  "floor": 1,
+  "status": "available",
   "createdAt": "2023-04-05T12:00:00Z",
   "updatedAt": "2023-04-05T12:00:00Z"
 }
 ```
 
-### Update a Room (Admin Only)
+### Room Availability
 
-Updates an existing room's details.
+#### Check Room Type Availability
 
-**Endpoint:** `PATCH /rooms/{id}`
+Check availability of a specific room type for a date range.
 
-**Request Body:** (partial update)
-```json
-{
-  "pricePerNight": 109.99,
-  "amenities": ["TV", "WiFi", "Air Conditioning", "Coffee Machine"],
-  "availabilityStatus": "maintenance"
-}
+**Endpoint:** `GET /room-types/{roomTypeId}/availability`
+
+**Query Parameters:**
+- `checkInDate` (required): ISO date string for check-in
+- `checkOutDate` (required): ISO date string for check-out
+
+**Example Request:**
+```
+GET /room-types/1/availability?checkInDate=2023-05-15&checkOutDate=2023-05-20
 ```
 
 **Response:** `200 OK`
 ```json
 {
-  "id": 1,
-  "roomNumber": "101",
-  "type": "single",
-  "pricePerNight": 109.99,
-  "maxGuests": 2,
-  "amenities": ["TV", "WiFi", "Air Conditioning", "Coffee Machine"],
-  "availabilityStatus": "maintenance",
-  "description": "Comfortable standard room with city view",
-  "photos": [
-    {
-      "url": "https://example.com/rooms/101/main.jpg",
-      "type": "main",
-      "caption": "Room 101 - Single",
-      "displayOrder": 1
-    }
-  ],
-  "createdAt": "2023-04-01T10:00:00Z",
-  "updatedAt": "2023-04-05T12:00:00Z"
+  "roomTypeId": 1,
+  "availableCount": 3,
+  "totalRooms": 5,
+  "checkInDate": "2023-05-15",
+  "checkOutDate": "2023-05-20"
 }
 ```
 
-### Delete a Room (Admin Only)
+### Search for Available Rooms
 
-Removes a room from the hotel inventory.
+Search for room types based on various criteria such as date range, capacity, and price range.
 
-**Endpoint:** `DELETE /rooms/{id}`
+**Endpoint:** `GET /rooms/search`
+
+**Query Parameters:**
+- `checkInDate` (required): ISO date string for check-in
+- `checkOutDate` (required): ISO date string for check-out
+- `maxGuests` (optional): Minimum number of guests the room should accommodate
+- `minPrice` (optional): Minimum price per night (in cents)
+- `maxPrice` (optional): Maximum price per night (in cents)
+- `sortBy` (optional): Field to sort by (price, maxGuests)
+- `sortOrder` (optional): Sort direction (asc, desc)
+
+**Example Request:**
+```
+GET /rooms/search?checkInDate=2023-05-15&checkOutDate=2023-05-20&maxGuests=2&maxPrice=15000&sortBy=price&sortOrder=asc
+```
 
 **Response:** `200 OK`
+```json
+[
+  {
+    "id": 1,
+    "name": "Standard Single",
+    "description": "Comfortable standard room with city view",
+    "pricePerNight": 9999,
+    "maxGuests": 2,
+    "amenities": ["TV", "WiFi", "Air Conditioning"],
+    "imageUrl": "https://example.com/rooms/standard-single.jpg",
+    "availableCount": 3
+  },
+  {
+    "id": 3,
+    "name": "Standard Double",
+    "description": "Comfortable standard room with two beds",
+    "pricePerNight": 12999,
+    "maxGuests": 2,
+    "amenities": ["TV", "WiFi", "Air Conditioning", "Coffee Machine"],
+    "imageUrl": "https://example.com/rooms/standard-double.jpg",
+    "availableCount": 1
+  }
+]
+```
 
-## Room Types
+## Error Handling
 
-The system supports various room types:
+The Room API handles errors with appropriate HTTP status codes:
 
-- **single**: Basic room with a single bed
-- **double**: Room with a double bed or two single beds
-- **suite**: Luxury suite with separate living area
-- **deluxe**: Premium room with enhanced amenities and space
+- `400 Bad Request`: Invalid input parameters
+- `401 Unauthorized`: Authentication required
+- `403 Forbidden`: Insufficient permissions (e.g., non-admin user attempting an admin operation)
+- `404 Not Found`: Room or room type not found
+- `429 Too Many Requests`: Rate limit exceeded
+- `500 Internal Server Error`: Unexpected server error
 
-## Availability Status
+Error responses follow this format:
 
-Rooms can have the following availability statuses:
-
-- **available**: Room is available for booking
-- **occupied**: Room is currently occupied by guests
-- **maintenance**: Room is under maintenance and not available for booking
-- **cleaning**: Room is being cleaned and will be available soon
-
-## Photo Types
-
-Room photos can be of the following types:
-
-- **main**: Main featured photo of the room
-- **gallery**: Additional photos for the room gallery
-- **amenity**: Photos specifically showing room amenities
-
-## Amenities
-
-Rooms can include various amenities:
-
-- TV
-- WiFi
-- Air Conditioning
-- Mini Bar
-- Coffee Machine
-- Ocean View
-- Garden View
-- City View
-- Bathtub
-- Balcony
-- King Bed
-- Queen Bed
-- Twin Beds
-
-## Validation Rules
-
-When creating or updating rooms, the following validation rules apply:
-
-1. Room number must be unique
-2. Price per night must be positive
-3. Maximum guests must be at least 1
-4. Room must have a valid room type
-5. Availability status must be one of the defined statuses
-
-## Error Responses
-
-The API returns standardized error responses:
-
-### 400 Bad Request
 ```json
 {
   "statusCode": 400,
-  "message": ["Room number must be unique"],
+  "message": "Invalid input: checkOutDate must be after checkInDate",
   "error": "Bad Request"
 }
 ```
 
-### 401 Unauthorized
+## Rate Limiting
+
+The API implements rate limiting to protect against excessive requests. If you exceed the rate limit, you'll receive a 429 response with a Retry-After header indicating when you can resume requests.
+
+## Pagination
+
+For endpoints that return lists, you can use pagination parameters:
+
+- `page`: Page number (starting from 1)
+- `limit`: Number of items per page
+
+Example:
+```
+GET /room-types?page=1&limit=10
+```
+
+Response includes pagination metadata:
 ```json
 {
-  "statusCode": 401,
-  "message": "Unauthorized",
-  "error": "Unauthorized"
+  "items": [...],
+  "meta": {
+    "totalItems": 25,
+    "itemCount": 10,
+    "itemsPerPage": 10,
+    "totalPages": 3,
+    "currentPage": 1
+  }
 }
-```
-
-### 403 Forbidden
-```json
-{
-  "statusCode": 403,
-  "message": "Forbidden resource",
-  "error": "Forbidden"
-}
-```
-
-### 404 Not Found
-```json
-{
-  "statusCode": 404,
-  "message": "Room with ID 999 not found",
-  "error": "Not Found"
-}
-```
-
-## Usage Examples
-
-### Finding Available Rooms for a Stay
-
-To find rooms available for a specific date range:
-
-```
-GET /rooms/search?checkInDate=2023-06-10T00:00:00Z&checkOutDate=2023-06-15T00:00:00Z
-```
-
-### Finding Affordable Rooms for a Family
-
-To find rooms that can accommodate a family of 4 with a limited budget:
-
-```
-GET /rooms/search?maxGuests=4&maxPrice=200
-```
-
-### Finding Specific Room Types
-
-To find deluxe rooms, sorted by price:
-
-```
-GET /rooms/search?type=deluxe&sortBy=pricePerNight&sortOrder=asc
-```
-
-### Finding Rooms Under Maintenance
-
-For administrators to find rooms currently under maintenance:
-
-```
-GET /rooms/search?availabilityStatus=maintenance
 ``` 

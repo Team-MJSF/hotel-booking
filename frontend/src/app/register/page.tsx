@@ -43,7 +43,6 @@ export default function RegisterPage() {
 
   const {
     register,
-    handleSubmit,
     formState: { errors },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -102,9 +101,9 @@ export default function RegisterPage() {
         console.error('Registration failed with message:', result.message);
         setError(result.message || 'Registration failed. Please try again.');
       }
-    } catch (err: any) {
+    } catch (err: Error | unknown) {
       console.error('Registration error caught in try/catch:', err);
-      if (err.message === 'Email already exists') {
+      if (err instanceof Error && err.message === 'Email already exists') {
         setError('This email is already registered. Please log in instead.');
       } else {
         setError('An unexpected error occurred. Please try again.');
@@ -264,7 +263,7 @@ export default function RegisterPage() {
               type="submit" 
               className="w-full" 
               disabled={isLoading}
-              onClick={(e) => {
+              onClick={() => {
                 // This will let the form's onSubmit handle it
                 console.log('Button clicked, letting form onSubmit handle submission');
               }}

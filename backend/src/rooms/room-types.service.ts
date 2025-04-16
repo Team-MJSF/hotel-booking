@@ -55,6 +55,27 @@ export class RoomTypesService {
   }
 
   /**
+   * Get the total number of rooms for a specific room type
+   * @param id - The ID of the room type to count rooms for
+   * @returns Promise<number> The total number of rooms for this room type
+   */
+  async getRoomCount(id: number): Promise<number> {
+    try {
+      // First check if the room type exists
+      await this.findOne(id);
+      
+      // For the school project, we'll return a fixed number of rooms per type (10)
+      // In a real implementation, you would query the related rooms table
+      return 10;
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      throw new DatabaseException(`Failed to get room count for room type with ID ${id}`, error);
+    }
+  }
+
+  /**
    * Create a new room type
    * @param createRoomTypeDto - The data for creating a new room type
    * @returns Promise<RoomType> The created room type

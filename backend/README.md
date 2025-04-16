@@ -4,16 +4,18 @@ A NestJS-based backend for a hotel booking system with authentication, room mana
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v18 or higher)
 - npm
 
 ## Features
 
 - User authentication with JWT and refresh tokens
 - Role-based access control (Admin, User)
-- Room management with search and filtering
-- Booking system with validation
+- Room types and individual rooms management
+- Advanced room search with availability checking
+- Booking system with validation and conflict prevention
 - Mock payment processing
+- Rate limiting protection with retry mechanisms
 - Comprehensive test coverage with separated unit and integration tests
 - API documentation with Swagger
 
@@ -51,13 +53,24 @@ A NestJS-based backend for a hotel booking system with authentication, room mana
 - `PATCH /users/:id` - Update user
 - `DELETE /users/:id` - Delete user (Admin only)
 
+### Room Types
+- `GET /room-types` - List all room types
+- `GET /room-types/:id` - Get room type details
+- `POST /room-types` - Create new room type (Admin only)
+- `PATCH /room-types/:id` - Update room type (Admin only)
+- `DELETE /room-types/:id` - Delete room type (Admin only)
+
 ### Rooms
 - `GET /rooms` - List all rooms
 - `GET /rooms/:id` - Get room details
-- `GET /rooms/search` - Search available rooms
 - `POST /rooms` - Create new room (Admin only)
 - `PATCH /rooms/:id` - Update room (Admin only)
 - `DELETE /rooms/:id` - Delete room (Admin only)
+- `GET /rooms/search` - Search available rooms
+
+### Room Availability
+- `GET /rooms/:roomId/availability` - Check room availability
+- `GET /room-types/:roomTypeId/availability` - Check room type availability for date range
 
 ### Bookings
 - `GET /bookings` - List user's bookings
@@ -65,6 +78,7 @@ A NestJS-based backend for a hotel booking system with authentication, room mana
 - `POST /bookings` - Create new booking
 - `PATCH /bookings/:id` - Update booking
 - `DELETE /bookings/:id` - Cancel booking
+- `GET /bookings/user/:userId` - Get user's bookings
 
 ### Payments
 - `GET /payments` - List all payments (Admin only)
@@ -148,6 +162,15 @@ NODE_ENV=development
 
 # Database Configuration
 DB_NAME=data/hotel_booking_dev.sqlite
+
+# JWT Settings
+JWT_SECRET=your_secret_key
+JWT_EXPIRATION=1h
+JWT_REFRESH_EXPIRATION=7d
+
+# Rate Limiting
+THROTTLE_TTL=60
+THROTTLE_LIMIT=20
 ```
 
 ## Project Structure
@@ -157,11 +180,20 @@ src/
 ├── auth/           # Authentication related files
 ├── bookings/       # Booking management
 ├── common/         # Shared utilities and filters
+│   ├── decorators/ # Custom decorators
+│   ├── dto/        # Shared DTOs
+│   ├── filters/    # Exception filters
+│   ├── guards/     # Auth guards
+│   └── docs/       # API documentation guides
 ├── config/         # Configuration files
 ├── database/       # Migration and seed files
 ├── payments/       # Payment processing (mocked)
 ├── refresh-tokens/ # Refresh token management
 ├── rooms/          # Room management
+│   ├── dto/        # Room DTOs
+│   ├── entities/   # Room entities
+│   └── services/   # Room services
+├── room-types/     # Room type management
 ├── users/          # User management
 ├── app.module.ts   # Main application module
 └── main.ts         # Application entry point
@@ -212,6 +244,7 @@ The API documentation is available at the `/api/docs` endpoint when the server i
 - View all available endpoints
 - See request/response schemas
 - Test API endpoints directly from the browser
+- Download the OpenAPI specification
 
 ### API Documentation Guides
 
@@ -223,6 +256,16 @@ Detailed API documentation guides are available for the following modules:
 - [Payment API Guide](src/common/docs/payment-api-guide.md) - Documentation for payment processing endpoints
 
 These guides provide in-depth information about each API endpoint, including request/response formats, validation rules, error responses, and usage examples.
+
+## Error Handling & Rate Limiting
+
+The API implements comprehensive error handling:
+
+1. **Input Validation** - All input data is validated using class-validator
+2. **Exception Filters** - Custom exception filters translate errors to consistent API responses
+3. **Global Error Handling** - Centralized error handling ensures consistent responses
+4. **Rate Limiting** - Built-in protection against excessive requests with configurable limits
+5. **Fallback Mechanisms** - Graceful fallbacks for dependencies that might fail
 
 ## Database Configuration
 

@@ -4,9 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
-import { formatPrice, formatDate } from '@/lib/utils';
-import { ChevronRight, Star, Utensils, Wifi, ShowerHead, Tv, MapPin, Calendar, Users } from 'lucide-react';
+import { formatDate } from '@/lib/utils';
+import { Star, Utensils, Wifi, ShowerHead, Tv, Calendar, Users } from 'lucide-react';
 import { RoomCard } from '@/components/ui/room-card';
 import { RoomType } from '@/types';
 import { roomService } from '@/services/api';
@@ -326,7 +325,7 @@ export default function Home() {
                   Nestled in the heart of downtown, Grand Plaza offers a perfect blend of elegance, comfort, and convenience. Our hotel features meticulously designed rooms, state-of-the-art amenities, and exceptional service to ensure an unforgettable stay.
                 </p>
                 <p className="leading-relaxed">
-                  Whether you're traveling for business or pleasure, our dedicated staff is committed to exceeding your expectations and making your stay as comfortable as possible.
+                  Whether you&apos;re traveling for business or pleasure, our dedicated staff is committed to exceeding your expectations and making your stay as comfortable as possible.
                 </p>
               </div>
               
@@ -523,7 +522,7 @@ export default function Home() {
                   ))}
                 </div>
                 
-                <p className="text-gray-700 mb-8 leading-relaxed font-medium italic">"{testimonial.comment}"</p>
+                <p className="text-gray-700 mb-8 leading-relaxed font-medium italic">&quot;{testimonial.comment}&quot;</p>
                 
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                   <div>

@@ -45,6 +45,22 @@ export class RoomTypesController {
     };
   }
 
+  @Get(':id/count')
+  @ApiOperation({ summary: 'Get total number of rooms for a room type' })
+  @ApiResponse({
+    status: 200,
+    description: 'The total count of rooms for this room type',
+  })
+  @ApiResponse({ status: 404, description: 'Room type not found' })
+  async getRoomCount(@Param('id') id: string): Promise<{ success: boolean; data: { totalRooms: number }; message: string }> {
+    const count = await this.roomTypesService.getRoomCount(+id);
+    return {
+      success: true,
+      data: { totalRooms: count },
+      message: 'Room count fetched successfully',
+    };
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get a room type by ID' })
   @ApiResponse({

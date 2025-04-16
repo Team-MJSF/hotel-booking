@@ -109,7 +109,7 @@ export default function ContactPage() {
                   </div>
                   <h3 className="text-xl font-bold text-green-800 mb-2">Message Sent!</h3>
                   <p className="text-green-700">
-                    Thank you for contacting us. We'll get back to you as soon as possible.
+                    Thank you for contacting us. We&apos;ll get back to you as soon as possible.
                   </p>
                 </div>
               ) : (

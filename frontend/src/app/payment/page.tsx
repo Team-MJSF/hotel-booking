@@ -13,10 +13,10 @@ import { Check, CreditCard, Lock, AlertCircle } from 'lucide-react';
 
 // Dummy data for room types (would come from API in production)
 const ROOM_IMAGES: Record<string, string> = {
-  '1': '/images/deluxe-suite.jpg',
+  '1': '/images/standard-room.jpg',
   '2': '/images/executive-room.jpg',
   '3': '/images/family-suite.jpg',
-  '4': '/images/standard-room.jpg',
+  '4': '/images/deluxe-suite.jpg',
   '5': '/images/premium-suite.jpg',
 };
 
@@ -39,7 +39,7 @@ export default function PaymentPage() {
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
   const [nights, setNights] = useState(1);
-  const [selectedRoomNumber, setSelectedRoomNumber] = useState(roomNumberParam);
+  const [selectedRoomNumber] = useState(roomNumberParam);
   
   // Validate required parameters with detailed checks
   const [paramErrors, setParamErrors] = useState<string[]>([]);
@@ -299,56 +299,226 @@ export default function PaymentPage() {
       console.log('- Check-out Date:', checkOutParam);
       console.log('- Number of Guests:', guestsParam);
       
-      // Create a booking using the booking service (which will be stored in localStorage for this school project)
-      const bookingResponse = await bookingService.createBooking({
-        roomId: selectedRoomNumber, // Use the actual selected room number 
-        roomTypeId: roomId, // Store the room type ID separately to ensure correct room type
-        roomTypeName: room.name, // Store the room type name for display
+      // Determine the actual database roomId based on the room type and room number
+      let actualRoomId;
+      
+      // Fetch room mappings from the API or use fallback data
+      const roomMappingsResponse = await roomService.getRoomMappings();
+      
+      if (roomMappingsResponse.success && roomMappingsResponse.data) {
+        const roomMappings = roomMappingsResponse.data;
+        
+        if (roomMappings[selectedRoomNumber]) {
+          // If there's a direct mapping for this room number, use it
+          actualRoomId = roomMappings[selectedRoomNumber];
+          console.log(`Using mapped ID ${actualRoomId} for room ${selectedRoomNumber}`);
+        } else {
+          // Otherwise, use a default mapping based on room type
+          const defaultRoomByType: Record<string, number> = {
+            '1': 1, // Standard Room (room IDs 1-5)
+            '2': 6, // Executive Room (room IDs 6-10)
+            '3': 11, // Family Suite (room IDs 11-15)
+            '4': 19, // Deluxe Suite (room IDs 19-20)
+            '5': 21, // Premium Suite (room IDs 21-25)
+          };
+          
+          actualRoomId = defaultRoomByType[roomId] || Number(roomId);
+          console.log(`Using default room ID ${actualRoomId} for room type ${roomId}`);
+        }
+      } else {
+        // Fallback to simple mapping if the API fails
+        console.error('Failed to get room mappings from API, using simple mapping');
+        actualRoomId = Number(roomId);
+      }
+      
+      console.log('- Mapped Room ID for database:', actualRoomId);
+      
+      // Create a booking using the booking service
+      const bookingRequest = {
+        roomId: actualRoomId, // Use the mapped room ID as a number
         checkInDate: checkInParam,
         checkOutDate: checkOutParam,
         guestCount: parseInt(guestsParam, 10),
-        specialRequests: ''
-      });
+        specialRequests: '', // Include any special requests
+        // Don't send these to backend, but keep them for normalizing the response
+        _roomNumber: selectedRoomNumber,
+        _roomTypeId: roomId, // The actual room type ID from URL param
+        _roomTypeName: room ? room.name : 'Standard Room',
+        _totalPrice: totalPrice // Include the calculated price
+      };
+      
+      console.log('Creating booking with data:', bookingRequest);
+      const bookingResponse = await bookingService.createBooking(bookingRequest);
       
       if (!bookingResponse.success) {
-        setError(bookingResponse.error || 'Failed to create booking');
+        let errorMessage = 'Failed to create booking';
+        
+        // Extract detailed error information if available
+        if (bookingResponse.error) {
+          errorMessage = bookingResponse.error;
+          console.error('Booking creation error:', bookingResponse.error);
+        }
+        
+        // Check if the error is a validation error with messages
+        if (bookingResponse.message && Array.isArray(bookingResponse.message)) {
+          errorMessage = bookingResponse.message.join(', ');
+          console.error('Booking validation errors:', bookingResponse.message);
+        }
+        
+        setError(errorMessage);
         setProcessingPayment(false);
         return;
       }
       
       // Use the actual booking ID from the response
-      const createdBookingId = bookingResponse.data?.id || `booking-${Date.now()}`;
-      setBookingId(createdBookingId);
+      if (!bookingResponse.data) {
+        setError('No booking data returned from server');
+        setProcessingPayment(false);
+        return;
+      }
+      
+      // Extract booking ID - handle API response format which may have bookingId property
+      let bookingIdValue: string | number | null = null;
+      
+      // The API response might have different property names for the ID depending on format
+      const responseBookingData = bookingResponse.data;
+      
+      if (responseBookingData) {
+        // Try different possible ID property names
+        if ('id' in responseBookingData) {
+          bookingIdValue = responseBookingData.id;
+        } else if ('bookingId' in responseBookingData) {
+          bookingIdValue = (responseBookingData as any).bookingId;
+        } else if ('booking_id' in responseBookingData) {
+          bookingIdValue = (responseBookingData as any).booking_id;
+        }
+      }
+      
+      if (bookingIdValue === null) {
+        setError('No booking ID returned from server');
+        setProcessingPayment(false);
+        return;
+      }
+      
+      const bookingIdString = String(bookingIdValue);
+      setBookingId(bookingIdString);
+      
+      // Generate a unique transaction ID for the mock payment
+      const mockTransactionId = `tx_${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
       
       // Process mock payment
-      const response = await paymentService.processPayment(createdBookingId, {
-        paymentMethod,
-        cardNumber: cardNumber.replace(/\s/g, ''),
-        cardHolder,
-        expiryDate,
-        cvv,
+      const paymentRequest = {
+        bookingId: bookingIdString,
         amount: totalPrice,
+        currency: 'USD',
+        paymentMethod,
+        transactionId: mockTransactionId,
+        cardDetails: {
+          cardNumber: cardNumber.replace(/\s/g, ''),
+          cardholderName: cardHolder,
+          expiryDate,
+          cvv,
+        }
+      };
+      
+      console.log('Processing payment with data:', {
+        ...paymentRequest,
+        cardDetails: {
+          ...paymentRequest.cardDetails,
+          cardNumber: '************' + paymentRequest.cardDetails.cardNumber.slice(-4),
+          cvv: '***'
+        }
       });
       
-      if (response.success && response.data?.success) {
-        // Update the booking status to confirmed
-        await bookingService.updateBookingStatus(createdBookingId, 'CONFIRMED');
+      const response = await paymentService.processPayment(paymentRequest);
+      
+      if (response.success) {
+        console.log('Payment successful with response:', response.data);
         
+        // Payment already updates the booking status in the new implementation,
+        // but we can still try to update if needed as a double-check
+        try {
+          console.log('Confirming booking status is set to CONFIRMED');
+          await bookingService.updateBookingStatus(bookingIdString, 'CONFIRMED');
+        } catch (statusUpdateError) {
+          // Don't fail if this doesn't work - the payment process already updated the status
+          console.log('Additional status update not needed or failed:', statusUpdateError);
+        }
+        
+        // Show payment success state and redirect to confirmation
         setPaymentSuccess(true);
         
         // Auto-redirect to confirmation after 3 seconds
         setTimeout(() => {
-          router.push(`/bookings?success=true&bookingId=${createdBookingId}`);
+          router.push(`/bookings?success=true&bookingId=${bookingIdString}`);
         }, 3000);
       } else {
-        setError('Payment processing failed. Please try again.');
+        // Handle payment failure with more detailed error
+        console.error('Payment processing failed:', response.error);
+        setError(response.error || 'Payment processing failed. Please try again.');
         setProcessingPayment(false);
       }
     } catch (err) {
       console.error('Error processing payment:', err);
-      setError('An unexpected error occurred. Please try again later.');
+      
+      // Handle different error types
+      let errorMessage = 'An unexpected error occurred. Please try again later.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      } else if (typeof err === 'object' && err !== null) {
+        try {
+          errorMessage = JSON.stringify(err);
+        } catch (e) {
+          // If JSON stringify fails, use default message
+        }
+      }
+      
+      setError(errorMessage);
       setProcessingPayment(false);
     }
+  };
+  
+  // Error display component
+  const ErrorDisplay = ({ errorMessage }: { errorMessage: any }) => {
+    // Handle different error formats
+    let displayMessage = '';
+    
+    if (typeof errorMessage === 'string') {
+      displayMessage = errorMessage;
+    } else if (errorMessage && typeof errorMessage === 'object') {
+      // Handle object errors
+      if (errorMessage.message) {
+        if (Array.isArray(errorMessage.message)) {
+          displayMessage = errorMessage.message.join(', ');
+        } else {
+          displayMessage = String(errorMessage.message);
+        }
+      } else if (errorMessage.error) {
+        displayMessage = String(errorMessage.error);
+      } else {
+        // Convert the whole object to a string representation
+        try {
+          displayMessage = JSON.stringify(errorMessage);
+        } catch (e) {
+          displayMessage = 'Unknown error occurred';
+        }
+      }
+    } else {
+      displayMessage = 'An error occurred';
+    }
+    
+    return (
+      <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+        <div className="flex">
+          <AlertCircle className="h-5 w-5 text-red-500 mt-0.5 mr-3 flex-shrink-0" />
+          <div>
+            <h3 className="text-sm font-medium text-red-800">Payment Error</h3>
+            <p className="text-sm text-red-700 mt-1">{displayMessage}</p>
+          </div>
+        </div>
+      </div>
+    );
   };
   
   if (loading) {
@@ -423,7 +593,7 @@ export default function PaymentPage() {
           </p>
           <div className="bg-gray-50 rounded-lg p-4 mb-6">
             <p className="font-medium">Booking Reference: {bookingId}</p>
-            <p>We've sent a confirmation email with all the details.</p>
+            <p>We&apos;ve sent a confirmation email with all the details.</p>
           </div>
           <p className="text-sm text-gray-500 mb-6">You will be redirected to your bookings page shortly...</p>
           <Link href="/bookings">
@@ -521,7 +691,7 @@ export default function PaymentPage() {
                       id="cardNumber"
                       type="text"
                       value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
+                      onChange={handleCardNumberChange}
                       placeholder="1234 5678 9012 3456"
                       maxLength={19}
                       aria-invalid={errors.cardNumber ? "true" : "false"}
@@ -621,7 +791,7 @@ export default function PaymentPage() {
               <div className="flex items-start mb-4">
                 <div className="relative h-24 w-24 rounded-md overflow-hidden mr-4 flex-shrink-0">
                   <Image
-                    src={ROOM_IMAGES[roomId] || '/images/room-placeholder.jpg'}
+                    src={room?.imageUrl || ROOM_IMAGES[roomId] || '/images/room-placeholder.jpg'}
                     alt={room?.name || 'Hotel Room'}
                     fill
                     className="object-cover"
@@ -670,6 +840,9 @@ export default function PaymentPage() {
           </div>
         </div>
       </div>
+      
+      {/* Show error if there is one */}
+      {error && <ErrorDisplay errorMessage={error} />}
     </div>
   );
 } 

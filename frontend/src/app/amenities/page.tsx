@@ -98,7 +98,7 @@ export default function AmenitiesPage() {
         <div className="text-center mb-12">
           <h1 className="hotel-heading mb-4">Hotel Amenities & Services</h1>
           <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-            Discover the exceptional amenities and services that make your stay with us truly memorable. From fine dining to relaxation and entertainment, we've thought of everything.
+            Discover the exceptional amenities and services that make your stay with us truly memorable. From fine dining to relaxation and entertainment, we&apos;ve thought of everything.
           </p>
         </div>
         
@@ -206,7 +206,7 @@ export default function AmenitiesPage() {
         <div className="mb-16 bg-gray-50 rounded-xl p-8">
           <h2 className="text-3xl font-bold mb-6">Accessibility Features</h2>
           <p className="text-gray-700 mb-6">
-            We're committed to providing a comfortable and accessible experience for all our guests. 
+            We&apos;re committed to providing a comfortable and accessible experience for all our guests. 
             Our hotel features a range of accessibility options, including:
           </p>
           <ul className="grid grid-cols-1 md:grid-cols-2 gap-4">

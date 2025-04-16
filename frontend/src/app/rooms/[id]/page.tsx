@@ -5,17 +5,27 @@ import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Room, RoomType } from '@/types';
+import { RoomType } from '@/types';
 import { roomService, authService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
-import { Bed, Users, Wifi, Tv, ShowerHead, Utensils, Coffee, Snowflake, CheckCircle, Calendar } from 'lucide-react';
+import { CheckCircle, Calendar, Users } from 'lucide-react';
 
+// Image mapping by room type ID
 const ROOM_IMAGES: Record<string, string> = {
-  '1': '/images/deluxe-suite.jpg',
+  '1': '/images/standard-room.jpg',
   '2': '/images/executive-room.jpg',
   '3': '/images/family-suite.jpg',
-  '4': '/images/standard-room.jpg',
+  '4': '/images/deluxe-suite.jpg',
   '5': '/images/premium-suite.jpg',
+};
+
+// Image mapping by room type name for more reliable matching
+const ROOM_TYPE_NAME_IMAGES: Record<string, string> = {
+  'Deluxe Suite': '/images/deluxe-suite.jpg',
+  'Executive Room': '/images/executive-room.jpg',
+  'Family Suite': '/images/family-suite.jpg',
+  'Standard Room': '/images/standard-room.jpg',
+  'Premium Suite': '/images/premium-suite.jpg',
 };
 
 // Amenities offered by different room types
@@ -48,7 +58,7 @@ export default function RoomDetailsPage() {
       try {
         const userResponse = await authService.getCurrentUser();
         setIsAuthenticated(userResponse.success && !!userResponse.data);
-      } catch (error) {
+      } catch {
         setIsAuthenticated(false);
       } finally {
         setAuthChecked(true);
@@ -120,7 +130,6 @@ export default function RoomDetailsPage() {
   
   const [roomType, setRoomType] = useState<RoomType | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   
   // Date picker state
   const [checkInDate, setCheckInDate] = useState(checkInParam);
@@ -146,19 +155,6 @@ export default function RoomDetailsPage() {
   // Add loading state for availability check
   const [checkingAvailability, setCheckingAvailability] = useState(false);
   
-  // Calculate nights based on check-in and check-out dates
-  const nights = useMemo(() => {
-    if (!checkInParam || !checkOutParam) return 1;
-    
-    const startDate = new Date(checkInParam);
-    const endDate = new Date(checkOutParam);
-    
-    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
-    
-    const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    return nights > 0 ? nights : 1;
-  }, [checkInParam, checkOutParam]);
-  
   // Define amenities based on room type
   const amenities = useMemo(() => {
     if (!roomType) return ROOM_AMENITIES.default;
@@ -183,7 +179,6 @@ export default function RoomDetailsPage() {
     const fetchRoomDetails = async () => {
       try {
         setLoading(true);
-        setError(null);
         
         // Fetch room type data from API
         const response = await roomService.getRoomTypeById(id);
@@ -206,11 +201,10 @@ export default function RoomDetailsPage() {
           
           setRoomType(room);
         } else {
-          setError('Room not found');
+          console.error('Room not found');
         }
       } catch (err) {
         console.error('Error fetching room details:', err);
-        setError('Failed to load room details. Please try again later.');
       } finally {
         setLoading(false);
       }
@@ -253,13 +247,6 @@ export default function RoomDetailsPage() {
           
           console.log(`Received ${availableRooms.length} available rooms out of ${totalRooms} total`);
           
-          // Create our room list format from the API response
-          const roomsList = availableRooms.map(room => ({
-            number: room.roomNumber,
-            id: room.id,
-            available: true
-          }));
-          
           // For rooms that aren't available, we need to create a full list of all possible rooms
           const floorNumber = parseInt(id, 10);
           const allRoomsList: { number: string; id: string; available: boolean }[] = [];
@@ -292,13 +279,9 @@ export default function RoomDetailsPage() {
           } else {
             setSelectedRoomNumber('');
           }
-          
-          // Clear any previous error
-          setError(null);
         } else {
           // If API call fails, show error but don't block the UI
           console.error('Failed to check room availability:', response.error);
-          setError(response.error || 'Failed to check room availability');
           
           // Set empty availability data
           setAvailableRooms([]);
@@ -310,7 +293,6 @@ export default function RoomDetailsPage() {
         }
       } catch (err) {
         console.error('Error checking room availability:', err);
-        setError('Failed to check room availability');
       } finally {
         // Set loading state to false
         setCheckingAvailability(false);
@@ -461,12 +443,12 @@ export default function RoomDetailsPage() {
     );
   }
   
-  if (error || !roomType) {
+  if (!roomType) {
     return (
       <div className="hotel-container py-12 min-h-screen flex items-center justify-center">
         <div className="text-center">
           <h2 className="text-2xl font-bold text-red-600 mb-4">Error</h2>
-          <p className="mb-6">{error || 'Room not found'}</p>
+          <p className="mb-6">Room not found</p>
           <Link href="/rooms">
             <Button>Back to Rooms</Button>
           </Link>
@@ -494,8 +476,8 @@ export default function RoomDetailsPage() {
             {/* Room Gallery */}
             <div className="relative w-full h-96 rounded-xl overflow-hidden mb-6">
               <Image
-                src={ROOM_IMAGES[id as string] || '/images/room-placeholder.jpg'}
-                alt={roomType.name}
+                src={roomType?.name ? ROOM_TYPE_NAME_IMAGES[roomType.name] || ROOM_IMAGES[id as string] || '/images/room-placeholder.jpg' : '/images/room-placeholder.jpg'}
+                alt={roomType?.name || 'Room'}
                 fill
                 className="object-cover"
               />

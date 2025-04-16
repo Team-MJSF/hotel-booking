@@ -20,13 +20,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const router = useRouter();
+  
+  // Get the storage method from environment variable
+  const getStorage = () => {
+    const storageType = process.env.NEXT_PUBLIC_AUTH_STORAGE || 'sessionStorage';
+    return storageType === 'localStorage' ? localStorage : sessionStorage;
+  };
 
   useEffect(() => {
     // Check if user is logged in on mount
     const checkAuthStatus = async () => {
       try {
         setIsLoading(true);
-        const token = localStorage.getItem('token');
+        const storage = getStorage();
+        const token = storage.getItem('token');
         console.log('Checking auth status, token exists:', !!token, token ? `Token prefix: ${token.slice(0, 15)}...` : '');
 
         if (token) {
@@ -35,12 +42,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log('Auth check response:', response);
           
           if (response.success && response.data) {
-            console.log('Setting user from profile:', response.data);
-            setUser(response.data);
+            // Only set the user if we have a valid user object with id and required fields
+            if (response.data.id && response.data.email) {
+              console.log('Setting user from profile:', response.data);
+              setUser(response.data);
+            } else {
+              console.log('Invalid user object received:', response.data);
+              storage.removeItem('token');
+              setUser(null);
+            }
           } else {
             // Token is invalid, remove it
-            console.log('Invalid token or failed to fetch profile, removing from localStorage');
-            localStorage.removeItem('token');
+            console.log(`Invalid token or failed to fetch profile: ${response.error || 'Unknown error'}`);
+            
+            // Be more specific about the error type for better debugging
+            if (response.error === 'User account no longer exists') {
+              console.log('User account no longer exists in the database, clearing token silently');
+            }
+            
+            storage.removeItem('token');
             setUser(null);
           }
         } else {
@@ -50,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } catch (error) {
         console.error('Failed to check auth status:', error);
         // Clear token if there was an error
-        localStorage.removeItem('token');
+        getStorage().removeItem('token');
         setUser(null);
       } finally {
         setIsLoading(false);
@@ -81,9 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(response.data.user);
         
         // Verify token was stored
-        const storedToken = localStorage.getItem('token');
+        const storage = getStorage();
+        const storedToken = storage.getItem('token');
         if (!storedToken) {
-          console.error('Token was not stored properly in localStorage');
+          console.error('Token was not stored properly in storage');
           return { 
             success: false, 
             message: 'Failed to store authentication token' 
@@ -98,70 +119,60 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         message: response.error || 'Invalid email or password' 
       };
     } catch (error) {
-      console.error('Login failed:', error);
-      return { success: false, message: 'An unexpected error occurred' };
+      console.error('Login error:', error);
+      return { 
+        success: false, 
+        message: 'An error occurred during login' 
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
-  const register = async (userData: {
-    email: string;
-    password: string;
-    confirmPassword: string;
-    firstName: string;
-    lastName: string;
-  }) => {
+  const register = async (userData: {email: string; password: string; confirmPassword: string; firstName: string; lastName: string}) => {
     try {
       setIsLoading(true);
-      console.log('Starting registration in AuthContext with:', userData.email);
       
-      // First try with the standard axios-based registration
-      let response = await authService.register(userData);
-      console.log('Initial registration response from authService:', response);
+      const response = await authService.register(userData);
       
-      // If the standard registration failed with invalid response, try the fetch-based approach
-      if (!response.success && response.error === 'Network error or server unavailable') {
-        console.log('Trying alternative fetch-based registration method...');
-        response = await authService.registerWithFetch(userData);
-        console.log('Fetch-based registration response:', response);
-      }
-      
-      if (response.success && response.data) {
-        console.log('Registration successful:', response.data);
+      if (response.success) {
+        // Register successful, user needs to log in
         return { success: true };
       }
       
-      console.error('Registration failed with error:', response.error);
       return { 
         success: false, 
         message: response.error || 'Registration failed' 
       };
     } catch (error) {
-      console.error('Registration failed with exception:', error);
-      return { success: false, message: 'An unexpected error occurred' };
+      console.error('Register error:', error);
+      return { 
+        success: false, 
+        message: 'An error occurred during registration' 
+      };
     } finally {
       setIsLoading(false);
     }
   };
 
   const logout = () => {
-    authService.logout();
+    const storage = getStorage();
+    storage.removeItem('token');
     setUser(null);
-    router.push('/login');
+    router.push('/');
+  };
+
+  const value = {
+    user,
+    isLoading,
+    isAuthenticated: !!user,
+    login,
+    register,
+    logout
   };
 
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        isAuthenticated: !!user,
-        login,
-        register,
-        logout,
-      }}
-    >
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );

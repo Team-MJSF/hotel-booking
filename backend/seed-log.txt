@@ -1,4 +1,4 @@
-Consolidated seed started at 2025-04-16T03:06:30.565Z
+Consolidated seed started at 2025-04-16T20:09:03.826Z
 Connected to database
 rooms table exists
 room_types table exists
@@ -14,8 +14,6 @@ Added room type: Deluxe Suite (deluxe)
 Added room type: Premium Suite (premium)
 All room types seeded successfully
 Seeding rooms...
-Found 50 existing rooms - clearing them
-Existing rooms cleared.
 Added room 101 (Standard Room)
 Added room 102 (Standard Room)
 Added room 103 (Standard Room)
@@ -68,7 +66,7 @@ Added room 509 (Premium Suite)
 Added room 510 (Premium Suite)
 All rooms seeded successfully
 Seeding test bookings...
-Test user 1 already exists
+Created test user 1
 Added completed booking for room 101
 Added confirmed booking for room 201
 Added confirmed booking for room 301

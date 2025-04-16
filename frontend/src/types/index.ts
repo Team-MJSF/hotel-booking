@@ -53,6 +53,7 @@ export interface Booking {
   checkInDate: string;
   checkOutDate: string;
   guestCount: number;
+  numberOfGuests?: number;
   totalPrice: number;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
   paymentStatus?: 'PENDING' | 'PAID' | 'REFUNDED';

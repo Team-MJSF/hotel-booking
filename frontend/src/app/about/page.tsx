@@ -232,7 +232,7 @@ export default function AboutPage() {
               <h3 className="text-xl font-bold">James Wilson</h3>
               <p className="text-primary font-medium">Head Concierge</p>
               <p className="text-gray-600 mt-2">
-                James's extensive knowledge of the area helps guests discover the best local experiences during their stay.
+                James&apos;s extensive knowledge of the area helps guests discover the best local experiences during their stay.
               </p>
             </div>
           </div>

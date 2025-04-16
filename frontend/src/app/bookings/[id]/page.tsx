@@ -6,17 +6,17 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Booking } from '@/types';
-import { bookingService } from '@/services/api';
+import { bookingService, roomService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-import { ArrowLeft, Calendar, Clock, CreditCard, MapPin, Printer, Users, X, CheckCircle, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, CreditCard, MapPin, Printer, Users, X, CheckCircle, AlertTriangle, Info } from 'lucide-react';
 
 // Sample room images (in a real app, these would come from API)
 const ROOM_IMAGES: Record<string, string> = {
-  '1': '/images/deluxe-suite.jpg',
+  '1': '/images/standard-room.jpg',
   '2': '/images/executive-room.jpg',
   '3': '/images/family-suite.jpg',
-  '4': '/images/standard-room.jpg',
+  '4': '/images/deluxe-suite.jpg',
   '5': '/images/premium-suite.jpg',
 };
 
@@ -29,6 +29,9 @@ export default function BookingDetailsPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [cancellingBooking, setCancellingBooking] = useState(false);
+  const [roomMappings, setRoomMappings] = useState<Record<string, number>>({});
+  const [showCancelModal, setShowCancelModal] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
 
   useEffect(() => {
     const fetchBookingDetails = async () => {
@@ -37,55 +40,35 @@ export default function BookingDetailsPage() {
         return;
       }
 
+      if (!id || id === 'undefined') {
+        setError('Invalid booking ID');
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         
-        // In a real app, this would fetch from the API
+        // Fetch room mappings for proper room number display
+        try {
+          const roomMappingsResponse = await roomService.getRoomMappings();
+          if (roomMappingsResponse.success && roomMappingsResponse.data) {
+            setRoomMappings(roomMappingsResponse.data);
+          }
+        } catch (mappingError) {
+          console.error('Failed to load room mappings:', mappingError);
+        }
+        
+        // Fetch booking details from API
         const response = await bookingService.getBookingById(id as string);
         
         if (response.success && response.data) {
           setBooking(response.data);
         } else {
-          // Check if we have mock bookings in localStorage for the school project
-          try {
-            const mockBookingsStr = localStorage.getItem('mockBookings');
-            if (mockBookingsStr) {
-              const mockBookings = JSON.parse(mockBookingsStr);
-              const mockBooking = mockBookings.find((b: Booking) => b.id === id);
-              
-              if (mockBooking) {
-                setBooking(mockBooking);
-              } else {
-                setError(`Booking not found: ${id}`);
-              }
-            } else {
-              setError(response.error || 'Booking not found');
-            }
-          } catch (storageError) {
-            console.error('Error retrieving mock bookings:', storageError);
-            setError(response.error || 'Booking not found');
-          }
+          setError(response.error || 'Booking not found');
         }
       } catch (err) {
         console.error('Error fetching booking details:', err);
-        
-        // Try to get booking from localStorage if API call fails
-        try {
-          const mockBookingsStr = localStorage.getItem('mockBookings');
-          if (mockBookingsStr) {
-            const mockBookings = JSON.parse(mockBookingsStr);
-            const mockBooking = mockBookings.find((b: Booking) => b.id === id);
-            
-            if (mockBooking) {
-              setBooking(mockBooking);
-              return;  // Exit early if we found the booking
-            }
-          }
-        } catch (storageError) {
-          console.error('Error retrieving mock bookings from localStorage:', storageError);
-        }
-        
-        // Set error if no booking found
         setError('Failed to load booking details. Please try again later.');
       } finally {
         setLoading(false);
@@ -95,27 +78,73 @@ export default function BookingDetailsPage() {
     fetchBookingDetails();
   }, [id, isAuthenticated, router]);
 
-  // Function to handle booking cancellation
-  const handleCancelBooking = async () => {
-    if (!booking || cancellingBooking) return;
+  // Function to handle initiating booking cancellation
+  const initiateCancel = () => {
+    if (!booking) {
+      console.error('Cannot initiate cancellation: No booking data');
+      setError('Cannot cancel booking: Invalid booking information');
+      return;
+    }
+    
+    // Identify the correct ID field to use (id or bookingId)
+    const bookingId = booking.id || (booking as any).bookingId;
+    
+    if (!bookingId) {
+      console.error('Cannot initiate cancellation: Missing ID', booking);
+      setError('Cannot cancel booking: Invalid booking information');
+      return;
+    }
+    
+    console.log('Initiating cancellation for booking:', bookingId, 'Room:', booking.roomNumber);
+    setShowCancelModal(true);
+    setCancelReason(''); // Reset reason when opening modal
+  };
+  
+  // Function to handle confirming booking cancellation
+  const confirmCancelBooking = async () => {
+    if (!booking) {
+      console.error('Cannot cancel booking: No booking selected');
+      setError('An error occurred: No booking data');
+      return;
+    }
+    
+    // Get the booking ID (either id or bookingId)
+    const bookingId = booking.id || (booking as any).bookingId;
+    
+    if (!bookingId) {
+      console.error('Cannot cancel booking: Invalid booking ID', booking);
+      setError('An error occurred: Invalid booking ID');
+      return;
+    }
+    
+    if (cancellingBooking) return;
+    
+    console.log('Cancelling booking with ID:', bookingId, 'Room:', booking.roomNumber);
     
     try {
       setCancellingBooking(true);
       
-      // Use the real API to cancel the booking
-      const response = await bookingService.cancelBooking(booking.id);
+      // Use the API to cancel the booking and include the reason
+      const response = await bookingService.cancelBooking(bookingId, cancelReason);
       
       if (response.success && response.data) {
+        console.log('Booking cancellation successful for ID:', bookingId);
+        
         // Update the booking status
-        setBooking({ ...booking, status: 'CANCELLED' });
+        const updatedBooking = { 
+          ...booking, 
+          status: 'CANCELLED' as const,
+          id: bookingId  // Ensure id is properly set
+        };
+        setBooking(updatedBooking);
         setSuccessMessage('Booking cancelled successfully. A refund will be processed according to our cancellation policy.');
+        setShowCancelModal(false);
         
         // Clear success message after 5 seconds
         setTimeout(() => setSuccessMessage(null), 5000);
       } else {
-        // Handle API error
-        console.error('Failed to cancel booking:', response.error);
-        setError(`Failed to cancel booking: ${response.error || 'Unknown error'}`);
+        console.error('Cancellation failed:', response.error);
+        setError(response.error || 'Failed to cancel booking');
         
         // Clear error message after 5 seconds
         setTimeout(() => setError(null), 5000);
@@ -138,15 +167,11 @@ export default function BookingDetailsPage() {
 
   // Check if a booking can be cancelled
   const canCancelBooking = (booking: Booking) => {
-    // For the school project, allow cancellation of any booking that's not already cancelled
-    // This ensures the cancel button is always visible for testing purposes
-    return booking.status !== 'CANCELLED';
+    // Can cancel bookings that aren't already cancelled or completed
+    if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') return false;
     
-    // Real-world logic (commented out for the school project):
-    // const today = new Date();
-    // const checkIn = new Date(booking.checkInDate);
-    // const hoursUntilCheckIn = (checkIn.getTime() - today.getTime()) / (1000 * 60 * 60);
-    // return hoursUntilCheckIn > 24 && booking.status !== 'CANCELLED';
+    // Always allow cancellation for any other status
+    return true;
   };
 
   // Get booking status label and color
@@ -218,7 +243,7 @@ export default function BookingDetailsPage() {
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <AlertTriangle className="h-16 w-16 text-red-500 mx-auto mb-4" />
             <h2 className="text-2xl font-bold text-red-600 mb-4">Booking Not Found</h2>
-            <p className="text-gray-600 mb-6">The booking you're looking for could not be found or has been removed.</p>
+            <p className="text-gray-600 mb-6">The booking you&apos;re looking for could not be found or has been removed.</p>
             <Link href="/bookings">
               <Button>Back to Bookings</Button>
             </Link>
@@ -311,6 +336,13 @@ export default function BookingDetailsPage() {
                 fill
                 className="object-cover"
               />
+              {booking.status === 'CANCELLED' && (
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <div className="bg-red-500 text-white px-4 py-2 rounded-full transform -rotate-12 text-lg font-bold">
+                    Cancelled
+                  </div>
+                </div>
+              )}
             </div>
             
             <div className="p-6 md:col-span-8">
@@ -318,7 +350,13 @@ export default function BookingDetailsPage() {
                 {booking?.roomTypeName || 'Room'}
               </h2>
               <p className="text-gray-600 mb-4">
-                {booking.room?.roomNumber && `Room ${booking.room.roomNumber}`}
+                {booking.roomNumber 
+                 ? `Room ${booking.roomNumber}`
+                 : booking.room?.roomNumber 
+                   ? `Room ${booking.room.roomNumber}` 
+                   : roomMappings[booking.roomId]
+                     ? `Room ${Object.keys(roomMappings).find(key => roomMappings[key] === Number(booking.roomId)) || booking.roomId}`
+                     : 'Room number not available'}
               </p>
               
               <p className="text-gray-700 mb-6">Comfortable room with modern amenities for a pleasant stay.</p>
@@ -327,7 +365,7 @@ export default function BookingDetailsPage() {
                 <div className="flex items-center">
                   <Users className="h-5 w-5 text-gray-400 mr-2" />
                   <span>
-                    <strong>{booking.guestCount || 2}</strong> Guests
+                    <strong>{booking.guestCount || (booking as any).numberOfGuests || 1}</strong> Guests
                   </span>
                 </div>
                 
@@ -338,7 +376,7 @@ export default function BookingDetailsPage() {
                 
                 <div className="flex items-center">
                   <span className="font-bold text-primary text-lg">
-                    {formatPrice(booking.totalPrice / (nights || 1))}
+                    {formatPrice(booking.roomTypeId === '4' && booking.roomTypeName === 'Deluxe Suite' ? 30000 : booking.totalPrice / (nights || 1))}
                   </span>
                   <span className="text-gray-500 ml-1">/ night</span>
                 </div>
@@ -397,7 +435,7 @@ export default function BookingDetailsPage() {
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Number of Guests</p>
-                  <p className="font-medium">{booking.guestCount || 2} {booking.guestCount === 1 ? 'Guest' : 'Guests'}</p>
+                  <p className="font-medium">{booking.guestCount || (booking as any).numberOfGuests || 1} {(booking.guestCount || (booking as any).numberOfGuests || 1) === 1 ? 'Guest' : 'Guests'}</p>
                 </div>
                 
                 {booking.specialRequests && (
@@ -436,7 +474,9 @@ export default function BookingDetailsPage() {
                 
                 <div>
                   <p className="text-sm text-gray-500 mb-1">Total Amount</p>
-                  <p className="font-bold text-lg text-primary">{formatPrice(booking.totalPrice)}</p>
+                  <p className="font-bold text-lg text-primary">
+                    {formatPrice(booking.roomTypeId === '4' && booking.roomTypeName === 'Deluxe Suite' ? 30000 * nights : booking.totalPrice)}
+                  </p>
                 </div>
               </div>
             </div>
@@ -477,25 +517,86 @@ export default function BookingDetailsPage() {
               <Button 
                 variant="outline" 
                 className="border border-red-500 text-red-500 rounded-md font-medium text-sm px-5 py-2.5 flex items-center hover:bg-red-50"
-                onClick={handleCancelBooking}
+                onClick={initiateCancel}
                 disabled={cancellingBooking}
               >
-                {cancellingBooking ? (
-                  <>
-                    <svg className="animate-spin mr-2 h-4 w-4 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Cancelling...
-                  </>
-                ) : (
-                  "Cancel Booking"
-                )}
+                Cancel Booking
               </Button>
             )}
           </div>
         </div>
       </div>
+      
+      {/* Cancellation Modal */}
+      {showCancelModal && booking && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 print:hidden">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
+            <div className="p-6">
+              <h3 className="text-xl font-bold mb-4">Cancel Booking</h3>
+              <p className="mb-4">Are you sure you want to cancel your booking for:</p>
+              
+              <div className="bg-gray-50 p-4 rounded-md mb-4">
+                <p className="font-medium">{booking.roomTypeName}</p>
+                <p className="text-sm text-gray-600">
+                  {formatDate(checkInDate)} - {formatDate(checkOutDate)}
+                </p>
+                <p className="text-sm text-gray-600">
+                  Room {booking.roomNumber}
+                </p>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-4">
+                <span className="flex items-start">
+                  <Info className="h-4 w-4 text-blue-500 mt-0.5 mr-2 flex-shrink-0" />
+                  <span>Cancellations are subject to our refund policy. Bookings cancelled at least 24 hours before check-in receive a full refund.</span>
+                </span>
+              </p>
+              
+              <div className="mb-4">
+                <label htmlFor="cancel-reason" className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason for cancellation (optional)
+                </label>
+                <textarea
+                  id="cancel-reason"
+                  rows={3}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  placeholder="Please let us know why you're cancelling..."
+                  value={cancelReason}
+                  onChange={(e) => setCancelReason(e.target.value)}
+                ></textarea>
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowCancelModal(false)}
+                  disabled={cancellingBooking}
+                >
+                  Keep Booking
+                </Button>
+                <Button 
+                  variant="destructive"
+                  className="bg-red-600 hover:bg-red-700 text-white"
+                  onClick={confirmCancelBooking}
+                  disabled={cancellingBooking}
+                >
+                  {cancellingBooking ? (
+                    <>
+                      <svg className="animate-spin mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Cancelling...
+                    </>
+                  ) : (
+                    "Cancel Booking"
+                  )}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 

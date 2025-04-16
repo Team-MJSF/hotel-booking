@@ -2,15 +2,20 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import RoomTypesGrid from '@/components/RoomTypesGrid';
-import { Room, RoomType } from '@/types';
 import { roomService } from '@/services/api';
 import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import axios from 'axios';
+
+// Declare the handleRoomNavigation method on the Window interface
+declare global {
+  interface Window {
+    handleRoomNavigation?: (roomId: string) => void;
+  }
+}
 
 export default function RoomsPage() {
   const searchParams = useSearchParams();
@@ -47,11 +52,9 @@ export default function RoomsPage() {
   
   // Helper variables
   const hasSelectedDates = checkInDate && checkOutDate;
-  const hasSelectedGuests = guests && parseInt(guests, 10) > 0;
-  const hasRequiredFields = hasSelectedDates && hasSelectedGuests;
-
+  
   // Validate dates and guest count
-  const validateBookingCriteria = () => {
+  const validateBookingCriteria = useCallback(() => {
     const errors: {
       checkIn?: string;
       checkOut?: string;
@@ -91,10 +94,10 @@ export default function RoomsPage() {
     
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
-  };
+  }, [checkInDate, checkOutDate, guests]);
 
-  // Helper function to handle navigation to room details page
-  const handleRoomNavigation = (roomId: string) => {
+  // Helper function to handle navigation to room details page - wrapped in useCallback
+  const handleRoomNavigation = useCallback((roomId: string) => {
     // Validate that dates and guests are selected before allowing navigation
     if (!validateBookingCriteria()) {
       // Scroll to the top to show the error message
@@ -104,20 +107,18 @@ export default function RoomsPage() {
     
     // Navigate to room details with date and guest parameters
     router.push(`/rooms/${roomId}?checkIn=${checkInDate}&checkOut=${checkOutDate}&guests=${guests}`);
-  };
+  }, [checkInDate, checkOutDate, guests, router]);
   
   // Expose the navigation handler to be used by child components
   useEffect(() => {
     // Make the handler available to the RoomTypesGrid component
-    // @ts-ignore - Adding a custom property to window for internal component communication
     window.handleRoomNavigation = handleRoomNavigation;
     
     return () => {
       // Clean up when component unmounts
-      // @ts-ignore
       delete window.handleRoomNavigation;
     };
-  }, [checkInDate, checkOutDate, guests]);
+  }, [handleRoomNavigation]);
 
   // Fetch available rooms if dates are already provided
   useEffect(() => {
@@ -141,18 +142,31 @@ export default function RoomsPage() {
   }) => {
     try {
       setLoading(true);
+      setError(null);
       
-      console.log('Searching rooms with:', params);
+      console.log('Fetching available rooms with params:', params);
       
-      // Get all room types first to ensure we have complete data
+      // First try to perform a regular room search with the API
+      const searchResponse = await roomService.searchRooms({
+        checkInDate: params.checkInDate,
+        checkOutDate: params.checkOutDate,
+        maxGuests: params.maxGuests,
+        minPrice: params.minPrice,
+        maxPrice: params.maxPrice
+      });
+      
+      console.log('Search response:', searchResponse);
+      
+      // Get all room types to ensure we have complete data
       const roomTypesResponse = await roomService.getRoomTypes();
       
       if (!roomTypesResponse.success || !roomTypesResponse.data) {
+        console.error('Failed to fetch room types:', roomTypesResponse.error);
         throw new Error(roomTypesResponse.error || 'Failed to fetch room types');
       }
       
       const allRoomTypes = roomTypesResponse.data;
-      console.log('All room types:', allRoomTypes);
+      console.log('All room types retrieved:', allRoomTypes.length);
       
       // Initialize availability data for all room types
       const roomAvailabilityData: Record<string, { available: number; total: number; soldOut: boolean }> = {};
@@ -167,6 +181,8 @@ export default function RoomsPage() {
             await new Promise(resolve => setTimeout(resolve, 300));
           }
           
+          console.log(`Checking availability for room type ${typeId} (${roomType.name})`);
+          
           const availabilityResponse = await roomService.checkRoomAvailability(
             typeId,
             params.checkInDate,
@@ -174,15 +190,16 @@ export default function RoomsPage() {
           );
           
           if (availabilityResponse.success && availabilityResponse.data) {
+            console.log(`Room type ${typeId} availability:`, availabilityResponse.data);
             roomAvailabilityData[typeId] = {
               available: availabilityResponse.data.availableCount,
               total: availabilityResponse.data.totalRooms,
               soldOut: availabilityResponse.data.availableCount === 0
             };
           } else {
+            console.error(`Failed to get availability for room type ${typeId}:`, availabilityResponse.error);
             // Use mock data as fallback if API call fails
             roomAvailabilityData[typeId] = {
-              // For demo/school project, we'll use some default values
               available: Math.floor(Math.random() * 8) + 1, // Random 1-8 rooms available
               total: 10,
               soldOut: false
@@ -198,7 +215,6 @@ export default function RoomsPage() {
           
           // Use mock data when API fails
           roomAvailabilityData[typeId] = {
-            // For demo/school project, we'll use some default values
             available: Math.floor(Math.random() * 8) + 1, // Random 1-8 rooms available
             total: 10,
             soldOut: false
@@ -207,11 +223,13 @@ export default function RoomsPage() {
       }
       
       console.log('Room availability data after checking all types:', roomAvailabilityData);
+      
+      // No need to test API connection anymore since everything is working
       setRoomAvailability(roomAvailabilityData);
       
     } catch (err) {
       console.error('Exception fetching available rooms:', err);
-      setError('An error occurred while searching for rooms');
+      setError('An error occurred while searching for rooms. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -261,90 +279,6 @@ export default function RoomsPage() {
     // Call API to fetch available rooms
     fetchAvailableRooms(searchParams);
   };
-
-  // Check availability for the specified dates
-  const checkAvailability = useCallback(async () => {
-    if (!checkInDate || !checkOutDate) {
-      setError('Please select check-in and check-out dates');
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      // Get all room types first
-      const roomTypesResponse = await roomService.getRoomTypes();
-      
-      if (!roomTypesResponse.success || !roomTypesResponse.data) {
-        throw new Error(roomTypesResponse.error || 'Failed to fetch room types');
-      }
-      
-      const allRoomTypes = roomTypesResponse.data;
-      
-      // Initialize availability data
-      const roomAvailabilityData: Record<string, { 
-        available: number, 
-        total: number,
-        soldOut: boolean
-      }> = {};
-      
-      // Check availability for each room type sequentially
-      for (const roomType of allRoomTypes) {
-        const typeId = roomType.id.toString();
-        try {
-          // Add a small delay between requests to avoid rate limiting
-          if (Object.keys(roomAvailabilityData).length > 0) {
-            await new Promise(resolve => setTimeout(resolve, 300));
-          }
-          
-          const availabilityResponse = await roomService.checkRoomAvailability(
-            typeId,
-            checkInDate,
-            checkOutDate
-          );
-          
-          if (availabilityResponse.success && availabilityResponse.data) {
-            roomAvailabilityData[typeId] = {
-              available: availabilityResponse.data.availableCount,
-              total: availabilityResponse.data.totalRooms,
-              soldOut: availabilityResponse.data.availableCount === 0
-            };
-          } else {
-            // Use mock data as fallback if API call fails
-            roomAvailabilityData[typeId] = {
-              // For demo/school project, we'll use some default values
-              available: Math.floor(Math.random() * 8) + 1, // Random 1-8 rooms available
-              total: 10,
-              soldOut: false
-            };
-          }
-        } catch (err) {
-          console.error(`Error checking availability for room type ${typeId}:`, err);
-          
-          // Handle rate limit errors gracefully
-          if (axios.isAxiosError(err) && err.response?.status === 429) {
-            console.log(`Rate limit hit for room type ${typeId}, using fallback data`);
-          }
-          
-          // Use mock data when API fails
-          roomAvailabilityData[typeId] = {
-            // For demo/school project, we'll use some default values
-            available: Math.floor(Math.random() * 8) + 1, // Random 1-8 rooms available
-            total: 10,
-            soldOut: false
-          };
-        }
-      }
-      
-      setRoomAvailability(roomAvailabilityData);
-    } catch (err) {
-      setError('Failed to check room availability. Please try again.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  }, [checkInDate, checkOutDate]);
 
   return (
     <div className="py-8 md:py-12">

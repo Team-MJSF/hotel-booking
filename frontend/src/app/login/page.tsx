@@ -12,9 +12,20 @@ import { Input } from '@/components/ui/input';
 import { Mail, Lock, CheckCircle } from 'lucide-react';
 import { debugApi } from '@/services/api';
 
+// Define a type for the debug interface
+interface HotelBookingDebug {
+  checkAuthStatus: () => boolean;
+  [key: string]: unknown; // For the spread of debugApi
+}
+
+// Define interface for window with our custom property
+interface CustomWindow extends Window {
+  hotelBookingDebug: HotelBookingDebug;
+}
+
 // Expose debug tools to window for browser console access
 if (typeof window !== 'undefined') {
-  (window as any).hotelBookingDebug = {
+  ((window as unknown) as CustomWindow).hotelBookingDebug = {
     ...debugApi,
     checkAuthStatus: () => {
       const token = localStorage.getItem('token');

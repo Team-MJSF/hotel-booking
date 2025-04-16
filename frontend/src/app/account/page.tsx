@@ -33,18 +33,21 @@ export default function AccountPage() {
         return;
       }
       
-      // In a real app, you would fetch user profile data here
-      // For this demo, we'll use mock data
-      if (user) {
+      // Check if we have valid user data with required fields
+      if (user && user.firstName && user.lastName && user.email) {
         setFormData({
-          firstName: user.firstName || 'John',
-          lastName: user.lastName || 'Doe',
-          email: user.email || 'john.doe@example.com',
-          phone: '+1 (555) 123-4567', // Default phone since it's not in the User type
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          phone: '+1 (555) 123-4567', // Default phone since User type doesn't include phone
         });
+        setIsLoading(false);
+      } else {
+        // User data is incomplete or invalid, log out and redirect
+        console.log('Invalid or incomplete user data:', user);
+        router.push('/login?redirect=/account');
+        return;
       }
-      
-      setIsLoading(false);
     };
     
     checkAuth();
