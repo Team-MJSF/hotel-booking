@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { RoomType, Room } from '@/types';
 import { roomService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -50,6 +50,16 @@ export default function BookingPage() {
   
   // Validation state
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [dateError, setDateError] = useState<string | null>(null);
+  
+  // Update form fields when user data changes
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      setFirstName(user.firstName || '');
+      setLastName(user.lastName || '');
+      setEmail(user.email || '');
+    }
+  }, [isAuthenticated, user]);
   
   useEffect(() => {
     // If user is not authenticated, redirect to login
@@ -69,21 +79,29 @@ export default function BookingPage() {
       
       try {
         setLoading(true);
-        // In a real app, we would call the API
-        // const response = await roomService.getRoomTypeById(roomId);
+        // Call the API to get room details
+        const response = await roomService.getRoomTypeById(roomId);
+        const roomData = response.success && response.data ? response.data : null;
         
-        // For now, use dummy data
-        const dummyRoom: RoomType = {
-          id: roomId,
-          name: 'Deluxe Suite',
-          description: 'Spacious suite with city views, king-size bed, and luxury amenities.',
-          pricePerNight: 29900,
-          capacity: 2,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        
-        setRoom(dummyRoom);
+        if (roomData) {
+          const roomInfo: RoomType = {
+            id: roomData.id,
+            name: roomData.name,
+            code: roomData.code,
+            description: roomData.description,
+            pricePerNight: roomData.pricePerNight,
+            maxGuests: roomData.maxGuests,
+            imageUrl: roomData.imageUrl || '',
+            amenities: typeof roomData.amenities === 'string'
+              ? JSON.parse(roomData.amenities)
+              : roomData.amenities || [],
+            displayOrder: roomData.displayOrder
+          };
+          
+          setRoom(roomInfo);
+        } else {
+          setError('Room not found');
+        }
       } catch (err) {
         console.error('Error fetching room details:', err);
         setError('Failed to load room details. Please try again later.');
@@ -115,14 +133,10 @@ export default function BookingPage() {
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
     
-    if (!firstName.trim()) newErrors.firstName = 'First name is required';
-    if (!lastName.trim()) newErrors.lastName = 'Last name is required';
-    if (!email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = 'Email is invalid';
+    // Only validate phone number since other fields are from user account
+    if (!phone.trim()) {
+      newErrors.phone = 'Phone number is required';
     }
-    if (!phone.trim()) newErrors.phone = 'Phone number is required';
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -155,22 +169,36 @@ export default function BookingPage() {
   
   // Handle change in dates
   const handleDateChange = (type: 'checkIn' | 'checkOut', value: string) => {
+    // Reset errors first
+    setDateError(null);
+    setErrors(prevErrors => ({
+      ...prevErrors,
+      [type === 'checkIn' ? 'checkInDate' : 'checkOutDate']: ''
+    }));
+    
+    // Normalize and format the date consistently
+    const selectedDate = new Date(value);
+    const formattedDate = selectedDate.toISOString().split('T')[0];
+    
     if (type === 'checkIn') {
-      setCheckInDate(value);
+      setCheckInDate(formattedDate);
       
       // Ensure check-out is after check-in
-      const checkIn = new Date(value);
-      const checkOut = new Date(checkOutDate);
-      
-      if (checkIn >= checkOut) {
-        // Set check-out to day after check-in
-        const nextDay = new Date(checkIn);
-        nextDay.setDate(nextDay.getDate() + 1);
-        setCheckOutDate(nextDay.toISOString().split('T')[0]);
+      if (checkOutDate) {
+        const checkOut = new Date(checkOutDate);
+        if (selectedDate >= checkOut) {
+          // Automatically set check-out to day after check-in
+          const nextDay = new Date(selectedDate);
+          nextDay.setDate(nextDay.getDate() + 1);
+          setCheckOutDate(nextDay.toISOString().split('T')[0]);
+        }
       }
     } else {
-      setCheckOutDate(value);
+      setCheckOutDate(formattedDate);
     }
+    
+    // Recalculate booking details when dates change
+    calculateBookingDetails();
   };
   
   if (loading) {
@@ -268,7 +296,7 @@ export default function BookingPage() {
                     value={guests}
                     onChange={(e) => setGuests(e.target.value)}
                   >
-                    {Array.from({ length: room.capacity }, (_, i) => i + 1).map((num) => (
+                    {Array.from({ length: room.maxGuests }, (_, i) => i + 1).map((num) => (
                       <option key={num} value={num}>
                         {num} {num === 1 ? 'Guest' : 'Guests'}
                       </option>
@@ -276,7 +304,10 @@ export default function BookingPage() {
                   </select>
                 </div>
                 
-                <Button fullWidth onClick={handleContinue}>
+                <Button 
+                  className="w-full"
+                  onClick={handleContinue}
+                >
                   Continue
                 </Button>
               </div>
@@ -287,72 +318,57 @@ export default function BookingPage() {
               <div className="bg-white rounded-lg shadow-md p-6">
                 <h2 className="text-2xl font-bold mb-6">Guest Information</h2>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
-                      First Name*
-                    </label>
-                    <Input
-                      id="firstName"
-                      type="text"
-                      value={firstName}
-                      onChange={(e) => setFirstName(e.target.value)}
-                      error={errors.firstName}
-                    />
-                    {errors.firstName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.firstName}</p>
-                    )}
-                  </div>
-                  
-                  <div>
-                    <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
-                      Last Name*
-                    </label>
-                    <Input
-                      id="lastName"
-                      type="text"
-                      value={lastName}
-                      onChange={(e) => setLastName(e.target.value)}
-                      error={errors.lastName}
-                    />
-                    {errors.lastName && (
-                      <p className="text-red-500 text-sm mt-1">{errors.lastName}</p>
-                    )}
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-start">
+                    <CheckCircle className="h-5 w-5 text-blue-500 mt-0.5 mr-3 flex-shrink-0" />
+                    <div>
+                      <p className="text-sm font-medium text-blue-800 mb-1">Account Information</p>
+                      <p className="text-sm text-blue-700">
+                        Your booking will be associated with your account information. 
+                        Only special requests can be added below.
+                      </p>
+                    </div>
                   </div>
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
-                      Email Address*
-                    </label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      error={errors.email}
-                    />
-                    {errors.email && (
-                      <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                    )}
+                <div className="border border-gray-200 rounded-lg p-5 mb-6">
+                  <h3 className="text-md font-semibold mb-3 text-gray-700">Personal Details</h3>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-3">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">First Name</p>
+                      <p className="font-medium">{user?.firstName || 'Not available'}</p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Last Name</p>
+                      <p className="font-medium">{user?.lastName || 'Not available'}</p>
+                    </div>
                   </div>
                   
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                      Phone Number*
-                    </label>
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      error={errors.phone}
-                    />
-                    {errors.phone && (
-                      <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
-                    )}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <p className="text-sm text-gray-500 mb-1">Email Address</p>
+                      <p className="font-medium">{user?.email || 'Not available'}</p>
+                    </div>
                   </div>
+                </div>
+
+                <div className="mb-6">
+                  <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
+                    Phone Number*
+                  </label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    error={errors.phone}
+                    placeholder="Enter phone number for booking communication"
+                  />
+                  {errors.phone && (
+                    <p className="text-red-500 text-sm mt-1">{errors.phone}</p>
+                  )}
                 </div>
                 
                 <div className="mb-6">
@@ -364,11 +380,14 @@ export default function BookingPage() {
                     className="hotel-input w-full min-h-[100px]"
                     value={specialRequests}
                     onChange={(e) => setSpecialRequests(e.target.value)}
-                    placeholder="Any special requests or preferences?"
+                    placeholder="Any special requests or preferences? (e.g. early check-in, room preferences, dietary requirements)"
                   />
                 </div>
                 
-                <Button fullWidth onClick={handleContinue}>
+                <Button 
+                  className="w-full"
+                  onClick={handleContinue}
+                >
                   Continue to Review
                 </Button>
               </div>
@@ -384,12 +403,12 @@ export default function BookingPage() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm text-gray-500">Check-in</p>
-                      <p className="font-medium">{formatDate(new Date(checkInDate))}</p>
+                      <p className="font-medium">{checkInDate ? formatDate(new Date(checkInDate)) : "Not selected"}</p>
                       <p className="text-sm text-gray-600">After 3:00 PM</p>
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Check-out</p>
-                      <p className="font-medium">{formatDate(new Date(checkOutDate))}</p>
+                      <p className="font-medium">{checkOutDate ? formatDate(new Date(checkOutDate)) : "Not selected"}</p>
                       <p className="text-sm text-gray-600">Before 12:00 PM</p>
                     </div>
                   </div>
@@ -397,8 +416,8 @@ export default function BookingPage() {
                 
                 <div className="border-b border-gray-200 pb-4 mb-4">
                   <h3 className="text-lg font-semibold mb-2">Guest Information</h3>
-                  <p><span className="text-gray-500">Guest Name:</span> {firstName} {lastName}</p>
-                  <p><span className="text-gray-500">Email:</span> {email}</p>
+                  <p><span className="text-gray-500">Guest Name:</span> {user?.firstName} {user?.lastName}</p>
+                  <p><span className="text-gray-500">Email:</span> {user?.email}</p>
                   <p><span className="text-gray-500">Phone:</span> {phone}</p>
                   {specialRequests && (
                     <>
@@ -413,9 +432,22 @@ export default function BookingPage() {
                   <p className="text-sm text-gray-600">Free cancellation up to 24 hours before check-in. Cancellations made less than 24 hours before check-in are subject to a one-night charge.</p>
                 </div>
                 
-                <Button fullWidth onClick={handleContinue}>
-                  Proceed to Payment
-                </Button>
+                <div className="flex gap-4">
+                  <Button 
+                    className="flex-1"
+                    onClick={handleContinue}
+                  >
+                    Proceed to Payment
+                  </Button>
+                  
+                  <Button 
+                    variant="outline"
+                    className="border-red-500 text-red-500 hover:bg-red-50"
+                    onClick={() => router.push('/rooms')}
+                  >
+                    Cancel Booking
+                  </Button>
+                </div>
               </div>
             )}
           </div>
@@ -436,7 +468,7 @@ export default function BookingPage() {
                 </div>
                 <div>
                   <h3 className="font-bold">{room.name}</h3>
-                  <p className="text-sm text-gray-600">{room.capacity} Guests</p>
+                  <p className="text-sm text-gray-600">{room.maxGuests} Guests</p>
                 </div>
               </div>
               
@@ -444,7 +476,7 @@ export default function BookingPage() {
                 <div className="flex justify-between mb-2">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 text-primary mr-2" />
-                    <span className="text-sm">{formatDate(new Date(checkInDate))}</span>
+                    <span className="text-sm">{checkInDate ? formatDate(new Date(checkInDate)) : "Not selected"}</span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-sm">Check-in</span>
@@ -453,7 +485,7 @@ export default function BookingPage() {
                 <div className="flex justify-between mb-2">
                   <div className="flex items-center">
                     <Calendar className="h-4 w-4 text-primary mr-2" />
-                    <span className="text-sm">{formatDate(new Date(checkOutDate))}</span>
+                    <span className="text-sm">{checkOutDate ? formatDate(new Date(checkOutDate)) : "Not selected"}</span>
                   </div>
                   <div className="flex items-center">
                     <span className="text-sm">Check-out</span>

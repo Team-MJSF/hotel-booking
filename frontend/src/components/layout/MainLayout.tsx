@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { Facebook, Instagram, Mail, MapPin, Menu, Phone, Twitter, X } from 'lucide-react';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 export default function MainLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -33,6 +33,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
   const navLinks = [
     { href: '/', label: 'Home', protected: false },
     { href: '/rooms', label: 'Rooms', protected: false },
+    { href: '/amenities', label: 'Amenities', protected: false },
+    { href: '/about', label: 'About', protected: false },
+    { href: '/contact', label: 'Contact', protected: false },
     { href: '/my-bookings', label: 'My Bookings', protected: true },
     { href: '/account', label: 'My Account', protected: true },
   ];
@@ -162,22 +165,21 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               {isAuthenticated ? (
                 <Button 
                   variant="outline" 
-                  fullWidth
                   onClick={() => {
                     logout();
                     setMobileMenuOpen(false);
                   }}
-                  className="mt-4"
+                  className="mt-4 w-full"
                 >
                   Logout
                 </Button>
               ) : (
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <Link href="/login" className="flex" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="outline" fullWidth>Login</Button>
+                    <Button variant="outline" className="w-full">Login</Button>
                   </Link>
                   <Link href="/register" className="flex" onClick={() => setMobileMenuOpen(false)}>
-                    <Button fullWidth>Register</Button>
+                    <Button className="w-full">Register</Button>
                   </Link>
                 </div>
               )}
@@ -190,34 +192,37 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       <main className="flex-1">{children}</main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-white py-12">
+      <footer className="bg-gray-900 text-white py-8">
         <div className="hotel-container">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <h3 className="text-xl font-serif font-semibold mb-4">Grand Plaza</h3>
-              <p className="text-gray-300 mb-4">
+              <h3 className="text-lg font-serif font-semibold mb-3">Grand Plaza</h3>
+              <p className="text-gray-300 mb-3 text-sm">
                 Experience luxury and comfort in the heart of the city. Our hotel offers the perfect blend of elegance and modern amenities.
               </p>
               <div className="flex space-x-4">
                 <a href="#" className="text-white/70 hover:text-white">
-                  <Facebook className="h-5 w-5" />
+                  <Facebook className="h-4 w-4" />
                 </a>
                 <a href="#" className="text-white/70 hover:text-white">
-                  <Instagram className="h-5 w-5" />
+                  <Instagram className="h-4 w-4" />
                 </a>
                 <a href="#" className="text-white/70 hover:text-white">
-                  <Twitter className="h-5 w-5" />
+                  <Twitter className="h-4 w-4" />
                 </a>
               </div>
             </div>
             <div>
-              <h4 className="text-lg font-semibold mb-4">Quick Links</h4>
-              <ul className="space-y-2">
+              <h4 className="text-base font-semibold mb-3">Quick Links</h4>
+              <ul className="space-y-1 text-sm">
                 <li>
                   <Link href="/" className="text-gray-300 hover:text-white">Home</Link>
                 </li>
                 <li>
                   <Link href="/rooms" className="text-gray-300 hover:text-white">Rooms</Link>
+                </li>
+                <li>
+                  <Link href="/amenities" className="text-gray-300 hover:text-white">Amenities</Link>
                 </li>
                 <li>
                   <Link href="/about" className="text-gray-300 hover:text-white">About Us</Link>
@@ -228,38 +233,38 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
               </ul>
             </div>
             <div>
-              <h4 className="text-lg font-semibold mb-4">Contact Info</h4>
-              <ul className="space-y-2">
+              <h4 className="text-base font-semibold mb-3">Contact Info</h4>
+              <ul className="space-y-1 text-sm">
                 <li className="flex items-center">
-                  <MapPin className="h-5 w-5 mr-2 text-gray-400" />
+                  <MapPin className="h-4 w-4 mr-2 text-gray-400" />
                   <span className="text-gray-300">123 Luxury Avenue, Downtown</span>
                 </li>
                 <li className="flex items-center">
-                  <Phone className="h-5 w-5 mr-2 text-gray-400" />
+                  <Phone className="h-4 w-4 mr-2 text-gray-400" />
                   <span className="text-gray-300">+1 (555) 123-4567</span>
                 </li>
                 <li className="flex items-center">
-                  <Mail className="h-5 w-5 mr-2 text-gray-400" />
+                  <Mail className="h-4 w-4 mr-2 text-gray-400" />
                   <span className="text-gray-300">info@grandplaza.com</span>
                 </li>
               </ul>
             </div>
             <div>
-              <h4 className="text-lg font-semibold mb-4">Newsletter</h4>
-              <p className="text-gray-300 mb-4">Subscribe to our newsletter for special deals and offers.</p>
+              <h4 className="text-base font-semibold mb-3">Newsletter</h4>
+              <p className="text-gray-300 mb-3 text-sm">Subscribe to our newsletter for special deals and offers.</p>
               <div className="flex">
                 <input
                   type="email"
                   placeholder="Your email address"
-                  className="bg-gray-800 text-white px-4 py-2 rounded-l-md w-full focus:outline-none focus:ring-1 focus:ring-primary"
+                  className="bg-gray-800 text-white px-3 py-1.5 text-sm rounded-l-md w-full focus:outline-none focus:ring-1 focus:ring-primary"
                 />
-                <button className="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-r-md">
+                <button className="bg-primary hover:bg-primary/90 text-white px-3 py-1.5 text-sm rounded-r-md">
                   Subscribe
                 </button>
               </div>
             </div>
           </div>
-          <div className="border-t border-gray-800 mt-10 pt-6 text-center text-gray-400">
+          <div className="border-t border-gray-800 mt-6 pt-4 text-center text-gray-400 text-sm">
             <p>&copy; {new Date().getFullYear()} Grand Plaza Hotel. All rights reserved.</p>
           </div>
         </div>

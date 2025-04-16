@@ -23,7 +23,7 @@ export class CreateRooms1709913600001 implements MigrationInterface {
             name: 'room_type',
             type: 'varchar', // SQLite doesn't support ENUM, use CHECK constraint instead
             length: '20',
-            default: "'single'",
+            default: "'standard'",
           },
           {
             name: 'price_per_night',
@@ -92,7 +92,7 @@ export class CreateRooms1709913600001 implements MigrationInterface {
        FOR EACH ROW
        BEGIN
          SELECT CASE
-           WHEN NEW.room_type NOT IN ('single', 'double', 'suite', 'deluxe') THEN
+           WHEN NEW.room_type NOT IN ('standard', 'executive', 'family', 'deluxe', 'premium') THEN
              RAISE(ABORT, 'Invalid room type')
          END;
        END`
@@ -105,7 +105,7 @@ export class CreateRooms1709913600001 implements MigrationInterface {
        WHEN NEW.room_type IS NOT OLD.room_type
        BEGIN
          SELECT CASE
-           WHEN NEW.room_type NOT IN ('single', 'double', 'suite', 'deluxe') THEN
+           WHEN NEW.room_type NOT IN ('standard', 'executive', 'family', 'deluxe', 'premium') THEN
              RAISE(ABORT, 'Invalid room type')
          END;
        END`

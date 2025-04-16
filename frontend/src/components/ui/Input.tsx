@@ -1,44 +1,27 @@
-'use client';
+import * as React from "react"
 
-import React from 'react';
-import { cn } from '@/lib/utils';
+import { cn } from "@/lib/utils"
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
   error?: string;
-  inputSize?: 'sm' | 'default' | 'lg';
 }
 
 const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, error, inputSize = 'default', ...props }, ref) => {
-    // Size classes
-    const sizeClasses = {
-      sm: 'h-8 px-3 text-sm',
-      default: 'h-10 px-4',
-      lg: 'h-12 px-5 text-lg',
-    };
-
-    // Basic input classes + error classes if there's an error
-    const inputClasses = cn(
-      'flex w-full rounded-md border bg-white text-gray-900 shadow-sm focus:ring-1 focus:ring-inset transition-colors',
-      'placeholder:text-gray-400 disabled:cursor-not-allowed disabled:opacity-50',
-      error 
-        ? 'border-red-300 focus:border-red-500 focus:ring-red-500' 
-        : 'border-gray-300 focus:border-primary focus:ring-primary',
-      sizeClasses[inputSize],
-      className
-    );
-
+  ({ className, type, error, ...props }, ref) => {
     return (
-      <div className="w-full">
-        <input className={inputClasses} ref={ref} {...props} />
-        {error && typeof error === 'string' && (
-          <p className="mt-1 text-sm text-red-600">{error}</p>
+      <input
+        type={type}
+        className={cn(
+          "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-base shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
+          error && "border-red-500 focus-visible:ring-red-500",
+          className
         )}
-      </div>
-    );
+        ref={ref}
+        {...props}
+      />
+    )
   }
-);
+)
+Input.displayName = "Input"
 
-Input.displayName = 'Input';
-
-export { Input }; 
+export { Input }

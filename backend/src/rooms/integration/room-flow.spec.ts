@@ -29,7 +29,7 @@ describe('Room Flow Integration Tests', () => {
 
   const testRoom = {
     roomNumber: `101-${Date.now()}`,
-    type: RoomType.DOUBLE,
+    type: RoomType.EXECUTIVE,
     pricePerNight: 100,
     maxGuests: 2,
     availabilityStatus: AvailabilityStatus.AVAILABLE,

@@ -4,8 +4,8 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { RoomType } from '@/types';
 import { roomService, bookingService, paymentService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
@@ -29,6 +29,7 @@ export default function PaymentPage() {
   const checkInParam = searchParams.get('checkIn') || '';
   const checkOutParam = searchParams.get('checkOut') || '';
   const guestsParam = searchParams.get('guests') || '1';
+  const roomNumberParam = searchParams.get('roomNumber') || '';
   
   // Room and booking data
   const [room, setRoom] = useState<RoomType | null>(null);
@@ -37,6 +38,12 @@ export default function PaymentPage() {
   const [processingPayment, setProcessingPayment] = useState(false);
   const [paymentSuccess, setPaymentSuccess] = useState(false);
   const [bookingId, setBookingId] = useState<string | null>(null);
+  const [nights, setNights] = useState(1);
+  const [selectedRoomNumber, setSelectedRoomNumber] = useState(roomNumberParam);
+  
+  // Validate required parameters with detailed checks
+  const [paramErrors, setParamErrors] = useState<string[]>([]);
+  const [hasValidParams, setHasValidParams] = useState(true);
   
   // Payment form state
   const [paymentMethod, setPaymentMethod] = useState<'CREDIT_CARD' | 'DEBIT_CARD' | 'PAYPAL'>('CREDIT_CARD');
@@ -48,32 +55,113 @@ export default function PaymentPage() {
   // Form validation
   const [errors, setErrors] = useState<Record<string, string>>({});
   
-  // Load room details
+  // Validate all parameters on component mount
+  useEffect(() => {
+    const errors: string[] = [];
+    
+    // Check for missing parameters
+    if (!roomId) {
+      errors.push('Room selection is missing');
+    }
+    
+    if (!checkInParam) {
+      errors.push('Check-in date is missing');
+    }
+    
+    if (!checkOutParam) {
+      errors.push('Check-out date is missing');
+    }
+    
+    if (!guestsParam || parseInt(guestsParam, 10) < 1) {
+      errors.push('Number of guests is invalid');
+    }
+    
+    if (!roomNumberParam) {
+      errors.push('Room number is missing');
+    }
+    
+    // Validate date formats and logic if they exist
+    if (checkInParam && checkOutParam) {
+      const checkIn = new Date(checkInParam);
+      const checkOut = new Date(checkOutParam);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (isNaN(checkIn.getTime())) {
+        errors.push('Invalid check-in date format');
+      } else if (checkIn < today) {
+        errors.push('Check-in date cannot be in the past');
+      }
+      
+      if (isNaN(checkOut.getTime())) {
+        errors.push('Invalid check-out date format');
+      } else if (checkOut <= checkIn) {
+        errors.push('Check-out date must be after check-in date');
+      }
+    }
+    
+    setParamErrors(errors);
+    setHasValidParams(errors.length === 0);
+    
+    // If there are validation errors, set a timeout to redirect back to rooms page
+    if (errors.length > 0) {
+      setTimeout(() => {
+        router.push('/rooms');
+      }, 5000);
+    }
+  }, [roomId, checkInParam, checkOutParam, guestsParam, roomNumberParam, router]);
+  
+  // Calculate total price and nights
+  useEffect(() => {
+    if (checkInParam && checkOutParam) {
+      const checkIn = new Date(checkInParam);
+      const checkOut = new Date(checkOutParam);
+      
+      if (!isNaN(checkIn.getTime()) && !isNaN(checkOut.getTime())) {
+        const timeDiff = checkOut.getTime() - checkIn.getTime();
+        const nightsCount = Math.ceil(timeDiff / (1000 * 3600 * 24));
+        setNights(nightsCount > 0 ? nightsCount : 1);
+      } else {
+        setNights(1); // Default to 1 night if dates are invalid
+      }
+    } else {
+      setNights(1); // Default to 1 night if dates are missing
+    }
+  }, [checkInParam, checkOutParam]);
+  
+  // Load room details only if we have valid parameters
   useEffect(() => {
     const fetchRoomDetails = async () => {
-      if (!roomId) {
-        setError('Room ID is required');
+      if (!hasValidParams) {
         setLoading(false);
         return;
       }
       
       try {
         setLoading(true);
-        // In a real app, we would call the API
-        // const response = await roomService.getRoomTypeById(roomId);
+        // Call the API to get room details
+        const response = await roomService.getRoomTypeById(roomId);
+        const roomData = response.success && response.data ? response.data : null;
         
-        // For now, use dummy data
-        const dummyRoom: RoomType = {
-          id: roomId,
-          name: 'Deluxe Suite',
-          description: 'Spacious suite with city views, king-size bed, and luxury amenities.',
-          pricePerNight: 29900,
-          capacity: 2,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        
-        setRoom(dummyRoom);
+        if (roomData) {
+          const roomInfo: RoomType = {
+            id: roomData.id,
+            name: roomData.name,
+            code: roomData.code,
+            description: roomData.description,
+            pricePerNight: roomData.pricePerNight,
+            maxGuests: roomData.maxGuests,
+            imageUrl: roomData.imageUrl || '',
+            amenities: typeof roomData.amenities === 'string'
+              ? JSON.parse(roomData.amenities)
+              : roomData.amenities || [],
+            displayOrder: roomData.displayOrder
+          };
+          
+          setRoom(roomInfo);
+        } else {
+          setError('Room not found');
+        }
       } catch (err) {
         console.error('Error fetching room details:', err);
         setError('Failed to load room details. Please try again later.');
@@ -83,23 +171,10 @@ export default function PaymentPage() {
     };
     
     fetchRoomDetails();
-  }, [roomId]);
+  }, [roomId, hasValidParams]);
   
-  // Calculate total price and nights
-  const calculateBookingDetails = () => {
-    if (!room || !checkInParam || !checkOutParam) {
-      return { totalPrice: 0, nights: 0 };
-    }
-    
-    const startDate = new Date(checkInParam);
-    const endDate = new Date(checkOutParam);
-    const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
-    return {
-      totalPrice: room.pricePerNight * (nights > 0 ? nights : 1),
-      nights: nights > 0 ? nights : 1
-    };
-  };
+  // Calculate total price based on nights and room price
+  const totalPrice = room ? room.pricePerNight * nights : 0;
   
   // Format card number with spaces
   const formatCardNumber = (value: string) => {
@@ -183,6 +258,16 @@ export default function PaymentPage() {
     return Object.keys(newErrors).length === 0;
   };
   
+  // Check if form is valid (for disabling button)
+  const isFormValid = () => {
+    return cardHolder.trim() !== '' && 
+      cardNumber.replace(/\s/g, '').length >= 16 && 
+      expiryDate.trim() !== '' && 
+      /^\d{2}\/\d{2}$/.test(expiryDate) &&
+      cvv.trim() !== '' && 
+      /^\d{3,4}$/.test(cvv);
+  };
+  
   // Process payment
   const handlePayment = async () => {
     if (!validateForm()) {
@@ -199,26 +284,61 @@ export default function PaymentPage() {
     try {
       setProcessingPayment(true);
       
-      // This would create a real booking in production
-      // First create the booking
-      const mockBookingId = `booking-${Date.now()}`;
-      setBookingId(mockBookingId);
+      if (!room || !roomId || !checkInParam || !checkOutParam || !selectedRoomNumber) {
+        setError('Missing required booking information');
+        setProcessingPayment(false);
+        return;
+      }
+      
+      // First create an actual booking in the system
+      console.log('Creating booking with the following details:');
+      console.log('- Room Type ID:', roomId);
+      console.log('- Room Type Name:', room.name);
+      console.log('- Room Number:', selectedRoomNumber);
+      console.log('- Check-in Date:', checkInParam);
+      console.log('- Check-out Date:', checkOutParam);
+      console.log('- Number of Guests:', guestsParam);
+      
+      // Create a booking using the booking service (which will be stored in localStorage for this school project)
+      const bookingResponse = await bookingService.createBooking({
+        roomId: selectedRoomNumber, // Use the actual selected room number 
+        roomTypeId: roomId, // Store the room type ID separately to ensure correct room type
+        roomTypeName: room.name, // Store the room type name for display
+        checkInDate: checkInParam,
+        checkOutDate: checkOutParam,
+        guestCount: parseInt(guestsParam, 10),
+        specialRequests: ''
+      });
+      
+      if (!bookingResponse.success) {
+        setError(bookingResponse.error || 'Failed to create booking');
+        setProcessingPayment(false);
+        return;
+      }
+      
+      // Use the actual booking ID from the response
+      const createdBookingId = bookingResponse.data?.id || `booking-${Date.now()}`;
+      setBookingId(createdBookingId);
       
       // Process mock payment
-      const response = await paymentService.processPayment(mockBookingId, {
+      const response = await paymentService.processPayment(createdBookingId, {
         paymentMethod,
         cardNumber: cardNumber.replace(/\s/g, ''),
         cardHolder,
         expiryDate,
         cvv,
+        amount: totalPrice,
       });
       
       if (response.success && response.data?.success) {
+        // Update the booking status to confirmed
+        await bookingService.updateBookingStatus(createdBookingId, 'CONFIRMED');
+        
         setPaymentSuccess(true);
         
         // Auto-redirect to confirmation after 3 seconds
         setTimeout(() => {
-          router.push(`/bookings?success=true&bookingId=${mockBookingId}`);
+          router.push(`/bookings?success=true&bookingId=${createdBookingId}`);
         }, 3000);
       } else {
         setError('Payment processing failed. Please try again.');
@@ -242,6 +362,37 @@ export default function PaymentPage() {
     );
   }
   
+  // Show error if required parameters are missing or invalid
+  if (!hasValidParams) {
+    return (
+      <div className="hotel-container py-12 min-h-screen flex items-center justify-center">
+        <div className="text-center bg-red-50 p-8 rounded-lg max-w-md">
+          <h2 className="text-2xl font-bold text-red-600 mb-4">Invalid Booking Information</h2>
+          
+          {paramErrors.length > 0 && (
+            <ul className="list-disc list-inside text-left mb-4 text-red-700">
+              {paramErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          )}
+          
+          <p className="mb-4">Please select a room, valid dates, and number of guests before proceeding to payment.</p>
+          <p className="text-sm text-gray-600 mb-6">You will be redirected to the rooms page in a few seconds.</p>
+          
+          <div className="flex justify-center mb-4">
+            <div className="w-6 h-6 border-2 border-red-400 border-t-transparent rounded-full animate-spin mr-2"></div>
+            <span className="text-red-600">Redirecting...</span>
+          </div>
+          
+          <Button onClick={() => router.push('/rooms')} className="w-full">
+            Browse Available Rooms Now
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   if (error || !room) {
     return (
       <div className="hotel-container py-12 min-h-screen flex items-center justify-center">
@@ -255,8 +406,6 @@ export default function PaymentPage() {
       </div>
     );
   }
-  
-  const { totalPrice, nights } = calculateBookingDetails();
   
   // Payment success view
   if (paymentSuccess) {
@@ -278,7 +427,7 @@ export default function PaymentPage() {
           </div>
           <p className="text-sm text-gray-500 mb-6">You will be redirected to your bookings page shortly...</p>
           <Link href="/bookings">
-            <Button fullWidth>View My Bookings</Button>
+            <Button className="w-full">View My Bookings</Button>
           </Link>
         </div>
       </div>
@@ -355,7 +504,7 @@ export default function PaymentPage() {
                     value={cardHolder}
                     onChange={(e) => setCardHolder(e.target.value)}
                     placeholder="Name on card"
-                    error={errors.cardHolder}
+                    aria-invalid={errors.cardHolder ? "true" : "false"}
                   />
                   {errors.cardHolder && (
                     <p className="text-red-500 text-sm mt-1">{errors.cardHolder}</p>
@@ -372,10 +521,10 @@ export default function PaymentPage() {
                       id="cardNumber"
                       type="text"
                       value={cardNumber}
-                      onChange={handleCardNumberChange}
-                      placeholder="0000 0000 0000 0000"
+                      onChange={(e) => setCardNumber(e.target.value)}
+                      placeholder="1234 5678 9012 3456"
                       maxLength={19}
-                      error={errors.cardNumber}
+                      aria-invalid={errors.cardNumber ? "true" : "false"}
                     />
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex space-x-1">
                       <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none">
@@ -405,7 +554,7 @@ export default function PaymentPage() {
                       onChange={handleExpiryChange}
                       placeholder="MM/YY"
                       maxLength={5}
-                      error={errors.expiryDate}
+                      aria-invalid={errors.expiryDate ? "true" : "false"}
                     />
                     {errors.expiryDate && (
                       <p className="text-red-500 text-sm mt-1">{errors.expiryDate}</p>
@@ -424,7 +573,7 @@ export default function PaymentPage() {
                       onChange={(e) => setCvv(e.target.value.replace(/\D/g, '').slice(0, 4))}
                       placeholder="123"
                       maxLength={4}
-                      error={errors.cvv}
+                      aria-invalid={errors.cvv ? "true" : "false"}
                     />
                     {errors.cvv && (
                       <p className="text-red-500 text-sm mt-1">{errors.cvv}</p>
@@ -448,19 +597,16 @@ export default function PaymentPage() {
             </div>
             
             <Button 
-              fullWidth 
               onClick={handlePayment} 
-              disabled={processingPayment}
-              className="h-12 text-base"
+              disabled={processingPayment || !isFormValid()}
+              className="w-full h-12 text-base"
+              type="button"
             >
               {processingPayment ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing Payment...
-                </span>
+                <div className="flex items-center justify-center">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                  <span>Processing...</span>
+                </div>
               ) : (
                 `Pay Now ${formatPrice(totalPrice)}`
               )}
@@ -476,14 +622,20 @@ export default function PaymentPage() {
                 <div className="relative h-24 w-24 rounded-md overflow-hidden mr-4 flex-shrink-0">
                   <Image
                     src={ROOM_IMAGES[roomId] || '/images/room-placeholder.jpg'}
-                    alt={room.name}
+                    alt={room?.name || 'Hotel Room'}
                     fill
                     className="object-cover"
                   />
                 </div>
                 <div>
-                  <h3 className="font-bold">{room.name}</h3>
-                  <p className="text-sm text-gray-600">{formatDate(new Date(checkInParam))} - {formatDate(new Date(checkOutParam))}</p>
+                  <h3 className="font-bold">{room?.name}</h3>
+                  {selectedRoomNumber && (
+                    <p className="text-sm text-gray-600">Room {selectedRoomNumber}</p>
+                  )}
+                  <p className="text-sm text-gray-600">
+                    {checkInParam ? formatDate(new Date(checkInParam)) : "Not selected"} - 
+                    {checkOutParam ? formatDate(new Date(checkOutParam)) : "Not selected"}
+                  </p>
                   <p className="text-sm text-gray-600">{nights} {nights === 1 ? 'night' : 'nights'}, {guestsParam} {parseInt(guestsParam, 10) === 1 ? 'guest' : 'guests'}</p>
                 </div>
               </div>

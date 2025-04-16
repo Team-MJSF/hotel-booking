@@ -1,0 +1,91 @@
+Room and booking seed started at 2025-04-16T00:17:39.214Z
+Connected to database
+users table exists
+rooms table exists
+bookings table exists
+payments table exists
+Found 50 existing rooms - clearing them
+Existing rooms cleared. Seeding new rooms...
+Added room 101 (Standard Room)
+Added room 102 (Standard Room)
+Added room 103 (Standard Room)
+Added room 104 (Standard Room)
+Added room 105 (Standard Room)
+Added room 106 (Standard Room)
+Added room 107 (Standard Room)
+Added room 108 (Standard Room)
+Added room 109 (Standard Room)
+Added room 110 (Standard Room)
+Added room 201 (Executive Room)
+Added room 202 (Executive Room)
+Added room 203 (Executive Room)
+Added room 204 (Executive Room)
+Added room 205 (Executive Room)
+Added room 206 (Executive Room)
+Added room 207 (Executive Room)
+Added room 208 (Executive Room)
+Added room 209 (Executive Room)
+Added room 210 (Executive Room)
+Added room 301 (Family Suite)
+Added room 302 (Family Suite)
+Added room 303 (Family Suite)
+Added room 304 (Family Suite)
+Added room 305 (Family Suite)
+Added room 306 (Family Suite)
+Added room 307 (Family Suite)
+Added room 308 (Family Suite)
+Added room 309 (Family Suite)
+Added room 310 (Family Suite)
+Added room 401 (Deluxe Suite)
+Added room 402 (Deluxe Suite)
+Added room 403 (Deluxe Suite)
+Added room 404 (Deluxe Suite)
+Added room 405 (Deluxe Suite)
+Added room 406 (Deluxe Suite)
+Added room 407 (Deluxe Suite)
+Added room 408 (Deluxe Suite)
+Added room 409 (Deluxe Suite)
+Added room 410 (Deluxe Suite)
+Added room 501 (Premium Suite)
+Added room 502 (Premium Suite)
+Added room 503 (Premium Suite)
+Added room 504 (Premium Suite)
+Added room 505 (Premium Suite)
+Added room 506 (Premium Suite)
+Added room 507 (Premium Suite)
+Added room 508 (Premium Suite)
+Added room 509 (Premium Suite)
+Added room 510 (Premium Suite)
+Seeding test bookings...
+Booked standard room 101
+Booked standard room 102
+Booked standard room 103
+Booked standard room 104
+Booked standard room 105
+Booked executive room 201
+Booked executive room 202
+Booked executive room 203
+Booked executive room 204
+Booked executive room 205
+Booked executive room 206
+Booked executive room 207
+Booked executive room 208
+Booked executive room 209
+Booked executive room 210
+Family Suites (Floor 3) left fully available
+Booked deluxe suite 401
+Booked deluxe suite 402
+Booked deluxe suite 403
+Booked deluxe suite 404
+Booked deluxe suite 405
+Booked deluxe suite 406
+Booked deluxe suite 407
+Booked premium suite 501 (confirmed)
+Booked premium suite 502 (confirmed)
+Booked premium suite 503 (confirmed)
+Created cancelled booking for premium suite 504
+Created cancelled booking for premium suite 505
+Set premium suite 506 to maintenance status
+Note: Room availability for specific dates is determined by checking booking conflicts, not by the availability_status field
+All test bookings seeded successfully!
+Database connection closed

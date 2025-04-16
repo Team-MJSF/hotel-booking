@@ -1,12 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Room, RoomType } from '@/types';
-import { roomService } from '@/services/api';
+import { roomService, authService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { Bed, Users, Wifi, Tv, ShowerHead, Utensils, Coffee, Snowflake, CheckCircle, Calendar } from 'lucide-react';
 
@@ -33,40 +33,181 @@ export default function RoomDetailsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   
-  const id = Array.isArray(params.id) ? params.id[0] : params.id;
+  const id = params.id as string;
   const checkInParam = searchParams.get('checkIn') || '';
   const checkOutParam = searchParams.get('checkOut') || '';
   const guestsParam = searchParams.get('guests') || '1';
   
+  // Add state for current user authentication
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+  
+  // Check if user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        const userResponse = await authService.getCurrentUser();
+        setIsAuthenticated(userResponse.success && !!userResponse.data);
+      } catch (error) {
+        setIsAuthenticated(false);
+      } finally {
+        setAuthChecked(true);
+      }
+    };
+    
+    checkAuth();
+  }, []);
+  
+  // Check for missing or invalid parameters
+  const [missingParams, setMissingParams] = useState(false);
+  const [paramErrors, setParamErrors] = useState<string[]>([]);
+
+  // Validate the URL parameters
+  useEffect(() => {
+    const errors: string[] = [];
+    let hasErrors = false;
+
+    // Check for missing parameters
+    if (!checkInParam) {
+      errors.push("Check-in date is required");
+      hasErrors = true;
+    }
+    
+    if (!checkOutParam) {
+      errors.push("Check-out date is required");
+      hasErrors = true;
+    }
+    
+    if (!guestsParam || parseInt(guestsParam, 10) < 1) {
+      errors.push("Number of guests is required");
+      hasErrors = true;
+    }
+
+    // Validate date formats and logic if they exist
+    if (checkInParam && checkOutParam) {
+      const checkIn = new Date(checkInParam);
+      const checkOut = new Date(checkOutParam);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      if (isNaN(checkIn.getTime())) {
+        errors.push("Invalid check-in date format");
+        hasErrors = true;
+      } else if (checkIn < today) {
+        errors.push("Check-in date cannot be in the past");
+        hasErrors = true;
+      }
+      
+      if (isNaN(checkOut.getTime())) {
+        errors.push("Invalid check-out date format");
+        hasErrors = true;
+      } else if (checkOut <= checkIn) {
+        errors.push("Check-out date must be after check-in date");
+        hasErrors = true;
+      }
+    }
+
+    setParamErrors(errors);
+    setMissingParams(hasErrors);
+    
+    // Redirect after a short delay if parameters are missing or invalid
+    if (hasErrors) {
+      setTimeout(() => {
+        router.push('/rooms');
+      }, 3000);
+    }
+  }, [checkInParam, checkOutParam, guestsParam, router]);
+  
   const [roomType, setRoomType] = useState<RoomType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Date picker state
   const [checkInDate, setCheckInDate] = useState(checkInParam);
   const [checkOutDate, setCheckOutDate] = useState(checkOutParam);
-  const [guests, setGuests] = useState(guestsParam);
+  const [dateError, setDateError] = useState<string | null>(null);
   
-  // Fetch room details
+  // Guest selection state
+  const [guestCount, setGuestCount] = useState(parseInt(guestsParam, 10) || 1);
+  
+  // New state for available room numbers
+  const [availableRooms, setAvailableRooms] = useState<{
+    number: string;
+    id: string;
+    available: boolean;
+  }[]>([]);
+  const [selectedRoomNumber, setSelectedRoomNumber] = useState<string>('');
+  const [roomAvailabilityStatus, setRoomAvailabilityStatus] = useState<{
+    total: number;
+    available: number;
+    soldOut: boolean;
+  }>({ total: 0, available: 0, soldOut: false });
+  
+  // Add loading state for availability check
+  const [checkingAvailability, setCheckingAvailability] = useState(false);
+  
+  // Calculate nights based on check-in and check-out dates
+  const nights = useMemo(() => {
+    if (!checkInParam || !checkOutParam) return 1;
+    
+    const startDate = new Date(checkInParam);
+    const endDate = new Date(checkOutParam);
+    
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return 1;
+    
+    const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    return nights > 0 ? nights : 1;
+  }, [checkInParam, checkOutParam]);
+  
+  // Define amenities based on room type
+  const amenities = useMemo(() => {
+    if (!roomType) return ROOM_AMENITIES.default;
+    return ROOM_AMENITIES[roomType.name as keyof typeof ROOM_AMENITIES] || ROOM_AMENITIES.default;
+  }, [roomType]);
+  
+  // Calculate total price based on nights and room price
+  const totalPrice = useMemo(() => {
+    if (!roomType) return 0;
+    
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) return roomType.pricePerNight;
+    
+    const nightsCount = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+    return roomType.pricePerNight * (nightsCount > 0 ? nightsCount : 1);
+  }, [roomType, checkInDate, checkOutDate]);
+  
+  // Fetch room type details
   useEffect(() => {
     const fetchRoomDetails = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // In a real app, fetch the room details from the API
-        // const response = await roomService.getRoomTypeById(id);
+        // Fetch room type data from API
+        const response = await roomService.getRoomTypeById(id);
         
-        // For now, use dummy data
-        const dummyRoom: RoomType = {
-          id: id as string,
-          name: 'Deluxe Suite',
-          description: 'Experience luxury and comfort in our spacious Deluxe Suite featuring a king-size bed, elegant sitting area, and stunning city views. The suite includes a modern bathroom with premium amenities, a work desk, and high-speed internet. Perfect for both business travelers and couples seeking a special getaway.',
-          pricePerNight: 29900,
-          capacity: 2,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        };
-        
-        setRoomType(dummyRoom);
+        if (response.success && response.data) {
+          const roomData = response.data;
+          const room: RoomType = {
+            id: roomData.id,
+            name: roomData.name,
+            code: roomData.code,
+            description: roomData.description,
+            pricePerNight: roomData.pricePerNight,
+            maxGuests: roomData.maxGuests,
+            imageUrl: roomData.imageUrl || '',
+            amenities: typeof roomData.amenities === 'string'
+              ? JSON.parse(roomData.amenities)
+              : roomData.amenities || [],
+            displayOrder: roomData.displayOrder
+          };
+          
+          setRoomType(room);
+        } else {
+          setError('Room not found');
+        }
       } catch (err) {
         console.error('Error fetching room details:', err);
         setError('Failed to load room details. Please try again later.');
@@ -75,30 +216,211 @@ export default function RoomDetailsPage() {
       }
     };
     
-    if (id) {
-      fetchRoomDetails();
-    }
+    fetchRoomDetails();
   }, [id]);
   
-  // Calculate total price
-  const calculateTotalPrice = () => {
-    if (!roomType || !checkInDate || !checkOutDate) return roomType?.pricePerNight || 0;
+  // Check availability based on selected dates
+  useEffect(() => {
+    if (!id || !roomType) return;
     
-    const startDate = new Date(checkInDate);
-    const endDate = new Date(checkOutDate);
-    const nights = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    const checkAvailability = async () => {
+      if (!checkInDate || !checkOutDate) return;
+
+      // Show loading state while checking availability
+      setCheckingAvailability(true);
+
+      try {
+        console.log(`Checking availability for room type ${id} from ${checkInDate} to ${checkOutDate}`);
+        
+        // Normalize dates for consistency
+        const checkIn = new Date(checkInDate);
+        const checkOut = new Date(checkOutDate);
+        
+        // Format dates as ISO strings (YYYY-MM-DD)
+        const formattedCheckIn = checkIn.toISOString().split('T')[0];
+        const formattedCheckOut = checkOut.toISOString().split('T')[0];
+        
+        // Call the API to check actual room availability with normalized dates
+        const response = await roomService.checkRoomAvailability(
+          id,
+          formattedCheckIn,
+          formattedCheckOut
+        );
+
+        if (response.success && response.data) {
+          // Get the available rooms from the API response
+          const { availableRooms, totalRooms } = response.data;
+          
+          console.log(`Received ${availableRooms.length} available rooms out of ${totalRooms} total`);
+          
+          // Create our room list format from the API response
+          const roomsList = availableRooms.map(room => ({
+            number: room.roomNumber,
+            id: room.id,
+            available: true
+          }));
+          
+          // For rooms that aren't available, we need to create a full list of all possible rooms
+          const floorNumber = parseInt(id, 10);
+          const allRoomsList: { number: string; id: string; available: boolean }[] = [];
+          
+          // Generate all possible room numbers for this floor
+          for (let i = 1; i <= totalRooms; i++) {
+            const roomNumber = `${floorNumber}${i.toString().padStart(2, '0')}`;
+            const roomId = `room-${roomNumber}`;
+            
+            // Check if this room is in our available rooms list
+            const isAvailable = availableRooms.some(room => room.roomNumber === roomNumber);
+            
+            allRoomsList.push({
+              number: roomNumber,
+              id: roomId,
+              available: isAvailable
+            });
+          }
+          
+          setAvailableRooms(allRoomsList);
+          setRoomAvailabilityStatus({
+            total: totalRooms,
+            available: availableRooms.length,
+            soldOut: availableRooms.length === 0
+          });
+          
+          // Auto-select the first available room if any
+          if (availableRooms.length > 0) {
+            setSelectedRoomNumber(availableRooms[0].roomNumber);
+          } else {
+            setSelectedRoomNumber('');
+          }
+          
+          // Clear any previous error
+          setError(null);
+        } else {
+          // If API call fails, show error but don't block the UI
+          console.error('Failed to check room availability:', response.error);
+          setError(response.error || 'Failed to check room availability');
+          
+          // Set empty availability data
+          setAvailableRooms([]);
+          setRoomAvailabilityStatus({
+            total: 10,
+            available: 0,
+            soldOut: true
+          });
+        }
+      } catch (err) {
+        console.error('Error checking room availability:', err);
+        setError('Failed to check room availability');
+      } finally {
+        // Set loading state to false
+        setCheckingAvailability(false);
+      }
+    };
     
-    return roomType.pricePerNight * (nights > 0 ? nights : 1);
+    checkAvailability();
+  }, [id, roomType, checkInDate, checkOutDate]);
+  
+  // Handle date change
+  const handleDateChange = (type: 'checkIn' | 'checkOut', value: string) => {
+    setDateError(null);
+    
+    if (type === 'checkIn') {
+      // Format date consistently
+      const checkIn = new Date(value);
+      const formattedCheckIn = checkIn.toISOString().split('T')[0];
+      setCheckInDate(formattedCheckIn);
+      
+      // Ensure check-out is after check-in
+      const checkOut = checkOutDate ? new Date(checkOutDate) : null;
+      
+      if (checkOut && checkIn >= checkOut) {
+        // Set check-out to day after check-in
+        const nextDay = new Date(checkIn);
+        nextDay.setDate(nextDay.getDate() + 1);
+        setCheckOutDate(nextDay.toISOString().split('T')[0]);
+      }
+    } else {
+      // Format date consistently
+      const checkOut = new Date(value);
+      const formattedCheckOut = checkOut.toISOString().split('T')[0];
+      setCheckOutDate(formattedCheckOut);
+    }
+    
+    // Always trigger the loading state when either date changes
+    setCheckingAvailability(true);
+    
+    // Reset availability status while checking
+    setRoomAvailabilityStatus(prevStatus => ({
+      ...prevStatus,
+      available: 0,
+      soldOut: false
+    }));
+    
+    // Clear room selection when dates change
+    setSelectedRoomNumber('');
   };
   
-  // Handle booking
-  const handleBookNow = () => {
-    if (checkInDate && checkOutDate) {
-      router.push(`/booking?roomId=${id}&checkIn=${checkInDate}&checkOut=${checkOutDate}&guests=${guests}`);
-    } else {
-      // Show validation message or scroll to date selector
-      alert('Please select check-in and check-out dates to continue booking.');
+  // Handle guest count change
+  const handleGuestCountChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setGuestCount(parseInt(e.target.value, 10));
+  };
+  
+  // Validate dates before booking
+  const validateDates = (): boolean => {
+    if (!checkInDate || !checkOutDate) {
+      setDateError('Please select check-in and check-out dates');
+      return false;
     }
+    
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+      setDateError('Invalid date format');
+      return false;
+    }
+    
+    if (checkIn < today) {
+      setDateError('Check-in date cannot be in the past');
+      return false;
+    }
+    
+    if (checkOut <= checkIn) {
+      setDateError('Check-out date must be after check-in date');
+      return false;
+    }
+    
+    return true;
+  };
+  
+  // Handle room booking with validation
+  const handleBookNow = () => {
+    if (!roomType) return;
+    
+    // Check if user is authenticated
+    if (!isAuthenticated) {
+      // Save booking info to URL for after login
+      const returnUrl = `/rooms/${id}?checkIn=${checkInDate}&checkOut=${checkOutDate}&guests=${guestCount}`;
+      
+      // Redirect to login page with return URL
+      router.push(`/login?returnUrl=${encodeURIComponent(returnUrl)}`);
+      return;
+    }
+    
+    if (!validateDates()) {
+      return;
+    }
+    
+    // Check if room is available
+    if (roomAvailabilityStatus.soldOut || !selectedRoomNumber) {
+      setDateError('No rooms available for the selected dates');
+      return;
+    }
+    
+    // Include selected room number and validated dates in the booking process
+    router.push(`/payment?roomId=${roomType.id}&checkIn=${checkInDate}&checkOut=${checkOutDate}&guests=${guestCount}&roomNumber=${selectedRoomNumber}`);
   };
   
   if (loading) {
@@ -107,6 +429,33 @@ export default function RoomDetailsPage() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p>Loading room details...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // Show redirect message if missing dates or guest count or other validation errors
+  if (missingParams) {
+    return (
+      <div className="hotel-container py-12 min-h-screen flex items-center justify-center">
+        <div className="text-center bg-amber-50 p-8 rounded-lg max-w-md">
+          <h2 className="text-2xl font-bold text-amber-700 mb-4">Missing or Invalid Booking Information</h2>
+          {paramErrors.length > 0 && (
+            <ul className="list-disc list-inside text-left mb-4 text-amber-800">
+              {paramErrors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+          )}
+          <p className="mb-4">Please select valid check-in and check-out dates, and the number of guests before viewing room details.</p>
+          <p className="text-sm text-gray-600 mb-6">You will be redirected to the rooms page to select your booking criteria.</p>
+          <div className="flex justify-center">
+            <div className="w-6 h-6 border-2 border-amber-600 border-t-transparent rounded-full animate-spin mr-2"></div>
+            <span className="text-amber-600">Redirecting...</span>
+          </div>
+          <Button onClick={() => router.push('/rooms')} className="w-full mt-4">
+            Go to Rooms Page Now
+          </Button>
         </div>
       </div>
     );
@@ -126,9 +475,6 @@ export default function RoomDetailsPage() {
     );
   }
   
-  // Get the correct amenities for this room type, fallback to default
-  const amenities = ROOM_AMENITIES[roomType.name as keyof typeof ROOM_AMENITIES] || ROOM_AMENITIES.default;
-  
   return (
     <div className="py-8 md:py-12">
       <div className="hotel-container">
@@ -140,7 +486,7 @@ export default function RoomDetailsPage() {
             Back to Rooms
           </Link>
           <h1 className="hotel-heading mb-2">{roomType.name}</h1>
-          <p className="text-gray-600">{roomType.capacity} Guests • Luxury Accommodations</p>
+          <p className="text-gray-600">{roomType.maxGuests} Guests • Luxury Accommodations</p>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
@@ -155,7 +501,7 @@ export default function RoomDetailsPage() {
               />
             </div>
             
-            {/* Room Description */}
+            {/* Room Details */}
             <div className="bg-white rounded-lg shadow-md p-6 mb-6">
               <h2 className="text-2xl font-bold mb-4">Room Details</h2>
               <p className="mb-6 text-gray-700">{roomType.description}</p>
@@ -176,36 +522,17 @@ export default function RoomDetailsPage() {
             {/* Room Policies */}
             <div className="bg-white rounded-lg shadow-md p-6">
               <h2 className="text-2xl font-bold mb-4">Room Policies</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
                 <div>
-                  <h3 className="font-bold text-lg mb-2">Check-in</h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-start">
-                      <Calendar className="h-5 w-5 text-primary mr-2 mt-0.5" />
-                      <div>
-                        <p className="font-medium">From 3:00 PM</p>
-                        <p className="text-sm text-gray-600">Photo ID required</p>
-                      </div>
-                    </li>
-                  </ul>
+                  <h3 className="text-lg font-semibold mb-2">Check-in/Check-out</h3>
+                  <p className="text-gray-700">Check-in: 3:00 PM - 11:00 PM</p>
+                  <p className="text-gray-700">Check-out: Until 12:00 PM</p>
                 </div>
+                
                 <div>
-                  <h3 className="font-bold text-lg mb-2">Check-out</h3>
-                  <ul className="space-y-2">
-                    <li className="flex items-start">
-                      <Calendar className="h-5 w-5 text-primary mr-2 mt-0.5" />
-                      <div>
-                        <p className="font-medium">Until 12:00 PM</p>
-                        <p className="text-sm text-gray-600">Late check-out available upon request</p>
-                      </div>
-                    </li>
-                  </ul>
+                  <h3 className="text-lg font-semibold mb-2">Cancellation Policy</h3>
+                  <p className="text-gray-700">Free cancellation up to 24 hours before check-in. Cancellations made less than 24 hours before check-in are subject to a one-night charge.</p>
                 </div>
-              </div>
-              
-              <div className="border-t border-gray-200 mt-6 pt-6">
-                <h3 className="font-bold text-lg mb-2">Cancellation Policy</h3>
-                <p className="text-gray-700">Free cancellation up to 24 hours before check-in. Cancellations made less than 24 hours before check-in are subject to a one-night charge.</p>
               </div>
             </div>
           </div>
@@ -213,85 +540,163 @@ export default function RoomDetailsPage() {
           {/* Booking Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-lg shadow-md p-6 sticky top-24">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold">Price Details</h2>
-                <div className="text-right">
-                  <p className="text-primary font-bold text-2xl">{formatPrice(roomType.pricePerNight)}</p>
-                  <p className="text-gray-600 text-sm">per night</p>
+              <h2 className="text-2xl font-bold mb-4">Booking Details</h2>
+              
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Room Type</h3>
+                <p className="text-xl font-bold">{roomType.name}</p>
+              </div>
+              
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Your Stay</h3>
+                <div className="bg-gray-50 rounded-md p-3">
+                  <div className="flex items-center mb-2">
+                    <Calendar className="h-4 w-4 text-gray-500 mr-2" />
+                    <p className="text-sm">
+                      <span className="font-medium">Check-in:</span> {formatDate(new Date(checkInDate))}<br />
+                      <span className="font-medium">Check-out:</span> {formatDate(new Date(checkOutDate))}
+                    </p>
+                  </div>
+                  <div className="flex items-center">
+                    <Users className="h-4 w-4 text-gray-500 mr-2" />
+                    <p className="text-sm"><span className="font-medium">Guests:</span> {guestCount}</p>
+                  </div>
                 </div>
               </div>
               
-              <div className="space-y-4 mb-6">
-                <div>
-                  <label htmlFor="check-in-date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Check In
-                  </label>
-                  <input
-                    type="date"
-                    id="check-in-date"
-                    className="hotel-input w-full"
-                    value={checkInDate}
-                    onChange={(e) => setCheckInDate(e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="check-out-date" className="block text-sm font-medium text-gray-700 mb-1">
-                    Check Out
-                  </label>
-                  <input
-                    type="date"
-                    id="check-out-date"
-                    className="hotel-input w-full"
-                    value={checkOutDate}
-                    onChange={(e) => setCheckOutDate(e.target.value)}
-                    min={checkInDate || new Date().toISOString().split('T')[0]}
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="guests-select" className="block text-sm font-medium text-gray-700 mb-1">
-                    Guests
-                  </label>
-                  <select
-                    id="guests-select"
-                    className="hotel-input w-full"
-                    value={guests}
-                    onChange={(e) => setGuests(e.target.value)}
-                  >
-                    {Array.from({ length: roomType.capacity }, (_, i) => i + 1).map((num) => (
-                      <option key={num} value={num}>
-                        {num} {num === 1 ? 'Guest' : 'Guests'}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              
-              {checkInDate && checkOutDate && (
-                <div className="border-t border-b border-gray-200 py-4 mb-6">
-                  <div className="flex justify-between mb-2">
-                    <span>Room Rate</span>
-                    <span>{formatPrice(roomType.pricePerNight)}</span>
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Availability</h3>
+                {checkingAvailability ? (
+                  <div className="flex items-center space-x-2">
+                    <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm text-gray-500">Checking availability...</p>
                   </div>
-                  <div className="flex justify-between font-bold">
-                    <span>Total</span>
-                    <span>{formatPrice(calculateTotalPrice())}</span>
-                  </div>
-                  <p className="text-sm text-gray-600 mt-2">
-                    *Taxes and fees included
+                ) : (
+                  <p className={`text-lg font-semibold ${roomAvailabilityStatus.soldOut ? 'text-red-500' : 'text-green-600'}`}>
+                    {roomAvailabilityStatus.soldOut 
+                      ? 'Sold Out' 
+                      : `${roomAvailabilityStatus.available} of ${roomAvailabilityStatus.total} rooms available`}
                   </p>
-                </div>
-              )}
+                )}
+              </div>
               
-              <Button fullWidth onClick={handleBookNow} size="lg">
-                Book Now
+                <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Select Room Number</h3>
+                  <select 
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    value={selectedRoomNumber}
+                    onChange={(e) => setSelectedRoomNumber(e.target.value)}
+                  disabled={roomAvailabilityStatus.soldOut || checkingAvailability}
+                  >
+                  {checkingAvailability ? (
+                    <option>Loading rooms...</option>
+                  ) : (
+                    availableRooms
+                      .filter(room => room.available)
+                      .map(room => (
+                        <option key={room.id} value={room.number}>
+                          Room {room.number}
+                        </option>
+                      ))
+                  )}
+                  </select>
+                <p className="text-xs text-gray-500 mt-1">Please select a room number to continue</p>
+                </div>
+              
+              <div className="mb-4">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Update Dates</h3>
+                <div className="space-y-2">
+                  <div>
+                    <label htmlFor="check-in-date" className="block text-xs text-gray-500 mb-1">
+                      Check-in Date
+                    </label>
+                    <input
+                      id="check-in-date"
+                      type="date"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={checkInDate}
+                      onChange={(e) => handleDateChange('checkIn', e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="check-out-date" className="block text-xs text-gray-500 mb-1">
+                      Check-out Date
+                    </label>
+                    <input
+                      id="check-out-date"
+                      type="date"
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={checkOutDate}
+                      onChange={(e) => handleDateChange('checkOut', e.target.value)}
+                      min={checkInDate ? new Date(new Date(checkInDate).getTime() + 86400000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
+                    />
+                  </div>
+                  {checkingAvailability && (
+                    <div className="flex items-center justify-center text-xs text-amber-600 mt-1">
+                      <div className="w-3 h-3 border-2 border-amber-600 border-t-transparent rounded-full animate-spin mr-1"></div>
+                      <span>Checking new availability...</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-700 mb-1">Guests</h3>
+                <select 
+                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                  value={guestCount}
+                  onChange={handleGuestCountChange}
+                  disabled={roomAvailabilityStatus.soldOut}
+                >
+                  {[...Array(roomType?.maxGuests || 1)].map((_, index) => (
+                    <option key={index + 1} value={index + 1}>
+                      {index + 1} {index === 0 ? 'Guest' : 'Guests'}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="border-t border-gray-200 pt-4 mb-4">
+                <div className="flex justify-between mb-2">
+                  <span className="text-gray-700">Price per night</span>
+                  <span className="font-semibold">{formatPrice(roomType.pricePerNight)}</span>
+                </div>
+                    <div className="flex justify-between mb-2">
+                  <span className="text-gray-700">Number of nights</span>
+                  <span className="font-semibold">{Math.ceil((new Date(checkOutDate).getTime() - new Date(checkInDate).getTime()) / (1000 * 60 * 60 * 24))}</span>
+                    </div>
+                <div className="flex justify-between font-bold text-lg pt-2 border-t border-gray-200">
+                      <span>Total</span>
+                  <span>{formatPrice(totalPrice)}</span>
+                    </div>
+              </div>
+              
+              <Button 
+                className="w-full py-3 text-lg"
+                onClick={handleBookNow}
+                disabled={roomAvailabilityStatus.soldOut || !selectedRoomNumber || checkingAvailability}
+              >
+                {roomAvailabilityStatus.soldOut 
+                  ? 'Sold Out' 
+                  : isAuthenticated 
+                    ? 'Book Now' 
+                    : 'Login to Book'}
               </Button>
               
-              <div className="mt-4 text-center text-sm text-gray-600">
-                No payment required now – pay at the hotel
-              </div>
+              {dateError && (
+                <p className="text-red-500 text-sm mt-2 text-center">{dateError}</p>
+              )}
+              
+              {!selectedRoomNumber && !roomAvailabilityStatus.soldOut && !checkingAvailability && (
+                <p className="text-amber-500 text-sm mt-2 text-center">Please select a room number</p>
+              )}
+              
+              {!isAuthenticated && authChecked && (
+                <p className="text-blue-500 text-sm mt-2 text-center">
+                  You need to login or create an account to book a room
+                </p>
+              )}
             </div>
           </div>
         </div>

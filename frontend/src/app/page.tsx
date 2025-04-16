@@ -1,46 +1,26 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { ChevronRight, Star, Utensils, Wifi, ShowerHead, Tv, MapPin, Calendar, Users } from 'lucide-react';
-import { RoomCard } from '@/components/ui/RoomCard';
+import { RoomCard } from '@/components/ui/room-card';
+import { RoomType } from '@/types';
+import { roomService } from '@/services/api';
 
-// Sample room types for the homepage
-const featuredRoomTypes = [
-  {
-    id: '1',
-    name: 'Deluxe Suite',
-    description: 'Spacious suite with city views, king-size bed, and luxury amenities.',
-    pricePerNight: 29900, // in cents
-    capacity: 2,
-    image: '/images/deluxe-suite.jpg',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    name: 'Executive Room',
-    description: 'Modern room with work area, queen-size bed, and premium toiletries.',
-    pricePerNight: 19900, // in cents
-    capacity: 2,
-    image: '/images/executive-room.jpg',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    name: 'Family Suite',
-    description: 'Perfect for families with two bedrooms, living area, and kid-friendly amenities.',
-    pricePerNight: 34900, // in cents
-    capacity: 4,
-    image: '/images/family-suite.jpg',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-  },
-];
+// Define the shape of our featured room type
+interface FeaturedRoomType {
+  id: string;
+  name: string;
+  description: string;
+  pricePerNight: number;
+  capacity: number;
+  image: string;
+  amenities: string[];
+}
 
 // Sample testimonials
 const testimonials = [
@@ -71,6 +51,110 @@ export default function Home() {
   const [checkInDate, setCheckInDate] = useState('');
   const [checkOutDate, setCheckOutDate] = useState('');
   const [guests, setGuests] = useState('1');
+  const [featuredRoomTypes, setFeaturedRoomTypes] = useState<FeaturedRoomType[]>([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  
+  // Add form validation
+  const [errors, setErrors] = useState<{
+    checkIn?: string;
+    checkOut?: string;
+    guests?: string;
+  }>({});
+  
+  // Fetch room types from API
+  useEffect(() => {
+    const fetchRoomTypes = async () => {
+      try {
+        setLoadingRooms(true);
+        const response = await roomService.getRoomTypes();
+        
+        if (!response.success || !response.data) {
+          throw new Error(response.error || 'Failed to fetch room types');
+        }
+        
+        const roomTypes = response.data;
+        
+        // Sort by display order and take first 3
+        const sortedRooms = roomTypes
+          .sort((a: RoomType, b: RoomType) => (a.displayOrder || 0) - (b.displayOrder || 0))
+          .slice(0, 3)
+          .map((room: RoomType) => ({
+            id: room.id.toString(),
+            name: room.name,
+            description: room.description,
+            pricePerNight: room.pricePerNight,
+            capacity: room.maxGuests,
+            image: room.imageUrl || '',
+            amenities: typeof room.amenities === 'string' 
+              ? JSON.parse(room.amenities) 
+              : room.amenities || [],
+          }));
+        
+        setFeaturedRoomTypes(sortedRooms);
+      } catch (error) {
+        console.error('Error fetching room types:', error);
+        // Fallback to empty array if API call fails
+        setFeaturedRoomTypes([]);
+      } finally {
+        setLoadingRooms(false);
+      }
+    };
+    
+    fetchRoomTypes();
+  }, []);
+  
+  // Validate search form 
+  const validateSearchForm = () => {
+    const newErrors: {
+      checkIn?: string;
+      checkOut?: string;
+      guests?: string;
+    } = {};
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    
+    if (!checkInDate) {
+      newErrors.checkIn = 'Please select a check-in date';
+    } else {
+      const checkIn = new Date(checkInDate);
+      if (isNaN(checkIn.getTime())) {
+        newErrors.checkIn = 'Invalid date format';
+      } else if (checkIn < today) {
+        newErrors.checkIn = 'Check-in date cannot be in the past';
+      }
+    }
+    
+    if (!checkOutDate) {
+      newErrors.checkOut = 'Please select a check-out date';
+    } else if (checkInDate) {
+      const checkIn = new Date(checkInDate);
+      const checkOut = new Date(checkOutDate);
+      
+      if (isNaN(checkOut.getTime())) {
+        newErrors.checkOut = 'Invalid date format';
+      } else if (checkOut <= checkIn) {
+        newErrors.checkOut = 'Check-out date must be after check-in date';
+      }
+    }
+    
+    if (!guests || parseInt(guests, 10) < 1) {
+      newErrors.guests = 'Please select at least 1 guest';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+  
+  // Handle form submission with validation
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (validateSearchForm()) {
+      // If validation passes, navigate to rooms page with search params
+      window.location.href = `/rooms?checkIn=${checkInDate}&checkOut=${checkOutDate}&guests=${guests}`;
+    }
+  };
   
   return (
     <>
@@ -103,7 +187,7 @@ export default function Home() {
               </Button>
             </Link>
             <Link href="/about">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/20 px-8 py-3 text-lg h-auto">
+              <Button size="lg" variant="outline" className="border-white bg-white/20 text-white hover:bg-white hover:text-primary px-8 py-3 text-lg h-auto">
                 Explore Hotel
               </Button>
             </Link>
@@ -118,63 +202,71 @@ export default function Home() {
       <section className="relative z-20 mx-auto max-w-6xl px-4">
         <div className="bg-white rounded-xl shadow-2xl -mt-20 backdrop-blur-md border border-gray-100 overflow-hidden">
           <div className="p-2 md:p-6">
-            <form className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <form onSubmit={handleSearch} className="grid grid-cols-1 md:grid-cols-12 gap-4">
               <div className="md:col-span-8 lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="py-2 px-4 bg-gray-50 rounded-lg border border-gray-100 h-[68px] flex items-center">
+                <div className={`py-2 px-4 ${errors.checkIn ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'} rounded-lg border h-[68px] flex flex-col justify-center`}>
                   <div className="flex items-center w-full">
-                    <Calendar className="h-5 w-5 text-primary mr-3" />
+                    <Calendar className={`h-5 w-5 ${errors.checkIn ? 'text-red-500' : 'text-primary'} mr-3`} />
                     <div className="flex-1">
-                      <label htmlFor="check-in" className="block text-xs text-gray-500 uppercase font-medium mb-1">
-                        Check In
+                      <label htmlFor="check-in" className={`block text-xs ${errors.checkIn ? 'text-red-500' : 'text-gray-500'} uppercase font-medium mb-1`}>
+                        Check In <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="date"
                         id="check-in"
                         value={checkInDate}
                         onChange={(e) => setCheckInDate(e.target.value)}
-                        className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:outline-none focus:ring-0"
+                        className={`w-full bg-transparent border-none p-0 ${errors.checkIn ? 'text-red-500' : 'text-gray-900'} font-medium focus:outline-none focus:ring-0`}
                         min={new Date().toISOString().split('T')[0]}
                         required
                       />
                     </div>
                   </div>
+                  {errors.checkIn && (
+                    <p className="mt-1 text-xs text-red-500 pl-8">{errors.checkIn}</p>
+                  )}
                 </div>
 
-                <div className="py-2 px-4 bg-gray-50 rounded-lg border border-gray-100 h-[68px] flex items-center">
+                <div className={`py-2 px-4 ${errors.checkOut ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'} rounded-lg border h-[68px] flex flex-col justify-center`}>
                   <div className="flex items-center w-full">
-                    <Calendar className="h-5 w-5 text-primary mr-3" />
+                    <Calendar className={`h-5 w-5 ${errors.checkOut ? 'text-red-500' : 'text-primary'} mr-3`} />
                     <div className="flex-1">
-                      <label htmlFor="check-out" className="block text-xs text-gray-500 uppercase font-medium mb-1">
-                        Check Out
+                      <label htmlFor="check-out" className={`block text-xs ${errors.checkOut ? 'text-red-500' : 'text-gray-500'} uppercase font-medium mb-1`}>
+                        Check Out <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="date"
                         id="check-out"
                         value={checkOutDate}
                         onChange={(e) => setCheckOutDate(e.target.value)}
-                        className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:outline-none focus:ring-0"
+                        className={`w-full bg-transparent border-none p-0 ${errors.checkOut ? 'text-red-500' : 'text-gray-900'} font-medium focus:outline-none focus:ring-0`}
                         min={checkInDate || new Date().toISOString().split('T')[0]}
                         required
                       />
                     </div>
                   </div>
+                  {errors.checkOut && (
+                    <p className="mt-1 text-xs text-red-500 pl-8">{errors.checkOut}</p>
+                  )}
                 </div>
               </div>
 
               <div className="md:col-span-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-1 gap-4">
-                <div className="sm:col-span-1 md:col-span-2 py-2 px-4 bg-gray-50 rounded-lg border border-gray-100 h-[68px] flex items-center">
+                <div className={`sm:col-span-1 md:col-span-2 py-2 px-4 ${errors.guests ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'} rounded-lg border h-[68px] flex flex-col justify-center`}>
                   <div className="flex items-center w-full">
-                    <Users className="h-5 w-5 text-primary mr-3" />
+                    <Users className={`h-5 w-5 ${errors.guests ? 'text-red-500' : 'text-primary'} mr-3`} />
                     <div className="flex-1">
-                      <label htmlFor="guests" className="block text-xs text-gray-500 uppercase font-medium mb-1">
-                        Guests
+                      <label htmlFor="guests" className={`block text-xs ${errors.guests ? 'text-red-500' : 'text-gray-500'} uppercase font-medium mb-1`}>
+                        Guests <span className="text-red-500">*</span>
                       </label>
                       <select
                         id="guests"
                         value={guests}
                         onChange={(e) => setGuests(e.target.value)}
-                        className="w-full bg-transparent border-none p-0 text-gray-900 font-medium focus:outline-none focus:ring-0"
+                        className={`w-full bg-transparent border-none p-0 ${errors.guests ? 'text-red-500' : 'text-gray-900'} font-medium focus:outline-none focus:ring-0`}
+                        required
                       >
+                        <option value="">Select Guests</option>
                         {[1, 2, 3, 4, 5, 6].map((num) => (
                           <option key={num} value={num}>
                             {num} {num === 1 ? 'Guest' : 'Guests'}
@@ -183,23 +275,18 @@ export default function Home() {
                       </select>
                     </div>
                   </div>
+                  {errors.guests && (
+                    <p className="mt-1 text-xs text-red-500 pl-8">{errors.guests}</p>
+                  )}
                 </div>
 
                 <div className="sm:col-span-1 md:col-span-2 flex items-stretch">
-                  <Link 
-                    href={{
-                      pathname: '/rooms',
-                      query: { checkIn: checkInDate, checkOut: checkOutDate, guests },
-                    }} 
-                    className="w-full"
+                  <Button 
+                    type="submit"
+                    className="bg-primary hover:bg-primary-dark h-full text-base py-6 w-full"
                   >
-                    <Button 
-                      fullWidth 
-                      className="bg-primary hover:bg-primary-dark h-full text-base py-6"
-                    >
-                      Search Rooms
-                    </Button>
-                  </Link>
+                    Search Rooms
+                  </Button>
                 </div>
               </div>
             </form>
@@ -263,9 +350,12 @@ export default function Home() {
               </div>
               
               <Link href="/about">
-                <Button variant="outline" className="group font-medium border-gray-300 hover:border-gray-900 hover:bg-gray-900 hover:text-white transition-colors px-6 py-3 rounded-lg inline-flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="lg" 
+                  className="font-medium border-gray-300 hover:border-gray-900 hover:bg-gray-900 hover:text-white"
+                >
                   Learn More About Us
-                  <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </Link>
             </div>
@@ -286,15 +376,29 @@ export default function Home() {
             </p>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredRoomTypes.map((room) => (
-              <RoomCard 
-                key={room.id} 
-                room={room}
-                mode="compact"
-              />
-            ))}
-          </div>
+          {loadingRooms ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
+            </div>
+          ) : featuredRoomTypes.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredRoomTypes.map((room) => (
+                <RoomCard 
+                  key={room.id} 
+                  id={room.id}
+                  name={room.name}
+                  description={room.description}
+                  price={room.pricePerNight}
+                  imageUrl={room.image}
+                  capacity={room.capacity}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8">
+              <p>No room types available at the moment.</p>
+            </div>
+          )}
           
           <div className="text-center mt-12">
             <Link href="/rooms">
@@ -369,10 +473,10 @@ export default function Home() {
             <Link href="/amenities">
               <Button 
                 variant="outline" 
-                className="group font-medium border-gray-300 hover:border-gray-900 hover:bg-gray-900 hover:text-white transition-colors px-6 py-3 rounded-lg inline-flex items-center gap-2"
+                size="lg" 
+                className="font-medium border-gray-300 hover:border-gray-900 hover:bg-gray-900 hover:text-white"
               >
                 Explore All Amenities
-                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
           </div>
@@ -424,7 +528,7 @@ export default function Home() {
                 <div className="flex items-center justify-between border-t border-gray-100 pt-4">
                   <div>
                     <p className="font-bold text-gray-900">{testimonial.name}</p>
-                    <p className="text-gray-500 text-sm">{formatDate(testimonial.date, 'PP')}</p>
+                    <p className="text-gray-500 text-sm">{formatDate(new Date(testimonial.date))}</p>
                   </div>
                   
                   <div className="bg-gray-100 w-10 h-10 rounded-full flex items-center justify-center text-gray-600">
@@ -438,7 +542,7 @@ export default function Home() {
       </section>
 
       {/* CTA section with dynamic background */}
-      <section className="relative py-24 overflow-hidden">
+      <section className="relative py-16 overflow-hidden">
         <div className="absolute inset-0 z-0">
           <Image
             src="/images/hotel-lobby.jpg" 
@@ -450,8 +554,8 @@ export default function Home() {
         
         <div className="hotel-container relative z-10">
           <div className="max-w-3xl mx-auto text-center text-white">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">Ready to Experience Grand Plaza?</h2>
-            <p className="text-lg md:text-xl mb-10 opacity-90 font-light">
+            <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">Ready to Experience Grand Plaza?</h2>
+            <p className="text-base md:text-lg mb-6 opacity-90 font-light">
               Book your stay today and enjoy exceptional service, luxurious accommodations, and unforgettable memories.
             </p>
             
@@ -459,7 +563,7 @@ export default function Home() {
               <Link href="/rooms">
                 <Button 
                   size="lg" 
-                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-8 py-3 text-lg h-auto"
+                  className="bg-yellow-500 hover:bg-yellow-600 text-white font-medium px-6 py-2 text-base h-auto"
                 >
                   Book Your Stay Now
                 </Button>
@@ -468,14 +572,14 @@ export default function Home() {
                 <Button 
                   size="lg" 
                   variant="outline" 
-                  className="border-white text-white hover:bg-white/20 px-8 py-3 text-lg h-auto"
+                  className="border-white bg-white/20 text-white hover:bg-white hover:text-primary px-6 py-2 text-base h-auto"
                 >
                   Contact Us
                 </Button>
               </Link>
             </div>
           </div>
-    </div>
+        </div>
       </section>
     </>
   );

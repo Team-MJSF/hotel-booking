@@ -4,10 +4,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum RoomType {
-  SINGLE = 'single',
-  DOUBLE = 'double',
-  SUITE = 'suite',
+  STANDARD = 'standard',
+  EXECUTIVE = 'executive',
+  FAMILY = 'family',
   DELUXE = 'deluxe',
+  PREMIUM = 'premium',
 }
 
 export enum AvailabilityStatus {

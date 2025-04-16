@@ -1,42 +1,46 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
-import { Mail, Lock, User, Wifi } from 'lucide-react';
-import { authService } from '@/services/api';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { User, Mail, Lock } from 'lucide-react';
 
-// Define form schema using Zod
+// Form validation schema
 const registerSchema = z.object({
-  firstName: z.string().min(2, 'First name must be at least 2 characters'),
-  lastName: z.string().min(2, 'Last name must be at least 2 characters'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
-  confirmPassword: z.string(),
+  password: z
+    .string()
+    .min(6, 'Password must be at least 6 characters')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+    .regex(/[0-9]/, 'Password must contain at least one number'),
+  confirmPassword: z.string().min(6, 'Confirm your password'),
 }).refine((data) => data.password === data.confirmPassword, {
-  message: "Passwords don't match",
+  message: 'Passwords do not match',
   path: ['confirmPassword'],
 });
 
-// Type for form values
 type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
+  console.log('RegisterPage component rendering');
+  
   const { register: registerUser } = useAuth();
   const router = useRouter();
-  const [error, setError] = useState<string | React.ReactNode | null>(null);
-  const [debugInfo, setDebugInfo] = useState<string | null>(null);
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [connectionStatus, setConnectionStatus] = useState<{ success: boolean; message: string } | null>(null);
-  const [isTestingConnection, setIsTestingConnection] = useState(false);
 
-  // Initialize form
+  console.log('RegisterPage: Auth context and hooks initialized');
+
   const {
     register,
     handleSubmit,
@@ -52,127 +56,116 @@ export default function RegisterPage() {
     },
   });
 
-  // Test API connection
-  const testConnection = async () => {
-    try {
-      setIsTestingConnection(true);
-      setDebugInfo("Testing connection to backend API...");
-      
-      const result = await authService.testConnection();
-      
-      setConnectionStatus(result);
-      setDebugInfo(prev => `${prev}\nConnection test result: ${JSON.stringify(result)}`);
-    } catch (error) {
-      console.error('Connection test error:', error);
-      setConnectionStatus({
-        success: false,
-        message: 'Connection test failed with an unexpected error'
-      });
-      setDebugInfo(prev => `${prev}\nConnection test error: ${JSON.stringify(error)}`);
-    } finally {
-      setIsTestingConnection(false);
-    }
-  };
+  console.log('RegisterPage: Form validation setup complete');
 
-  // Handle form submission
+  // Add an effect to log when the component mounts
+  useEffect(() => {
+    console.log('RegisterPage component mounted');
+  }, []);
+
   const onSubmit = async (data: RegisterFormValues) => {
+    console.log('onSubmit function called with data:', data);
     try {
       setIsLoading(true);
       setError(null);
-      setDebugInfo(`Attempting to register user: ${data.email}`);
+      
+      console.log('Register form submitted with data:', data);
 
-      const userData = {
+      const result = await registerUser({
         firstName: data.firstName,
         lastName: data.lastName,
         email: data.email,
         password: data.password,
         confirmPassword: data.confirmPassword,
-      };
-
-      setDebugInfo(prev => `${prev}\nSending data to API...`);
+      });
       
-      const result = await registerUser(userData);
-
-      setDebugInfo(prev => `${prev}\nAPI Response: ${JSON.stringify(result)}`);
+      console.log('Registration result:', result);
 
       if (result.success) {
-        router.push('/login?registered=true');
-      } else {
-        // Check if it's an email already exists error
-        if (result.message && result.message.includes('Email already exists')) {
-          setError(
-            <div>
-              <p>{result.message}</p>
-              <p className="mt-2">
-                <Link href="/login" className="text-primary hover:text-primary-dark font-medium">
-                  Go to login page
-                </Link>
-              </p>
-            </div>
-          );
+        console.log('Registration successful, preparing to redirect');
+        // Preserve returnUrl or redirect parameter for login page
+        let redirectParams = '';
+        const returnUrl = searchParams.get('returnUrl');
+        const redirectParam = searchParams.get('redirect');
+        
+        if (returnUrl) {
+          redirectParams = `?returnUrl=${encodeURIComponent(returnUrl)}&registered=true`;
+        } else if (redirectParam) {
+          redirectParams = `?redirect=${encodeURIComponent(redirectParam)}&registered=true`;
         } else {
-          setError(result.message || 'Registration failed. Please try again.');
+          redirectParams = '?registered=true';
         }
+        
+        console.log('Redirecting to login with params:', redirectParams);
+        router.push(`/login${redirectParams}`);
+      } else {
+        console.error('Registration failed with message:', result.message);
+        setError(result.message || 'Registration failed. Please try again.');
       }
-    } catch (err) {
-      console.error('Registration error:', err);
-      setError('An unexpected error occurred. Please try again.');
-      setDebugInfo(prev => `${prev}\nError: ${JSON.stringify(err)}`);
+    } catch (err: any) {
+      console.error('Registration error caught in try/catch:', err);
+      if (err.message === 'Email already exists') {
+        setError('This email is already registered. Please log in instead.');
+      } else {
+        setError('An unexpected error occurred. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
+  // Manual direct form submission as a backup
+  const handleManualSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    console.log('Manual form submission triggered');
+    
+    const formElement = e.target as HTMLFormElement;
+    const firstName = (formElement.querySelector('#firstName') as HTMLInputElement)?.value;
+    const lastName = (formElement.querySelector('#lastName') as HTMLInputElement)?.value;
+    const email = (formElement.querySelector('#email') as HTMLInputElement)?.value;
+    const password = (formElement.querySelector('#password') as HTMLInputElement)?.value;
+    const confirmPassword = (formElement.querySelector('#confirmPassword') as HTMLInputElement)?.value;
+    
+    // Basic validation
+    if (!firstName || !lastName || !email || !password || !confirmPassword) {
+      setError('All fields are required');
+      return;
+    }
+    
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+    
+    // Direct submission
+    onSubmit({ firstName, lastName, email, password, confirmPassword } as RegisterFormValues);
+  };
+
   return (
     <div className="min-h-[calc(100vh-16rem)] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-lg">
+      <div className="w-full max-w-md">
         <div className="bg-white rounded-lg shadow-lg p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create Your Account</h1>
+            <h1 className="text-3xl font-bold text-gray-900 mb-2">Create an Account</h1>
             <p className="text-gray-600">
-              Join Grand Plaza to book rooms and manage your reservations
+              Join us to enjoy exclusive benefits and easy booking
             </p>
           </div>
 
-          {/* Display API URL for debugging */}
-          <div className="mb-4 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-md text-sm">
-            <div className="flex justify-between items-center">
-              <span>API URL: {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000'}</span>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={testConnection} 
-                isLoading={isTestingConnection}
-                className="ml-4 bg-blue-100 border-blue-300 hover:bg-blue-200"
-              >
-                <Wifi className="h-4 w-4 mr-2" />
-                Test Connection
-              </Button>
-            </div>
-            
-            {connectionStatus && (
-              <div className={`mt-2 p-2 rounded ${connectionStatus.success ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {connectionStatus.message}
-              </div>
-            )}
-          </div>
-
-          {/* Error display */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 text-red-600 rounded-md text-sm">
               {error}
             </div>
           )}
 
-          {/* Debug information (development only) */}
-          {debugInfo && process.env.NODE_ENV !== 'production' && (
-            <div className="mb-6 p-4 bg-gray-50 border border-gray-200 text-gray-800 rounded-md text-sm font-mono whitespace-pre-wrap">
-              {debugInfo}
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <form 
+            onSubmit={(e) => {
+              console.log('Form onSubmit triggered');
+              handleManualSubmit(e);
+            }}
+            className="space-y-5"
+          >
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
                   First Name
@@ -183,7 +176,6 @@ export default function RegisterPage() {
                   </div>
                   <Input
                     id="firstName"
-                    type="text"
                     className="pl-10"
                     placeholder="John"
                     error={errors.firstName?.message}
@@ -202,7 +194,6 @@ export default function RegisterPage() {
                   </div>
                   <Input
                     id="lastName"
-                    type="text"
                     className="pl-10"
                     placeholder="Doe"
                     error={errors.lastName?.message}
@@ -269,15 +260,32 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <Button type="submit" fullWidth isLoading={isLoading}>
-              Create Account
+            <Button 
+              type="submit" 
+              className="w-full" 
+              disabled={isLoading}
+              onClick={(e) => {
+                // This will let the form's onSubmit handle it
+                console.log('Button clicked, letting form onSubmit handle submission');
+              }}
+            >
+              {isLoading ? 'Creating Account...' : 'Create Account'}
             </Button>
 
-            <div className="text-center mt-6">
+            <div className="text-center mt-4">
               <p className="text-sm text-gray-600">
                 Already have an account?{' '}
-                <Link href="/login" className="text-primary hover:text-primary-dark font-medium">
-                  Sign in
+                <Link 
+                  href={`/login${
+                    searchParams.get('returnUrl') 
+                      ? `?returnUrl=${searchParams.get('returnUrl')}` 
+                      : searchParams.get('redirect') 
+                        ? `?redirect=${searchParams.get('redirect')}` 
+                        : ''
+                  }`}
+                  className="text-primary hover:text-primary-dark font-medium"
+                >
+                  Log in
                 </Link>
               </p>
             </div>

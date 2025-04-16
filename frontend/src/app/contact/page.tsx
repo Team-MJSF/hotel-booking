@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { MapPin, Phone, Mail, Clock, Check } from 'lucide-react';
 
 export default function ContactPage() {
@@ -208,9 +208,8 @@ export default function ContactPage() {
                   
                   <Button 
                     type="submit" 
-                    fullWidth 
                     disabled={isSubmitting}
-                    className="py-3"
+                    className="w-full py-3"
                   >
                     {isSubmitting ? (
                       <div className="flex items-center justify-center">

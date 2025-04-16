@@ -9,21 +9,30 @@ export interface User {
 }
 
 export interface RoomType {
-  id: string;
+  id: number;
   name: string;
+  code: string;
   description: string;
   pricePerNight: number;
-  capacity: number;
-  createdAt: string;
-  updatedAt: string;
+  maxGuests: number;
+  imageUrl?: string;
+  amenities?: string[];
+  displayOrder?: number;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Room {
   id: string;
   roomNumber: string;
-  roomTypeId: string;
+  roomTypeId?: string;
   roomType?: RoomType;
-  status: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
+  type?: string;
+  pricePerNight?: number;
+  maxGuests?: number;
+  amenities?: string;
+  availabilityStatus?: string;
+  status?: 'AVAILABLE' | 'OCCUPIED' | 'MAINTENANCE';
   createdAt: string;
   updatedAt: string;
 }
@@ -38,11 +47,15 @@ export interface Booking {
   user?: User;
   roomId: string;
   room?: Room;
+  roomTypeId: string;
+  roomTypeName: string;
+  roomNumber: string;
   checkInDate: string;
   checkOutDate: string;
+  guestCount: number;
   totalPrice: number;
   status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
-  paymentStatus: 'PENDING' | 'PAID' | 'REFUNDED';
+  paymentStatus?: 'PENDING' | 'PAID' | 'REFUNDED';
   specialRequests?: string;
   createdAt: string;
   updatedAt: string;
@@ -63,9 +76,13 @@ export interface Payment {
 export interface RoomSearchParams {
   checkInDate?: string;
   checkOutDate?: string;
-  capacity?: number;
-  priceMin?: number;
-  priceMax?: number;
+  maxGuests?: number;
+  minPrice?: number;
+  maxPrice?: number;
+  roomType?: string;
+  amenities?: string[];
+  sortBy?: string;
+  sortOrder?: string;
 }
 
 export interface ApiResponse<T> {

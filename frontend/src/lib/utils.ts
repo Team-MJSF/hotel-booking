@@ -1,37 +1,38 @@
-import { type ClassValue, clsx } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { clsx, type ClassValue } from "clsx"
+import { twMerge } from "tailwind-merge"
+import { format, isToday, isYesterday, isTomorrow } from "date-fns"
 
-/**
- * Combines multiple class names and resolves Tailwind CSS conflicts
- */
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs));
+  return twMerge(clsx(inputs))
 }
 
 /**
- * Format a price in cents to a currency string
+ * Format a price in cents to a readable currency string
  */
-export function formatPrice(price: number, opts: { currency?: string; notation?: Intl.NumberFormatOptions['notation'] } = {}) {
-  const { currency = 'USD', notation = 'standard' } = opts;
-  
+export function formatPrice(priceInCents: number): string {
+  const priceInDollars = priceInCents / 100;
   return new Intl.NumberFormat('en-US', {
     style: 'currency',
-    currency,
-    notation,
-  }).format(price / 100);
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(priceInDollars);
 }
 
 /**
- * Format a date to a human-readable string
+ * Format a date to a readable string
  */
-export function formatDate(date: Date | string, format: string = 'PPP') {
-  if (!date) return '';
+export function formatDate(date: Date): string {
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return "Invalid date";
+  }
   
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  // Create a normalized date that preserves the date portion regardless of timezone
+  // First get the ISO date string (YYYY-MM-DD) and create a new date with it
+  const dateString = date.toISOString().split('T')[0];
+  const normalizedDate = new Date(`${dateString}T12:00:00Z`);
   
-  return dateObj.toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-} 
+  // Always use the standard date format for consistency across the application
+  return format(normalizedDate, "EEE, MMM d, yyyy");
+}

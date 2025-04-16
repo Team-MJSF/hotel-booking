@@ -122,6 +122,75 @@ export class RoomsController {
   }
 
   /**
+   * Checks availability of rooms for specific dates
+   * @param checkInDate - The check-in date for the booking
+   * @param checkOutDate - The check-out date for the booking
+   * @param roomTypeId - Optional room type ID to filter by
+   * @returns Promise<Room[]> Array of available rooms for the specified dates
+   */
+  @Get('available')
+  @ApiOperation({
+    summary: 'Check room availability for specific dates',
+    description:
+      'Retrieves a list of available rooms for the specified date range, optionally filtered by room type ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of available rooms for the specified dates',
+    type: [Room],
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid parameters' })
+  async checkAvailability(
+    @Query('checkInDate') checkInDate: string,
+    @Query('checkOutDate') checkOutDate: string,
+    @Query('roomTypeId') roomTypeId?: string,
+  ): Promise<Room[]> {
+    // Validate required parameters
+    if (!checkInDate || !checkOutDate) {
+      throw new Error('Check-in and check-out dates are required');
+    }
+
+    // Convert string dates to Date objects
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    
+    // Validate date format
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+      throw new Error('Invalid date format');
+    }
+    
+    // Validate date range
+    if (checkOut <= checkIn) {
+      throw new Error('Check-out date must be after check-in date');
+    }
+
+    // Create search parameters for the service
+    const searchParams: SearchRoomsDto = {
+      checkInDate: checkIn,
+      checkOutDate: checkOut,
+    };
+    
+    // If room type ID is provided, add it to the search parameters
+    if (roomTypeId) {
+      // Get all available rooms first
+      const rooms = await this.roomsService.searchAvailableRooms(searchParams);
+      
+      // Filter rooms by floor number (room type id)
+      // In a real system, this would match by an actual room type relationship
+      // We're using a simple heuristic: the first digit of the room number is the floor number
+      // and corresponds to the room type ID
+      return rooms.filter(room => {
+        // Extract floor number from room number (first character)
+        const floorNumber = room.roomNumber.charAt(0);
+        return floorNumber === roomTypeId;
+      });
+    }
+    
+    // Otherwise just return all available rooms
+    return this.roomsService.searchAvailableRooms(searchParams);
+  }
+
+  /**
    * Retrieves a single room by ID
    * @param id - The ID of the room to retrieve
    * @returns Promise<Room> The room with the specified ID

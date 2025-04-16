@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 import { Award, Users, Coffee, Utensils, Dumbbell, Wifi, Car, Clock } from 'lucide-react';
 
 export default function AboutPage() {

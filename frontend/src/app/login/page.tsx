@@ -7,8 +7,8 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/Button';
-import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Mail, Lock, CheckCircle } from 'lucide-react';
 import { debugApi } from '@/services/api';
 
@@ -40,11 +40,22 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string | null>(null);
 
-  // Check for registered=true query parameter
   useEffect(() => {
+    // Check if user just registered
     if (searchParams.get('registered') === 'true') {
-      setSuccessMessage('Registration successful! Please log in with your new account.');
+      setSuccessMessage('Registration successful! Please log in.');
+    }
+    
+    // Store returnUrl or redirect in state
+    const returnUrl = searchParams.get('returnUrl');
+    const redirectParam = searchParams.get('redirect');
+    
+    if (returnUrl) {
+      setRedirectPath(decodeURIComponent(returnUrl));
+    } else if (redirectParam) {
+      setRedirectPath(decodeURIComponent(redirectParam));
     }
   }, [searchParams]);
 
@@ -66,19 +77,18 @@ export default function LoginPage() {
     try {
       setIsLoading(true);
       setError(null);
-      setSuccessMessage(null);
 
       const result = await login(data.email, data.password);
 
       if (result.success) {
-        router.push('/');
-        router.refresh();
+        // Redirect user to intended destination or home page
+        router.push(redirectPath || '/');
       } else {
-        setError(typeof result.message === 'string' ? result.message : 'Invalid credentials. Please try again.');
+        setError(result.message || 'Login failed. Please try again.');
       }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again.');
       console.error('Login error:', err);
+      setError('An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -157,14 +167,27 @@ export default function LoginPage() {
               </div>
             </div>
 
-            <Button type="submit" fullWidth isLoading={isLoading}>
-              Sign In
+            <Button 
+              type="submit" 
+              className="w-full"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Logging in...' : 'Login'}
             </Button>
 
             <div className="text-center mt-6">
               <p className="text-sm text-gray-600">
                 Don&apos;t have an account?{' '}
-                <Link href="/register" className="text-primary hover:text-primary-dark font-medium">
+                <Link 
+                  href={`/register${
+                    searchParams.get('returnUrl') 
+                      ? `?returnUrl=${searchParams.get('returnUrl')}` 
+                      : searchParams.get('redirect') 
+                        ? `?redirect=${searchParams.get('redirect')}` 
+                        : ''
+                  }`} 
+                  className="text-primary hover:text-primary-dark font-medium"
+                >
                   Sign up
                 </Link>
               </p>

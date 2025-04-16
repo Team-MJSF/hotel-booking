@@ -114,18 +114,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }) => {
     try {
       setIsLoading(true);
-      const response = await authService.register(userData);
+      console.log('Starting registration in AuthContext with:', userData.email);
+      
+      // First try with the standard axios-based registration
+      let response = await authService.register(userData);
+      console.log('Initial registration response from authService:', response);
+      
+      // If the standard registration failed with invalid response, try the fetch-based approach
+      if (!response.success && response.error === 'Network error or server unavailable') {
+        console.log('Trying alternative fetch-based registration method...');
+        response = await authService.registerWithFetch(userData);
+        console.log('Fetch-based registration response:', response);
+      }
       
       if (response.success && response.data) {
+        console.log('Registration successful:', response.data);
         return { success: true };
       }
       
+      console.error('Registration failed with error:', response.error);
       return { 
         success: false, 
         message: response.error || 'Registration failed' 
       };
     } catch (error) {
-      console.error('Registration failed:', error);
+      console.error('Registration failed with exception:', error);
       return { success: false, message: 'An unexpected error occurred' };
     } finally {
       setIsLoading(false);
