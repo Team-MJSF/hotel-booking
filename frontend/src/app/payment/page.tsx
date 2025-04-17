@@ -469,6 +469,7 @@ export default function PaymentPage() {
       } else if (typeof err === 'object' && err !== null) {
         try {
           errorMessage = JSON.stringify(err);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_unused) {
           // If JSON stringify fails, use default message
         }
@@ -500,6 +501,7 @@ export default function PaymentPage() {
         // Convert the whole object to a string representation
         try {
           displayMessage = JSON.stringify(errorMessage);
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         } catch (_unused) {
           displayMessage = 'Unknown error occurred';
         }
