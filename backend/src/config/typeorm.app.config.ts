@@ -12,7 +12,7 @@ export function getTypeOrmConfig(
   return Promise.resolve({
     // Define base directory for better path resolution
     type: 'sqlite',
-    database: join(process.cwd(), 'data', 'hotel_booking_dev.sqlite'),
+    database: join(process.cwd(), 'data', process.env.NODE_ENV === 'test' ? 'hotel_booking_test.sqlite' : 'hotel_booking_dev.sqlite'),
     entities: [join(__dirname, '..', '**', '*.entity.{ts,js}')],
     // Enable synchronize for development
     synchronize: process.env.NODE_ENV === 'development',

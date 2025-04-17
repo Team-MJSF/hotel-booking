@@ -451,7 +451,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(pastEnd),
         status: 'completed',
         guests: 1,
-        amount: 14900 * 5 // 5 nights
+        total_price: 14900 * 5 // 5 nights
       },
       {
         roomId: rooms[1].room_id, // Executive Room (201)
@@ -460,7 +460,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(currentEnd),
         status: 'confirmed',
         guests: 2,
-        amount: 19900 * 5 // 5 nights
+        total_price: 19900 * 5 // 5 nights
       },
       {
         roomId: rooms[2].room_id, // Family Suite (301)
@@ -469,7 +469,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(futureEnd),
         status: 'confirmed',
         guests: 3,
-        amount: 34900 * 5 // 5 nights
+        total_price: 34900 * 5 // 5 nights
       },
       {
         roomId: rooms[3].room_id, // Deluxe Suite (401)
@@ -478,7 +478,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(farFutureEnd),
         status: 'pending',
         guests: 2,
-        amount: 29900 * 5 // 5 nights
+        total_price: 29900 * 5 // 5 nights
       },
       {
         roomId: rooms[4].room_id, // Premium Suite (501)
@@ -487,7 +487,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(anotherPastEnd),
         status: 'cancelled',
         guests: 2,
-        amount: 39900 * 5 // 5 nights
+        total_price: 39900 * 5 // 5 nights
       },
       // Additional bookings for the upcoming month
       {
@@ -497,7 +497,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(nextWeekEnd),
         status: 'confirmed',
         guests: 1,
-        amount: 14900 * 3 // 3 nights
+        total_price: 14900 * 3 // 3 nights
       },
       {
         roomId: additionalRooms[1].room_id, // Another Executive Room (202)
@@ -506,7 +506,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(twoWeeksEnd),
         status: 'confirmed',
         guests: 2,
-        amount: 19900 * 3 // 3 nights
+        total_price: 19900 * 3 // 3 nights
       },
       {
         roomId: additionalRooms[2].room_id, // Another Family Suite (302)
@@ -515,7 +515,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(threeWeeksEnd),
         status: 'confirmed',
         guests: 4,
-        amount: 34900 * 3 // 3 nights
+        total_price: 34900 * 3 // 3 nights
       },
       {
         roomId: additionalRooms[3].room_id, // Another Deluxe Suite (402)
@@ -524,7 +524,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(fourWeeksEnd),
         status: 'confirmed',
         guests: 2,
-        amount: 29900 * 3 // 3 nights
+        total_price: 29900 * 3 // 3 nights
       },
       {
         roomId: additionalRooms[4].room_id, // Another Premium Suite (502)
@@ -533,7 +533,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(fiveWeeksEnd),
         status: 'confirmed',
         guests: 2,
-        amount: 39900 * 3 // 3 nights
+        total_price: 39900 * 3 // 3 nights
       },
       // Additional May bookings - Early May
       {
@@ -543,7 +543,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may1End),
         status: 'confirmed',
         guests: 1,
-        amount: 14900 * 3 // 3 nights
+        total_price: 14900 * 3 // 3 nights
       },
       {
         roomId: mayRooms[2].room_id, // Executive Room (203)
@@ -552,7 +552,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may1End),
         status: 'confirmed',
         guests: 2,
-        amount: 19900 * 3 // 3 nights
+        total_price: 19900 * 3 // 3 nights
       },
       // May 5-8 bookings
       {
@@ -562,7 +562,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may5End),
         status: 'confirmed',
         guests: 1,
-        amount: 14900 * 3 // 3 nights
+        total_price: 14900 * 3 // 3 nights
       },
       {
         roomId: mayRooms[3].room_id, // Executive Room (204)
@@ -571,7 +571,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may5End),
         status: 'confirmed',
         guests: 2,
-        amount: 19900 * 3 // 3 nights
+        total_price: 19900 * 3 // 3 nights
       },
       // May 10-13 bookings
       {
@@ -581,7 +581,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may10End),
         status: 'confirmed',
         guests: 3,
-        amount: 34900 * 3 // 3 nights
+        total_price: 34900 * 3 // 3 nights
       },
       {
         roomId: mayRooms[6].room_id, // Deluxe Suite (403)
@@ -590,7 +590,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may10End),
         status: 'confirmed',
         guests: 2,
-        amount: 29900 * 3 // 3 nights
+        total_price: 29900 * 3 // 3 nights
       },
       // May 15-18 bookings
       {
@@ -600,7 +600,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may15End),
         status: 'confirmed',
         guests: 4,
-        amount: 34900 * 3 // 3 nights
+        total_price: 34900 * 3 // 3 nights
       },
       {
         roomId: mayRooms[8].room_id, // Premium Suite (503)
@@ -609,7 +609,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may15End),
         status: 'confirmed',
         guests: 2,
-        amount: 39900 * 3 // 3 nights
+        total_price: 39900 * 3 // 3 nights
       },
       // May 20-23 bookings
       {
@@ -619,7 +619,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may20End),
         status: 'confirmed',
         guests: 2,
-        amount: 29900 * 3 // 3 nights
+        total_price: 29900 * 3 // 3 nights
       },
       // May 25-28 bookings
       {
@@ -629,7 +629,7 @@ async function seedDatabase(): Promise<void> {
         checkOut: formatDateForSql(may25End),
         status: 'confirmed',
         guests: 2,
-        amount: 39900 * 3 // 3 nights
+        total_price: 39900 * 3 // 3 nights
       }
     ];
     
@@ -639,8 +639,8 @@ async function seedDatabase(): Promise<void> {
       
       const bookingResult = await run(
         `INSERT INTO bookings 
-         (user_id, room_id, check_in_date, check_out_date, status, number_of_guests, special_requests, created_at, updated_at) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
+         (user_id, room_id, check_in_date, check_out_date, status, number_of_guests, total_price, special_requests, created_at, updated_at) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))`,
         [
           booking.userId,
           booking.roomId,
@@ -648,7 +648,8 @@ async function seedDatabase(): Promise<void> {
           booking.checkOut,
           booking.status,
           booking.guests,
-          `Booking for ${booking.guests} guests with an amount of $${(booking.amount/100).toFixed(2)}`,
+          booking.total_price,
+          `Booking for ${booking.guests} guests with a total price of $${(booking.total_price/100).toFixed(2)}`,
         ]
       );
       
@@ -661,7 +662,7 @@ async function seedDatabase(): Promise<void> {
           [
             bookingResult.lastID,
             'credit_card',
-            booking.amount,
+            booking.total_price,
             'USD',
             'completed',
             `TRANS-${Math.floor(Math.random() * 1000000)}`
