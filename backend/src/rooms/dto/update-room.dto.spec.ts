@@ -46,7 +46,7 @@ describe('UpdateRoomDto', () => {
 
       // Test all fields update
       const allFieldsDto = createDto({
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         roomNumber: '101',
         pricePerNight: 100,
         maxGuests: 2,
@@ -117,7 +117,7 @@ describe('UpdateRoomDto', () => {
     it('should transform all data types correctly', () => {
       // Test basic transformation with all fields
       const allFieldsDto = createDto({
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         roomNumber: '101',
         pricePerNight: 100.5,
         maxGuests: 2,
@@ -127,7 +127,7 @@ describe('UpdateRoomDto', () => {
       });
 
       expect(allFieldsDto).toBeInstanceOf(UpdateRoomDto);
-      expect(allFieldsDto.type).toBe(RoomType.SINGLE);
+      expect(allFieldsDto.type).toBe(RoomType.STANDARD);
       expect(allFieldsDto.roomNumber).toBe('101');
       expect(typeof allFieldsDto.pricePerNight).toBe('number');
       expect(typeof allFieldsDto.maxGuests).toBe('number');
@@ -209,12 +209,12 @@ describe('UpdateRoomDto', () => {
 
       // Test enum values with case transformation
       const enumDto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         availabilityStatus: 'AVAILABLE',
       });
 
       expect(enumDto).toBeInstanceOf(UpdateRoomDto);
-      expect(enumDto.type).toBe(RoomType.SINGLE);
+      expect(enumDto.type).toBe(RoomType.STANDARD);
       expect(enumDto.availabilityStatus).toBe(AvailabilityStatus.AVAILABLE);
 
       // Test partial updates
@@ -253,14 +253,14 @@ describe('UpdateRoomDto', () => {
 
       // Test extra properties
       const extraPropsDto = createDto({
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         roomNumber: '101',
         pricePerNight: 100.5,
         extraField: 'extra value',
       });
 
       expect(extraPropsDto).toBeInstanceOf(UpdateRoomDto);
-      expect(extraPropsDto.type).toBe(RoomType.SINGLE);
+      expect(extraPropsDto.type).toBe(RoomType.STANDARD);
       expect(extraPropsDto.roomNumber).toBe('101');
       expect(extraPropsDto.pricePerNight).toBe(100.5);
       // Extra properties are automatically ignored by class-transformer

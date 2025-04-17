@@ -48,7 +48,8 @@ describe('CreatePaymentDto', () => {
       expect(missingFieldsErrors.length).toBeGreaterThan(0);
       expect(missingFieldsErrors.some(error => error.property === 'paymentMethod')).toBe(true);
       expect(missingFieldsErrors.some(error => error.property === 'currency')).toBe(true);
-      expect(missingFieldsErrors.some(error => error.property === 'status')).toBe(true);
+      // Status is now optional, so we don't check for it
+      // expect(missingFieldsErrors.some(error => error.property === 'status')).toBe(true);
 
       // Invalid payment method case
       createPaymentDto = new CreatePaymentDto();

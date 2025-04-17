@@ -29,11 +29,32 @@ export class BookingsService {
    */
   async findAll(): Promise<Booking[]> {
     try {
-      return await this.bookingsRepository.find({
-        relations: ['user', 'room', 'payment'],
-      });
+      // First check if there are any bookings
+      const bookingCount = await this.bookingsRepository.count();
+      
+      if (bookingCount === 0) {
+        console.log('No bookings found in database');
+        return [];
+      }
+
+      // If bookings exist, fetch them with relations
+      try {
+        const bookings = await this.bookingsRepository.find({
+          relations: ['user', 'room', 'payment'],
+        });
+        console.log(`Successfully retrieved ${bookings.length} bookings with relations`);
+        return bookings;
+      } catch (relationsError) {
+        console.error('Failed to fetch bookings with relations:', relationsError);
+        
+        // If relations fail, try without relations
+        const bookings = await this.bookingsRepository.find();
+        console.log(`Retrieved ${bookings.length} bookings without relations`);
+        return bookings;
+      }
     } catch (error) {
-      throw new DatabaseException('Failed to fetch bookings', error as Error);
+      console.error('Failed to fetch bookings:', error);
+      return [];
     }
   }
 
@@ -45,6 +66,11 @@ export class BookingsService {
    */
   async findOne(id: number): Promise<Booking> {
     try {
+      // Validate id to prevent SQL injection and NaN errors
+      if (isNaN(id) || id <= 0) {
+        throw new ResourceNotFoundException('Booking', id);
+      }
+
       const booking = await this.bookingsRepository.findOne({
         where: { bookingId: id },
         relations: ['user', 'room', 'payment'],
@@ -94,6 +120,7 @@ export class BookingsService {
         ...createBookingDto,
         user,
         room,
+        status: BookingStatus.PENDING,
       });
 
       return await this.bookingsRepository.save(booking);

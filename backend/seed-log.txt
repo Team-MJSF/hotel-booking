@@ -1,0 +1,91 @@
+Consolidated seed started at 2025-04-17T01:48:13.246Z
+Connected to database
+rooms table exists
+room_types table exists
+bookings table exists
+payments table exists
+Seeding room types...
+Found 5 existing room types - clearing them
+Existing room types cleared.
+Added room type: Standard Room (standard)
+Added room type: Executive Room (executive)
+Added room type: Family Suite (family)
+Added room type: Deluxe Suite (deluxe)
+Added room type: Premium Suite (premium)
+All room types seeded successfully
+Seeding rooms...
+Added room 101 (Standard Room)
+Added room 102 (Standard Room)
+Added room 103 (Standard Room)
+Added room 104 (Standard Room)
+Added room 105 (Standard Room)
+Added room 106 (Standard Room)
+Added room 107 (Standard Room)
+Added room 108 (Standard Room)
+Added room 109 (Standard Room)
+Added room 110 (Standard Room)
+Added room 201 (Executive Room)
+Added room 202 (Executive Room)
+Added room 203 (Executive Room)
+Added room 204 (Executive Room)
+Added room 205 (Executive Room)
+Added room 206 (Executive Room)
+Added room 207 (Executive Room)
+Added room 208 (Executive Room)
+Added room 209 (Executive Room)
+Added room 210 (Executive Room)
+Added room 301 (Family Suite)
+Added room 302 (Family Suite)
+Added room 303 (Family Suite)
+Added room 304 (Family Suite)
+Added room 305 (Family Suite)
+Added room 306 (Family Suite)
+Added room 307 (Family Suite)
+Added room 308 (Family Suite)
+Added room 309 (Family Suite)
+Added room 310 (Family Suite)
+Added room 401 (Deluxe Suite)
+Added room 402 (Deluxe Suite)
+Added room 403 (Deluxe Suite)
+Added room 404 (Deluxe Suite)
+Added room 405 (Deluxe Suite)
+Added room 406 (Deluxe Suite)
+Added room 407 (Deluxe Suite)
+Added room 408 (Deluxe Suite)
+Added room 409 (Deluxe Suite)
+Added room 410 (Deluxe Suite)
+Added room 501 (Premium Suite)
+Added room 502 (Premium Suite)
+Added room 503 (Premium Suite)
+Added room 504 (Premium Suite)
+Added room 505 (Premium Suite)
+Added room 506 (Premium Suite)
+Added room 507 (Premium Suite)
+Added room 508 (Premium Suite)
+Added room 509 (Premium Suite)
+Added room 510 (Premium Suite)
+All rooms seeded successfully
+Seeding test bookings...
+Created test user 1
+Added completed booking for room 101
+Added confirmed booking for room 201
+Added confirmed booking for room 301
+Added pending booking for room 401
+Added cancelled booking for room 501
+Added confirmed booking for room 102
+Added confirmed booking for room 202
+Added confirmed booking for room 302
+Added confirmed booking for room 402
+Added confirmed booking for room 502
+Added confirmed booking for room 103
+Added confirmed booking for room 203
+Added confirmed booking for room 104
+Added confirmed booking for room 204
+Added confirmed booking for room 303
+Added confirmed booking for room 403
+Added confirmed booking for room 304
+Added confirmed booking for room 503
+Added confirmed booking for room 404
+Added confirmed booking for room 504
+Test bookings created successfully
+Database connection closed

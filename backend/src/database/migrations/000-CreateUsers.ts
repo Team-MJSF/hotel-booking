@@ -8,7 +8,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
         columns: [
           {
             name: 'user_id',
-            type: 'int',
+            type: 'integer',
             isPrimary: true,
             isGenerated: true,
             generationStrategy: 'increment',
@@ -36,9 +36,9 @@ export class CreateUsers1709913600000 implements MigrationInterface {
           },
           {
             name: 'role',
-            type: 'enum',
-            enum: ['admin', 'user', 'staff'],
-            default: `'user'`,
+            type: 'varchar',
+            length: '10',
+            default: "'user'",
           },
           {
             name: 'phone_number',
@@ -54,7 +54,7 @@ export class CreateUsers1709913600000 implements MigrationInterface {
           },
           {
             name: 'token_version',
-            type: 'int',
+            type: 'integer',
             default: 0,
             isNullable: false,
           },
@@ -66,23 +66,17 @@ export class CreateUsers1709913600000 implements MigrationInterface {
           },
           {
             name: 'created_at',
-            type: 'timestamp',
+            type: 'datetime',
             default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'updated_at',
-            type: 'timestamp',
-            default: 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+            type: 'datetime',
+            default: 'CURRENT_TIMESTAMP',
           },
           {
             name: 'deleted_at',
-            type: 'timestamp',
-            isNullable: true,
-            default: 'NULL',
-          },
-          {
-            name: 'createdBy',
-            type: 'int',
+            type: 'datetime',
             isNullable: true,
           },
         ],
@@ -90,16 +84,43 @@ export class CreateUsers1709913600000 implements MigrationInterface {
       true,
     );
 
-    // Create index for role
-    await queryRunner.createIndex(
-      'users',
-      new TableIndex({
-        name: 'IDX_USERS_ROLE',
-        columnNames: ['role'],
-      }),
+    // Add trigger for updated_at timestamp
+    await queryRunner.query(
+      `CREATE TRIGGER update_users_timestamp 
+       AFTER UPDATE ON users 
+       FOR EACH ROW 
+       BEGIN 
+         UPDATE users SET updated_at = CURRENT_TIMESTAMP WHERE user_id = OLD.user_id; 
+       END`
     );
 
-    // Create index for email
+    // Add CHECK constraints directly using raw query since SQLite doesn't support ALTER TABLE ADD CONSTRAINT
+    await queryRunner.query(
+      `CREATE TRIGGER check_user_role
+       BEFORE INSERT ON users
+       FOR EACH ROW
+       BEGIN
+         SELECT CASE
+           WHEN NEW.role NOT IN ('admin', 'user', 'staff') THEN
+             RAISE(ABORT, 'Invalid role value')
+         END;
+       END`
+    );
+
+    await queryRunner.query(
+      `CREATE TRIGGER check_user_role_update
+       BEFORE UPDATE ON users
+       FOR EACH ROW
+       WHEN NEW.role IS NOT OLD.role
+       BEGIN
+         SELECT CASE
+           WHEN NEW.role NOT IN ('admin', 'user', 'staff') THEN
+             RAISE(ABORT, 'Invalid role value')
+         END;
+       END`
+    );
+
+    // Create index on email
     await queryRunner.createIndex(
       'users',
       new TableIndex({
@@ -108,20 +129,15 @@ export class CreateUsers1709913600000 implements MigrationInterface {
         isUnique: true,
       }),
     );
-
-    await queryRunner.query(
-      'ALTER TABLE `users` ADD CONSTRAINT `FK_Users_createdBy` FOREIGN KEY (`createdBy`) REFERENCES `users`(`user_id`) ON DELETE SET NULL',
-    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    const table = await queryRunner.getTable('users');
-    if (table) {
-      const indices = table.indices.filter(
-        index => index.name === 'IDX_USERS_ROLE' || index.name === 'IDX_USERS_EMAIL',
-      );
-      await Promise.all(indices.map(index => queryRunner.dropIndex('users', index)));
-    }
+    // Drop triggers
+    await queryRunner.query(`DROP TRIGGER IF EXISTS update_users_timestamp`);
+    await queryRunner.query(`DROP TRIGGER IF EXISTS check_user_role`);
+    await queryRunner.query(`DROP TRIGGER IF EXISTS check_user_role_update`);
+
+    // Drop the table (will also drop indexes and constraints)
     await queryRunner.dropTable('users');
   }
 }

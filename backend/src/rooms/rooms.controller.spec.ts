@@ -32,7 +32,7 @@ describe('RoomsController', () => {
   const mockRoom: Room = {
     id: 1,
     roomNumber: '101',
-    type: RoomType.DOUBLE,
+    type: RoomType.EXECUTIVE,
     pricePerNight: 100,
     maxGuests: 2,
     description: 'A comfortable double room',
@@ -171,7 +171,7 @@ describe('RoomsController', () => {
     it('should handle all create scenarios', async () => {
       const createRoomDto: CreateRoomDto = {
         roomNumber: '101',
-        type: RoomType.DOUBLE,
+        type: RoomType.EXECUTIVE,
         pricePerNight: 100,
         maxGuests: 2,
         description: 'A comfortable double room',

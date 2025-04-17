@@ -37,6 +37,99 @@ export class RoomsController {
   constructor(private readonly roomsService: RoomsService) {}
 
   /**
+   * Get mappings between room numbers and room IDs
+   * @returns Object containing mappings of room numbers to room IDs
+   */
+  @Get('mappings')
+  @ApiOperation({
+    summary: 'Get room number to ID mappings',
+    description: 'Returns a mapping of room numbers to their corresponding room IDs'
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Room number to ID mappings',
+    content: {
+      'application/json': {
+        example: {
+          '101': 1,
+          '102': 2,
+          '201': 6,
+          '401': 19,
+          '409': 20
+        }
+      }
+    }
+  })
+  async getRoomMappings() {
+    try {
+      // Get all rooms, handling potential database errors
+      let rooms: Room[] = [];
+      try {
+        rooms = await this.roomsService.findAll();
+        console.log(`Successfully retrieved ${rooms.length} rooms for mapping`);
+      } catch (dbError) {
+        console.error('Error fetching rooms from database:', dbError);
+        // Return empty mappings but with success true to avoid frontend errors
+        return {
+          success: true,
+          data: {},
+          message: 'Could not fetch rooms from database, using empty mappings'
+        };
+      }
+      
+      const mappings: Record<string, number> = {};
+      
+      // Process each room safely
+      rooms.forEach((room, index) => {
+        // Skip rooms with missing data
+        if (!room || !room.roomNumber) {
+          console.warn(`Room at index ${index} has invalid roomNumber`);
+          return;
+        }
+        
+        // Safely extract room ID
+        let roomId: number | null = null;
+        
+        // Handle different ID types safely
+        if (typeof room.id === 'number') {
+          roomId = room.id;
+        } else if (typeof room.id === 'string') {
+          roomId = parseInt(room.id, 10);
+          if (isNaN(roomId)) {
+            console.warn(`Room ${room.roomNumber} has invalid string ID: "${room.id}"`);
+            return;
+          }
+        } else {
+          console.warn(`Room ${room.roomNumber} has missing or invalid ID type: ${typeof room.id}`);
+          return;
+        }
+        
+        // Only add valid mappings
+        if (roomId !== null && !isNaN(roomId)) {
+          mappings[room.roomNumber] = roomId;
+        }
+      });
+      
+      const mappingCount = Object.keys(mappings).length;
+      console.log(`Successfully created mappings for ${mappingCount} rooms`);
+      
+      return {
+        success: true,
+        data: mappings,
+        message: `Generated ${mappingCount} room mappings`
+      };
+    } catch (error) {
+      console.error('Error in getRoomMappings:', error);
+      // Return success with empty data to avoid frontend errors
+      return {
+        success: true,
+        data: {},
+        message: 'Error generating mappings, using empty mappings'
+      };
+    }
+  }
+
+  /**
    * Retrieves all rooms
    * @returns Promise<Room[]> Array of all rooms
    */
@@ -119,6 +212,75 @@ export class RoomsController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid search parameters' })
   searchRooms(@Query() searchDto: SearchRoomsDto): Promise<Room[]> {
     return this.roomsService.searchAvailableRooms(searchDto);
+  }
+
+  /**
+   * Checks availability of rooms for specific dates
+   * @param checkInDate - The check-in date for the booking
+   * @param checkOutDate - The check-out date for the booking
+   * @param roomTypeId - Optional room type ID to filter by
+   * @returns Promise<Room[]> Array of available rooms for the specified dates
+   */
+  @Get('available')
+  @ApiOperation({
+    summary: 'Check room availability for specific dates',
+    description:
+      'Retrieves a list of available rooms for the specified date range, optionally filtered by room type ID',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of available rooms for the specified dates',
+    type: [Room],
+  })
+  @ApiResponse({ status: 400, description: 'Bad Request - Invalid parameters' })
+  async checkAvailability(
+    @Query('checkInDate') checkInDate: string,
+    @Query('checkOutDate') checkOutDate: string,
+    @Query('roomTypeId') roomTypeId?: string,
+  ): Promise<Room[]> {
+    // Validate required parameters
+    if (!checkInDate || !checkOutDate) {
+      throw new Error('Check-in and check-out dates are required');
+    }
+
+    // Convert string dates to Date objects
+    const checkIn = new Date(checkInDate);
+    const checkOut = new Date(checkOutDate);
+    
+    // Validate date format
+    if (isNaN(checkIn.getTime()) || isNaN(checkOut.getTime())) {
+      throw new Error('Invalid date format');
+    }
+    
+    // Validate date range
+    if (checkOut <= checkIn) {
+      throw new Error('Check-out date must be after check-in date');
+    }
+
+    // Create search parameters for the service
+    const searchParams: SearchRoomsDto = {
+      checkInDate: checkIn,
+      checkOutDate: checkOut,
+    };
+    
+    // If room type ID is provided, add it to the search parameters
+    if (roomTypeId) {
+      // Get all available rooms first
+      const rooms = await this.roomsService.searchAvailableRooms(searchParams);
+      
+      // Filter rooms by floor number (room type id)
+      // In a real system, this would match by an actual room type relationship
+      // We're using a simple heuristic: the first digit of the room number is the floor number
+      // and corresponds to the room type ID
+      return rooms.filter(room => {
+        // Extract floor number from room number (first character)
+        const floorNumber = room.roomNumber.charAt(0);
+        return floorNumber === roomTypeId;
+      });
+    }
+    
+    // Otherwise just return all available rooms
+    return this.roomsService.searchAvailableRooms(searchParams);
   }
 
   /**

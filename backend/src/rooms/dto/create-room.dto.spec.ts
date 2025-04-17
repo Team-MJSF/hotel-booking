@@ -5,7 +5,7 @@ import { RoomType, AvailabilityStatus } from '../entities/room.entity';
 
 describe('CreateRoomDto', () => {
   const validBaseDto = {
-    type: RoomType.SINGLE,
+    type: RoomType.STANDARD,
     roomNumber: '101',
     pricePerNight: 100,
     maxGuests: 2,
@@ -31,7 +31,7 @@ describe('CreateRoomDto', () => {
 
       // Test minimal required data
       const minimalDto = createDto({
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         roomNumber: '101',
         pricePerNight: 100,
         maxGuests: 2,
@@ -68,7 +68,7 @@ describe('CreateRoomDto', () => {
       expect(typeErrors.some(error => error.property === 'type')).toBe(true);
 
       const missingRoomNumberDto = plainToClass(CreateRoomDto, {
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         pricePerNight: 100,
         maxGuests: 2,
       });
@@ -77,7 +77,7 @@ describe('CreateRoomDto', () => {
       expect(roomNumberErrors.some(error => error.property === 'roomNumber')).toBe(true);
 
       const missingPriceDto = plainToClass(CreateRoomDto, {
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         roomNumber: '101',
         maxGuests: 2,
       });
@@ -86,7 +86,7 @@ describe('CreateRoomDto', () => {
       expect(priceErrors.some(error => error.property === 'pricePerNight')).toBe(true);
 
       const missingMaxGuestsDto = plainToClass(CreateRoomDto, {
-        type: RoomType.SINGLE,
+        type: RoomType.STANDARD,
         roomNumber: '101',
         pricePerNight: 100,
       });
@@ -128,7 +128,7 @@ describe('CreateRoomDto', () => {
     it('should transform all data types correctly', () => {
       // Test basic transformation
       const dto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         roomNumber: '101',
         pricePerNight: '100',
         maxGuests: '2',
@@ -137,7 +137,7 @@ describe('CreateRoomDto', () => {
         availabilityStatus: 'AVAILABLE',
       });
 
-      expect(dto.type).toBe(RoomType.SINGLE);
+      expect(dto.type).toBe(RoomType.STANDARD);
       expect(dto.roomNumber).toBe('101');
       expect(dto.pricePerNight).toBe(100);
       expect(dto.maxGuests).toBe(2);
@@ -147,7 +147,7 @@ describe('CreateRoomDto', () => {
 
       // Test undefined values
       const undefinedDto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         roomNumber: '101',
         pricePerNight: undefined,
         maxGuests: undefined,
@@ -157,7 +157,7 @@ describe('CreateRoomDto', () => {
 
       // Test null values
       const nullDto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         roomNumber: '101',
         pricePerNight: null,
         maxGuests: null,
@@ -167,7 +167,7 @@ describe('CreateRoomDto', () => {
 
       // Test empty string values
       const emptyStringDto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         roomNumber: '101',
         pricePerNight: '',
         maxGuests: '',
@@ -177,7 +177,7 @@ describe('CreateRoomDto', () => {
 
       // Test type conversion
       const typeConversionDto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         roomNumber: '101',
         pricePerNight: '100.50',
         maxGuests: '3',
@@ -191,7 +191,7 @@ describe('CreateRoomDto', () => {
       // The class-transformer library includes extra properties by default
       // We'll check that the DTO still has all the expected properties
       const extraPropsDto = createDto({
-        type: 'SINGLE',
+        type: 'STANDARD',
         roomNumber: '101',
         pricePerNight: 100,
         maxGuests: 2,
@@ -199,7 +199,7 @@ describe('CreateRoomDto', () => {
       });
 
       // Check that all expected properties are present
-      expect(extraPropsDto.type).toBe(RoomType.SINGLE);
+      expect(extraPropsDto.type).toBe(RoomType.STANDARD);
       expect(extraPropsDto.roomNumber).toBe('101');
       expect(extraPropsDto.pricePerNight).toBe(100);
       expect(extraPropsDto.maxGuests).toBe(2);

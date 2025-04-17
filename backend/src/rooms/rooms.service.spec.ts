@@ -41,7 +41,7 @@ describe('RoomsService', () => {
   const mockRoom: Room = {
     id: 1,
     roomNumber: '101',
-    type: RoomType.SINGLE,
+    type: RoomType.STANDARD,
     pricePerNight: 100,
     maxGuests: 2,
     description: 'Standard Room',
@@ -203,7 +203,7 @@ describe('RoomsService', () => {
   describe('create', () => {
     const createRoomDto: CreateRoomDto = {
       roomNumber: '101',
-      type: RoomType.SINGLE,
+      type: RoomType.STANDARD,
       pricePerNight: 100,
       maxGuests: 2,
       description: 'Standard Room',
@@ -602,7 +602,7 @@ describe('RoomsService', () => {
       },
       {
         ...mockRoom,
-        type: RoomType.SUITE,
+        type: RoomType.FAMILY,
         pricePerNight: 300,
         availabilityStatus: AvailabilityStatus.AVAILABLE,
       },

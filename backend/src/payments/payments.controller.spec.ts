@@ -33,7 +33,7 @@ describe('PaymentsController', () => {
   const mockRoom: Room = {
     id: 1,
     roomNumber: '101',
-    type: RoomType.SINGLE,
+    type: RoomType.STANDARD,
     pricePerNight: 100,
     maxGuests: 2,
     description: 'Test room',

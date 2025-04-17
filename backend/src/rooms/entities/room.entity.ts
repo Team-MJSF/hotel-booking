@@ -4,10 +4,11 @@ import { ApiProperty } from '@nestjs/swagger';
 import { BaseEntity } from '../../common/entities/base.entity';
 
 export enum RoomType {
-  SINGLE = 'single',
-  DOUBLE = 'double',
-  SUITE = 'suite',
+  STANDARD = 'standard',
+  EXECUTIVE = 'executive',
+  FAMILY = 'family',
   DELUXE = 'deluxe',
+  PREMIUM = 'premium',
 }
 
 export enum AvailabilityStatus {
@@ -27,7 +28,7 @@ export interface RoomPhoto {
   url: string;
   type: PhotoType;
   caption?: string;
-  displayOrder: number;
+  displayOrder?: number;
 }
 
 @Entity('rooms')
@@ -50,9 +51,8 @@ export class Room extends BaseEntity {
 
   @Column({
     name: 'room_type',
-    type: 'enum',
-    enum: RoomType,
-    default: RoomType.SINGLE,
+    type: 'varchar',
+    length: 20,
   })
   @ApiProperty({ description: 'The type of room', enum: RoomType })
   type: RoomType;
@@ -69,14 +69,14 @@ export class Room extends BaseEntity {
   @ApiProperty({ description: 'The description of the room' })
   description: string;
 
-  @Column({ name: 'amenities', type: 'json', nullable: true })
+  @Column({ name: 'amenities', type: 'text', nullable: true })
   @ApiProperty({
     description: 'The amenities available in the room',
     type: 'string',
   })
   public amenities: string;
 
-  @Column({ name: 'photos', type: 'json', nullable: true })
+  @Column({ name: 'photos', type: 'text', nullable: true })
   @ApiProperty({
     description: 'Array of photos associated with the room',
     type: 'array',
@@ -95,9 +95,8 @@ export class Room extends BaseEntity {
 
   @Column({
     name: 'availability_status',
-    type: 'enum',
-    enum: AvailabilityStatus,
-    default: AvailabilityStatus.AVAILABLE,
+    type: 'varchar',
+    length: 20,
   })
   @ApiProperty({
     description: 'The current availability status of the room',
@@ -106,6 +105,14 @@ export class Room extends BaseEntity {
   availabilityStatus: AvailabilityStatus;
 
   @OneToMany(() => Booking, booking => booking.room)
-  @ApiProperty({ description: 'The bookings associated with this room' })
+  @ApiProperty({ 
+    description: 'The bookings associated with this room',
+    type: 'array',
+    items: {
+      type: 'object',
+      properties: {}
+    },
+    required: false
+  })
   bookings: Booking[];
 }

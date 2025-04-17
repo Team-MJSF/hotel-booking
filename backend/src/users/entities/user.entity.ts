@@ -40,7 +40,7 @@ export class User extends BaseEntity {
   @ApiProperty({ description: 'The hashed password of the user' })
   password: string;
 
-  @Column({ name: 'role', type: 'enum', enum: UserRole, default: UserRole.USER })
+  @Column({ name: 'role', type: 'varchar', length: 10 })
   @ApiProperty({ description: 'The role of the user', enum: UserRole })
   role: UserRole;
 
@@ -61,11 +61,27 @@ export class User extends BaseEntity {
   isActive: boolean;
 
   @OneToMany(() => Booking, booking => booking.user)
-  @ApiProperty({ description: 'The bookings made by the user' })
+  @ApiProperty({ 
+    description: 'The bookings made by the user',
+    type: 'array',
+    items: { 
+      type: 'object',
+      properties: {} 
+    },
+    required: false 
+  })
   bookings: Booking[];
 
   @OneToMany(() => RefreshToken, refreshToken => refreshToken.user)
-  @ApiProperty({ description: 'The refresh tokens associated with the user' })
+  @ApiProperty({ 
+    description: 'The refresh tokens associated with the user',
+    type: 'array',
+    items: { 
+      type: 'object',
+      properties: {} 
+    },
+    required: false 
+  })
   refreshTokens: RefreshToken[];
 
   @CreateDateColumn()
