@@ -113,6 +113,7 @@ export default function AmenitiesPage() {
                     src={amenity.image}
                     alt={amenity.title}
                     fill
+                    sizes="(max-width: 768px) 100vw, 50vw"
                     className="object-cover"
                   />
                 </div>
@@ -196,6 +197,7 @@ export default function AmenitiesPage() {
                 src="/images/hotel-exterior.jpg"
                 alt="Room amenities"
                 fill
+                sizes="(max-width: 1024px) 100vw, 50vw"
                 className="object-cover"
               />
             </div>
@@ -250,7 +252,7 @@ export default function AmenitiesPage() {
               </Button>
             </Link>
             <Link href="/contact">
-              <Button variant="outline" className="border-white text-white hover:bg-white/10 min-w-[160px]">
+              <Button variant="outline" className="border-white bg-white/20 text-white hover:bg-white hover:text-primary min-w-[160px]">
                 Contact Us
               </Button>
             </Link>

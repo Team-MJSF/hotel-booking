@@ -268,8 +268,8 @@ export default function ContactPage() {
                   </div>
                   <div className="ml-4">
                     <h3 className="text-lg font-semibold">Email Addresses</h3>
-                    <p className="text-gray-600">Reservations: reservations@luxuryhotel.com</p>
-                    <p className="text-gray-600">Customer Service: info@luxuryhotel.com</p>
+                    <p className="text-gray-600">Reservations: reservations@grandplaza.com</p>
+                    <p className="text-gray-600">Customer Service: info@grandplaza.com</p>
                   </div>
                 </div>
                 

@@ -388,9 +388,9 @@ export default function PaymentPage() {
         if ('id' in responseBookingData) {
           bookingIdValue = responseBookingData.id;
         } else if ('bookingId' in responseBookingData) {
-          bookingIdValue = (responseBookingData as any).bookingId;
+          bookingIdValue = (responseBookingData as { bookingId: string | number }).bookingId;
         } else if ('booking_id' in responseBookingData) {
-          bookingIdValue = (responseBookingData as any).booking_id;
+          bookingIdValue = (responseBookingData as { booking_id: string | number }).booking_id;
         }
       }
       
@@ -469,7 +469,7 @@ export default function PaymentPage() {
       } else if (typeof err === 'object' && err !== null) {
         try {
           errorMessage = JSON.stringify(err);
-        } catch (e) {
+        } catch (_unused) {
           // If JSON stringify fails, use default message
         }
       }
@@ -480,7 +480,7 @@ export default function PaymentPage() {
   };
   
   // Error display component
-  const ErrorDisplay = ({ errorMessage }: { errorMessage: any }) => {
+  const ErrorDisplay = ({ errorMessage }: { errorMessage: string | Record<string, unknown> | Error | unknown }) => {
     // Handle different error formats
     let displayMessage = '';
     
@@ -488,19 +488,19 @@ export default function PaymentPage() {
       displayMessage = errorMessage;
     } else if (errorMessage && typeof errorMessage === 'object') {
       // Handle object errors
-      if (errorMessage.message) {
+      if ('message' in errorMessage && errorMessage.message) {
         if (Array.isArray(errorMessage.message)) {
           displayMessage = errorMessage.message.join(', ');
         } else {
           displayMessage = String(errorMessage.message);
         }
-      } else if (errorMessage.error) {
+      } else if ('error' in errorMessage && errorMessage.error) {
         displayMessage = String(errorMessage.error);
       } else {
         // Convert the whole object to a string representation
         try {
           displayMessage = JSON.stringify(errorMessage);
-        } catch (e) {
+        } catch (_unused) {
           displayMessage = 'Unknown error occurred';
         }
       }

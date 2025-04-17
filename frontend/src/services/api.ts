@@ -1,8 +1,8 @@
-import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import { format } from 'date-fns';
+import axios from 'axios';
 import { ApiResponse, Booking, Room, RoomSearchParams, RoomType, User } from '@/types';
 
 // Define the Payment type
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface Payment {
   id?: string;
   bookingId: string | number;
@@ -38,7 +38,7 @@ interface PaymentResponse {
   status: string;
   timestamp: string;
   paymentMethod: string;
-  booking?: any;
+  booking?: Booking;
 }
 
 // Create axios instance with base URL and default headers
@@ -841,14 +841,14 @@ export const roomService = {
           let totalRoomsPerType = 10; // Default fallback
           
           try {
-            const roomTypeCountResponse = await api.get<ApiResponse<{totalRooms: number}>>(`/room-types/${params.roomTypeId}/count`);
-            if (roomTypeCountResponse.data.success && roomTypeCountResponse.data.data) {
-              totalRoomsPerType = roomTypeCountResponse.data.data.totalRooms;
+            const countResponse = await api.get<{ count: number }>(`/rooms/count/${params.roomTypeId}`);
+            if (countResponse.data && countResponse.data.count) {
+              totalRoomsPerType = countResponse.data.count;
               console.log(`Got total room count from API: ${totalRoomsPerType} rooms for type ${params.roomTypeId}`);
             }
-          } catch (countError: any) {
+          } catch (countError: unknown) {
             // Don't log the full error if it's a 404 - just use the default count
-            if (countError.response && countError.response.status === 404) {
+            if (axios.isAxiosError(countError) && countError.response && countError.response.status === 404) {
               console.log(`Room count endpoint not found for type ${params.roomTypeId}, using default count of 10`);
             } else {
               console.warn('Could not get exact room count, using default:', countError);
@@ -900,10 +900,10 @@ export const roomService = {
           console.log(`Found ${allRooms.length} total rooms of type ${params.roomTypeId}`);
           
           // Step 2: Get bookings for the date range
-          const bookingsResponse = await api.get<ApiResponse<any[]>>('/bookings/date-range', {
+          const bookingsResponse = await api.get<ApiResponse<LegacyApiBooking[]>>('/bookings/date-range', {
             params: {
-              checkInDate,
-              checkOutDate
+              startDate: checkInDate,
+              endDate: checkOutDate
             }
           });
           
@@ -915,8 +915,18 @@ export const roomService = {
           console.log(`Found ${bookings.length} bookings in the date range`);
           
           // Step 3: Filter out booked rooms
-          const bookedRoomIds = new Set(bookings.map(booking => booking.room_id));
-          const availableRooms = allRooms.filter(room => !bookedRoomIds.has(room.id));
+          const bookedRoomIds = new Set<string | number>(
+            bookings
+              .filter(booking => 
+                // Ignore cancelled bookings
+                booking.status?.toLowerCase() !== 'cancelled' &&
+                // Get the room_id or roomId, whichever is available
+                (booking.room_id || booking.roomId))
+              .map(booking => String(booking.room_id || booking.roomId))
+              .filter(Boolean) // Remove any undefined/null values
+          );
+          
+          const availableRooms = allRooms.filter(room => !bookedRoomIds.has(String(room.id)));
           
           console.log(`After filtering, ${availableRooms.length} rooms are available`);
           
@@ -936,7 +946,7 @@ export const roomService = {
           try {
             console.log('Checking localStorage for existing bookings before generating fallback data');
             const mockBookingsJSON = localStorage.getItem('mockBookings');
-            let existingBookings: any[] = [];
+            let existingBookings: LegacyApiBooking[] = [];
             
             if (mockBookingsJSON) {
               existingBookings = JSON.parse(mockBookingsJSON);
@@ -944,15 +954,15 @@ export const roomService = {
             }
             
             // Filter out rooms that are already booked for these dates
-            const checkIn = new Date(checkInDate);
-            const checkOut = new Date(checkOutDate);
+            const checkIn = new Date(checkInDate || new Date().toISOString());
+            const checkOut = new Date(checkOutDate || new Date().toISOString());
             
             // Find rooms that are already booked for this date range
             const bookedRoomIds = new Set();
             
             existingBookings.forEach(booking => {
-              const bookingCheckIn = new Date(booking.check_in_date || booking.checkInDate);
-              const bookingCheckOut = new Date(booking.check_out_date || booking.checkOutDate);
+              const bookingCheckIn = new Date(booking.check_in_date || booking.checkInDate || new Date().toISOString());
+              const bookingCheckOut = new Date(booking.check_out_date || booking.checkOutDate || new Date().toISOString());
               
               // Check for date overlap
               if (
@@ -1124,34 +1134,66 @@ export const bookingService = {
   // Get booking by ID
   getBookingById: async (id: string): Promise<ApiResponse<Booking>> => {
     try {
-      const response = await api.get<ApiResponse<Booking>>(`/bookings/${id}`);
+      console.log(`Fetching booking details for ID: ${id}`);
+      
+      // If it's a numeric ID, ensure we're using the right format
+      const formattedId = !isNaN(Number(id)) ? Number(id) : id;
+      
+      console.log(`Making API request to /bookings/${formattedId}`);
+      const response = await api.get<ApiResponse<Booking>>(`/bookings/${formattedId}`);
       
       // Process the response data to ensure consistent room info
       if (response.data.success && response.data.data) {
         const booking = response.data.data;
+        console.log('Successfully retrieved booking:', booking);
+        
+        // Map the booking ID to the frontend format
+        const normalizedBooking = {
+          ...booking,
+          // Ensure we have an id field for frontend consistency
+          id: (booking as LegacyBooking).id || 
+              (booking as LegacyBooking).bookingId || 
+              String((booking as LegacyBooking).booking_id || (booking as LegacyBooking).bookingId)
+        };
         
         // Ensure roomTypeId is a string for frontend consistency
-        if (booking.roomTypeId && typeof booking.roomTypeId !== 'string') {
-          booking.roomTypeId = String(booking.roomTypeId);
+        if (normalizedBooking.roomTypeId && typeof normalizedBooking.roomTypeId !== 'string') {
+          normalizedBooking.roomTypeId = String(normalizedBooking.roomTypeId);
         }
         
         // Ensure roomId is a string for frontend consistency 
-        if (booking.roomId && typeof booking.roomId !== 'string') {
-          booking.roomId = String(booking.roomId);
+        if (normalizedBooking.roomId && typeof normalizedBooking.roomId !== 'string') {
+          normalizedBooking.roomId = String(normalizedBooking.roomId);
         }
         
-        return { success: true, data: booking };
+        console.log('Normalized booking for frontend:', normalizedBooking);
+        return { success: true, data: normalizedBooking as Booking };
       }
       
+      console.error('API returned unsuccessful response:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error fetching booking details:', error);
-      return { success: false, error: 'Booking not found' };
+      
+      // Provide more detailed error information
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 404) {
+          console.error(`Booking with ID ${id} not found on server`);
+          return { success: false, error: 'Booking not found' };
+        }
+        
+        if (error.response?.data?.message) {
+          console.error('API error message:', error.response.data.message);
+          return { success: false, error: error.response.data.message };
+        }
+      }
+      
+      return { success: false, error: 'Error fetching booking details. Please try again later.' };
     }
   },
   
   // Create new booking
-  createBooking: async (bookingData: any): Promise<ApiResponse<Booking>> => {
+  createBooking: async (bookingData: CreateBookingData): Promise<ApiResponse<Booking>> => {
     try {
       // Extract frontend-specific data (prefixed with _) before sending to backend
       const frontendData = {
@@ -1184,15 +1226,15 @@ export const bookingService = {
         const normalizedBooking = {
           ...booking,
           // Use type assertion to safely access properties that might be in different formats
-          id: (booking as any).id || (booking as any).bookingId || String((booking as any).booking_id),
-          roomId: String((booking as any).roomId || formattedBookingData.roomId),
+          id: (booking as LegacyBooking).id || (booking as LegacyBooking).bookingId || String((booking as LegacyBooking).booking_id),
+          roomId: String((booking as LegacyBooking).roomId || formattedBookingData.roomId),
           // Include frontend data that wasn't sent to the API but needed for display
           roomTypeId: String(frontendData.roomTypeId),
           roomTypeName: frontendData.roomTypeName,
           roomNumber: frontendData.roomNumber,
           totalPrice: frontendData.totalPrice,
-          guestCount: (booking as any).numberOfGuests || formattedBookingData.numberOfGuests,
-          status: (booking as any).status || 'PENDING'
+          guestCount: (booking as LegacyBooking).numberOfGuests || formattedBookingData.numberOfGuests,
+          status: (booking as LegacyBooking).status || 'PENDING'
         };
         
         return { 
@@ -1212,7 +1254,7 @@ export const bookingService = {
   },
   
   // Update booking
-  updateBooking: async (id: string, updateData: any): Promise<ApiResponse<Booking>> => {
+  updateBooking: async (id: string, updateData: Partial<Booking>): Promise<ApiResponse<Booking>> => {
     try {
       const response = await api.patch<ApiResponse<Booking>>(`/bookings/${id}`, updateData);
       return response.data;
@@ -1298,11 +1340,11 @@ export const bookingService = {
 };
 
 // Add these utility logging functions
-const logDebug = (message: string, data?: any) => {
+const logDebug = (message: string, data?: unknown): void => {
   console.log(`[DEBUG] ${message}`, data ? data : '');
 };
 
-const logError = (message: string, error?: any) => {
+const logError = (message: string, error?: unknown): void => {
   console.error(`[ERROR] ${message}`, error ? error : '');
 };
 
@@ -1447,7 +1489,7 @@ export const paymentService = {
         
         // Try using the /payments endpoint, but don't fail if it doesn't work
         try {
-          const paymentResponse = await api.post<ApiResponse<any>>('/payments', formattedPaymentData);
+          const paymentResponse = await api.post<ApiResponse<PaymentResponse>>('/payments', formattedPaymentData);
           if (paymentResponse.data.success) {
             return paymentResponse.data;
           }
@@ -1514,7 +1556,7 @@ export const paymentService = {
   },
   
   // Get payment details by ID
-  getPaymentById: async (id: string): Promise<ApiResponse<any>> => {
+  getPaymentById: async (id: string): Promise<ApiResponse<PaymentResponse>> => {
     try {
       const response = await api.get(`/payments/${id}`);
       return response.data;
@@ -1525,7 +1567,7 @@ export const paymentService = {
   },
   
   // Get payments for a booking
-  getPaymentsByBookingId: async (bookingId: string): Promise<ApiResponse<any>> => {
+  getPaymentsByBookingId: async (bookingId: string): Promise<ApiResponse<PaymentResponse[]>> => {
     try {
       // Call the backend API to get payment information
       const response = await api.get(`/payments/booking/${bookingId}`);
@@ -1583,4 +1625,54 @@ export const debugApi = {
       return { success: false, error };
     }
   }
-}; 
+};
+
+// Define a type for legacy bookings
+interface LegacyBooking {
+  id?: string;
+  bookingId?: string;
+  booking_id?: string;
+  roomId?: string | number;
+  numberOfGuests?: number;
+  status?: string;
+  room?: {
+    roomNumber?: string;
+    type?: string;
+    pricePerNight?: number;
+  };
+}
+
+// Define the CreateBookingData interface
+interface CreateBookingData {
+  roomId: string | number;
+  checkInDate: string;
+  checkOutDate: string;
+  guestCount?: number;
+  numberOfGuests?: number;
+  specialRequests?: string;
+  _roomNumber?: string;
+  _roomTypeId?: string;
+  _roomTypeName?: string;
+  _totalPrice?: number;
+  [key: string]: unknown;
+}
+
+// Define a type for legacy API responses with snake_case properties
+interface LegacyApiBooking {
+  id?: string | number;
+  booking_id?: string | number;
+  bookingId?: string | number;
+  room_id?: string | number;
+  roomId?: string | number;
+  check_in_date?: string;
+  checkInDate?: string;
+  check_out_date?: string;
+  checkOutDate?: string;
+  status?: string;
+  room?: {
+    roomNumber?: string;
+    type?: string;
+    pricePerNight?: number;
+  };
+  [key: string]: unknown;
+} 

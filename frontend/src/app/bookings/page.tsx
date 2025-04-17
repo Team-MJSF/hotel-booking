@@ -9,7 +9,20 @@ import { Booking } from '@/types';
 import { bookingService, roomService } from '@/services/api';
 import { formatPrice, formatDate } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
-import { Calendar, CheckCircle, AlertTriangle, X, Info } from 'lucide-react';
+import { Calendar, CheckCircle, AlertTriangle, X, Info, CreditCard } from 'lucide-react';
+
+// Define types for the legacy booking structure
+interface LegacyBooking {
+  bookingId?: string;
+  booking_id?: string;
+  numberOfGuests?: number;
+  room?: {
+    roomNumber?: string;
+    type?: string;
+    pricePerNight?: number;
+    photos?: string | Array<{url: string}>;
+  };
+}
 
 // Sample room images (in a real app, these would come from API)
 const ROOM_IMAGES: Record<string, string> = {
@@ -33,6 +46,8 @@ export default function BookingsPage() {
   );
   const [cancellingBookingId, setCancellingBookingId] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'current' | 'past'>('all');
+  // This warning can be ignored because roomMappings is used in the component
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [roomMappings, setRoomMappings] = useState<Record<string, number>>({});
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
@@ -52,7 +67,7 @@ export default function BookingsPage() {
           // Fix room type information for frontend display
           const fixedBookings = response.data.map(booking => {
             // Create updated booking with proper room information
-            let updatedBooking = {...booking};
+            const updatedBooking = {...booking};
             
             // Extract room information from the room object if available
             if (booking.room) {
@@ -134,8 +149,11 @@ export default function BookingsPage() {
       // Always show cancelled bookings in "all" filter
       if (filter === 'all') return true;
       
+      // Normalize status to uppercase for comparison
+      const status = booking.status.toUpperCase();
+      
       // Show cancelled bookings in the appropriate timing category based on check-in date
-      if (booking.status === 'CANCELLED') {
+      if (status === 'CANCELLED') {
         if (filter === 'upcoming' && checkInDate > today) return true;
         if (filter === 'past' && checkInDate <= today) return true;
         return false;
@@ -151,8 +169,11 @@ export default function BookingsPage() {
   
   // Check if a booking can be cancelled
   const canCancelBooking = (booking: Booking) => {
+    // Normalize status to uppercase for comparison
+    const status = booking.status.toUpperCase();
+    
     // Can cancel bookings that aren't already cancelled or completed
-    if (booking.status === 'CANCELLED' || booking.status === 'COMPLETED') return false;
+    if (status === 'CANCELLED' || status === 'COMPLETED') return false;
     
     // Always allow cancellation for any other status
     return true;
@@ -168,7 +189,7 @@ export default function BookingsPage() {
     }
     
     // Identify the correct ID field to use (id or bookingId)
-    const bookingId = booking.id || (booking as any).bookingId;
+    const bookingId = booking.id || (booking as LegacyBooking).bookingId;
     
     if (!bookingId) {
       console.error('Cannot initiate cancellation: Missing ID', booking);
@@ -220,7 +241,7 @@ export default function BookingsPage() {
         setBookings(prevBookings => 
           prevBookings.map(booking => {
             // Match by id or bookingId
-            const currentId = booking.id || (booking as any).bookingId;
+            const currentId = booking.id || (booking as LegacyBooking).bookingId;
             return currentId === bookingId 
               ? { ...booking, status: 'CANCELLED' as const } 
               : booking;
@@ -265,14 +286,17 @@ export default function BookingsPage() {
   
   // Get booking status label and color
   const getStatusDetails = (booking: Booking) => {
-    const statusMap = {
+    // Normalize status to uppercase for consistency
+    const status = booking.status.toUpperCase();
+    
+    const statusMap: Record<string, { label: string, color: string }> = {
       PENDING: { label: 'Pending', color: 'bg-yellow-100 text-yellow-800' },
       CONFIRMED: { label: 'Confirmed', color: 'bg-green-100 text-green-800' },
       CANCELLED: { label: 'Cancelled', color: 'bg-red-100 text-red-800' },
       COMPLETED: { label: 'Completed', color: 'bg-blue-100 text-blue-800' },
     };
     
-    return statusMap[booking.status] || { label: booking.status, color: 'bg-gray-100 text-gray-800' };
+    return statusMap[status] || { label: booking.status, color: 'bg-gray-100 text-gray-800' };
   };
   
   if (loading) {
@@ -304,10 +328,13 @@ export default function BookingsPage() {
   
   if (filteredBookings.length === 0) {
     return (
-      <div className="hotel-container py-12 min-h-screen">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center">
+      <div className="py-8 md:py-12">
+        <div className="hotel-container">
+          <div className="text-center mb-8">
             <h1 className="hotel-heading mb-4">My Bookings</h1>
+            <p className="text-gray-600 max-w-2xl mx-auto">
+              View and manage all your bookings in one place. You can see upcoming stays, check booking details, and cancel reservations if needed.
+            </p>
           </div>
           
           {/* Success message */}
@@ -325,6 +352,36 @@ export default function BookingsPage() {
               <p className="text-red-700">{error}</p>
             </div>
           )}
+          
+          {/* Filter Tabs */}
+          <div className="bg-white rounded-lg shadow-md mb-8">
+            <div className="flex border-b border-gray-200 overflow-x-auto">
+              <button
+                className={`px-4 py-3 font-medium text-sm ${filter === 'all' ? 'text-primary border-b-2 border-primary' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setFilter('all')}
+              >
+                All Bookings
+              </button>
+              <button
+                className={`px-4 py-3 font-medium text-sm ${filter === 'upcoming' ? 'text-primary border-b-2 border-primary' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setFilter('upcoming')}
+              >
+                Upcoming
+              </button>
+              <button
+                className={`px-4 py-3 font-medium text-sm ${filter === 'current' ? 'text-primary border-b-2 border-primary' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setFilter('current')}
+              >
+                Current Stay
+              </button>
+              <button
+                className={`px-4 py-3 font-medium text-sm ${filter === 'past' ? 'text-primary border-b-2 border-primary' : 'text-gray-600 hover:text-gray-900'}`}
+                onClick={() => setFilter('past')}
+              >
+                Past Stays
+              </button>
+            </div>
+          </div>
           
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -432,7 +489,7 @@ export default function BookingsPage() {
                     {formatDate(new Date(selectedBooking.checkInDate))} - {formatDate(new Date(selectedBooking.checkOutDate))}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Room {selectedBooking.roomNumber}
+                    Room {selectedBooking.room?.roomNumber || selectedBooking.roomNumber || 'N/A'}
                   </p>
                 </div>
                 
@@ -494,9 +551,11 @@ export default function BookingsPage() {
           {filteredBookings.map((booking, index) => {
             const { label: statusLabel, color: statusColor } = getStatusDetails(booking);
             
+            // Generate a unique key for each booking, even if ID is undefined
+            const bookingKey = booking.id ? `booking-${booking.id}` : `booking-fallback-${index}`;
+            
             // Determine room type name from room object or fallback to frontend data
             let displayRoomTypeName = 'Standard Room';
-            let displayPrice = 0;
             
             // Priority 1: Use directly from room object if available
             if (booking.room) {
@@ -509,21 +568,12 @@ export default function BookingsPage() {
               };
               
               displayRoomTypeName = roomTypeMap[(booking.room.type as string)] || 'Standard Room';
-              
-              // Calculate price from room.pricePerNight if available
-              if (booking.room.pricePerNight) {
-                const checkIn = new Date(booking.checkInDate);
-                const checkOut = new Date(booking.checkOutDate);
-                const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
-                displayPrice = booking.room.pricePerNight * nights;
-              }
             } 
-            // Priority 2: Use roomTypeName and totalPrice if already set
+            // Priority 2: Use roomTypeName if already set
             else if (booking.roomTypeName) {
               displayRoomTypeName = booking.roomTypeName;
-              displayPrice = booking.totalPrice || 0;
             }
-            // Priority 3: Use roomTypeId to infer room type and price
+            // Priority 3: Use roomTypeId to infer room type
             else if (booking.roomTypeId) {
               switch(booking.roomTypeId) {
                 case '1':
@@ -544,37 +594,51 @@ export default function BookingsPage() {
                 default:
                   displayRoomTypeName = 'Standard Room';
               }
-              
-              // Calculate price based on room type if not available
-              if (displayPrice === 0) {
-                const checkInDate = new Date(booking.checkInDate);
-                const checkOutDate = new Date(booking.checkOutDate);
-                const nights = Math.ceil((checkOutDate.getTime() - checkInDate.getTime()) / (1000 * 60 * 60 * 24));
-                
-                switch(booking.roomTypeId) {
-                  case '1':
-                    displayPrice = 149 * nights;
-                    break;
-                  case '2':
-                    displayPrice = 199 * nights;
-                    break;
-                  case '3':
-                    displayPrice = 249 * nights;
-                    break;
-                  case '4':
-                    displayPrice = 329 * nights;
-                    break;
-                  case '5':
-                    displayPrice = 499 * nights;
-                    break;
-                  default:
-                    displayPrice = 149 * nights;
-                }
-              }
             }
             
-            // Generate a unique key for each booking, even if ID is undefined
-            const bookingKey = booking.id ? `booking-${booking.id}` : `booking-fallback-${index}`;
+            // Calculate price based on booking data
+            const calculatePrice = (booking: Booking): number => {
+              // If the booking already has a total price, use that
+              if (booking.totalPrice && !isNaN(booking.totalPrice)) {
+                return booking.totalPrice;
+              }
+              
+              // If we have room information with price per night
+              if (booking.room && (booking.room as LegacyBooking['room'])?.pricePerNight) {
+                const checkIn = new Date(booking.checkInDate);
+                const checkOut = new Date(booking.checkOutDate);
+                const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24));
+                return ((booking.room as LegacyBooking['room'])?.pricePerNight ?? 0) * (nights || 1);
+              }
+              
+              // Otherwise use default prices based on room type
+              const checkIn = new Date(booking.checkInDate);
+              const checkOut = new Date(booking.checkOutDate);
+              const nights = Math.ceil((checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60 * 24)) || 1;
+              
+              // Get price per night based on room type
+              let pricePerNight = 199; // Default price
+              
+              if (booking.roomTypeId) {
+                switch(booking.roomTypeId) {
+                  case '1': pricePerNight = 149; break; // Standard
+                  case '2': pricePerNight = 199; break; // Executive
+                  case '3': pricePerNight = 249; break; // Family
+                  case '4': pricePerNight = 329; break; // Deluxe
+                  case '5': pricePerNight = 499; break; // Premium
+                }
+              } else if (booking.roomTypeName) {
+                if (booking.roomTypeName.toLowerCase().includes('standard')) pricePerNight = 149;
+                else if (booking.roomTypeName.toLowerCase().includes('executive')) pricePerNight = 199;
+                else if (booking.roomTypeName.toLowerCase().includes('family')) pricePerNight = 249;
+                else if (booking.roomTypeName.toLowerCase().includes('deluxe')) pricePerNight = 329;
+                else if (booking.roomTypeName.toLowerCase().includes('premium')) pricePerNight = 499;
+              }
+              
+              return pricePerNight * nights;
+            };
+            
+            const displayPrice = calculatePrice(booking);
             
             // Determine correct room type image based on room data
             let imageUrl = '/images/room-placeholder.jpg';
@@ -584,7 +648,7 @@ export default function BookingsPage() {
             // 1. First check if room object has photos
             if (booking.room && 'photos' in booking.room) {
               try {
-                const photoData = (booking.room as any).photos;
+                const photoData = (booking.room as LegacyBooking['room'])?.photos;
                 const photos = typeof photoData === 'string' 
                   ? JSON.parse(photoData) 
                   : photoData;
@@ -635,7 +699,7 @@ export default function BookingsPage() {
               }
             }
             
-            console.log(`Booking ${(booking as any).bookingId || booking.id || index}: Using image ${imageUrl} for ${displayRoomTypeName}`);
+            console.log(`Booking ${(booking as LegacyBooking).bookingId || booking.id || index}: Using image ${imageUrl} for ${displayRoomTypeName}`);
             
             return (
               <div key={bookingKey} className="bg-white rounded-lg shadow-md overflow-hidden">
@@ -643,8 +707,9 @@ export default function BookingsPage() {
                   <div className="md:col-span-3 relative h-48 md:h-auto">
                     <Image
                       src={imageUrl}
-                      alt={booking.roomTypeName || 'Hotel Room'}
+                      alt={displayRoomTypeName}
                       fill
+                      sizes="(max-width: 768px) 100vw, 25vw"
                       className="object-cover"
                     />
                     {booking.status === 'CANCELLED' && (
@@ -672,7 +737,13 @@ export default function BookingsPage() {
                           <span className={`px-3 py-1 rounded-full text-xs font-semibold ${statusColor}`}>
                             {statusLabel}
                           </span>
-                          <p className="text-lg font-bold text-primary mt-2">
+                          <div className="mt-1 flex items-center">
+                            <CreditCard className="h-4 w-4 text-gray-500 mr-1" />
+                            <span className="text-sm text-gray-600">
+                              {booking.status === 'CANCELLED' ? 'Refunded' : 'Paid'}
+                            </span>
+                          </div>
+                          <p className="text-lg font-bold text-primary mt-1">
                             {formatPrice(displayPrice)}
                           </p>
                         </div>
@@ -705,16 +776,15 @@ export default function BookingsPage() {
                       )}
                       
                       <div className="mt-auto flex flex-wrap gap-3">
-                        {booking.id && (
-                          <Link href={`/bookings/${booking.id}`}>
-                            <Button 
-                              variant="secondary"
-                              className="bg-gray-900 text-white rounded-md font-medium text-sm px-5 py-2.5 flex items-center hover:bg-gray-800"
-                            >
-                              View Details
-                            </Button>
-                          </Link>
-                        )}
+                        {/* Always show the View Details button with properly formatted booking ID */}
+                        <Link href={`/bookings/${(booking as LegacyBooking).bookingId || booking.id || (booking as LegacyBooking).booking_id}`}>
+                          <Button 
+                            variant="secondary"
+                            className="bg-gray-900 text-white rounded-md font-medium text-sm px-5 py-2.5 flex items-center hover:bg-gray-800"
+                          >
+                            View Details
+                          </Button>
+                        </Link>
                         
                         {canCancelBooking(booking) && (
                           <Button 

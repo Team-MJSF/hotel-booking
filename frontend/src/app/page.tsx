@@ -266,7 +266,7 @@ export default function Home() {
                         required
                       >
                         <option value="">Select Guests</option>
-                        {[1, 2, 3, 4, 5, 6].map((num) => (
+                        {[1, 2, 3, 4].map((num) => (
                           <option key={num} value={num}>
                             {num} {num === 1 ? 'Guest' : 'Guests'}
                           </option>
@@ -307,6 +307,7 @@ export default function Home() {
                       src="/images/hotel-lobby.jpg"
                       alt="Grand Plaza Hotel Lobby"
                       fill
+                      sizes="(max-width: 768px) 100vw, 50vw"
                       className="object-cover"
                     />
                   </div>
@@ -547,6 +548,7 @@ export default function Home() {
             src="/images/hotel-lobby.jpg" 
             alt="Grand Plaza Hotel" 
             fill 
+            sizes="100vw"
             className="object-cover brightness-[0.4]"
           />
         </div>

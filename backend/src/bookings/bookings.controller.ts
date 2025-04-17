@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   ForbiddenException,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -346,14 +348,37 @@ export class BookingsController {
     description: 'Forbidden - Can only access own bookings unless admin',
   })
   async findOne(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking> {
-    const booking = await this.bookingsService.findOne(+id);
-
-    // Only allow users to access their own bookings or admins to access any booking
-    if (user && user.role !== UserRole.ADMIN && booking.user?.id !== user.id) {
-      throw new ForbiddenException('You can only access your own bookings');
+    console.log(`Received GET request for booking with ID: ${id}, type: ${typeof id}`);
+    
+    try {
+      // Attempt to parse the ID as a number
+      const numericId = parseInt(id, 10);
+      
+      // Check if parsing was successful
+      if (isNaN(numericId)) {
+        console.error(`Invalid booking ID format: ${id}, cannot parse as integer`);
+        throw new BadRequestException(`Invalid booking ID format: ${id}`);
+      }
+      
+      console.log(`Looking up booking with numeric ID: ${numericId}`);
+      const booking = await this.bookingsService.findOne(numericId);
+  
+      // Only allow users to access their own bookings or admins to access any booking
+      if (user && user.role !== UserRole.ADMIN && booking.user?.id !== user.id) {
+        console.error(`Access denied: User ${user.id} attempted to access booking belonging to user ${booking.user?.id}`);
+        throw new ForbiddenException('You can only access your own bookings');
+      }
+  
+      console.log(`Successfully retrieved booking ${numericId} for user ${user?.id || 'unknown'}`);
+      return booking;
+    } catch (error) {
+      console.error(`Error retrieving booking ${id}:`, error);
+      if (error instanceof BadRequestException || error instanceof ForbiddenException) {
+        throw error;
+      }
+      
+      throw new NotFoundException(`Booking with ID ${id} not found`);
     }
-
-    return booking;
   }
 
   /**

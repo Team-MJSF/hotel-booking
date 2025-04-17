@@ -24,6 +24,7 @@ export default function AboutPage() {
               src="/images/hotel-exterior.jpg"
               alt="Hotel exterior"
               fill
+              sizes="(max-width: 768px) 100vw, 50vw"
               className="object-cover"
             />
           </div>
@@ -72,6 +73,7 @@ export default function AboutPage() {
                   src="/images/restaurant.jpg"
                   alt="Hotel restaurant"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover"
                 />
               </div>
@@ -92,6 +94,7 @@ export default function AboutPage() {
                   src="/images/gym.jpg"
                   alt="Hotel fitness center"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover"
                 />
               </div>
@@ -112,6 +115,7 @@ export default function AboutPage() {
                   src="/images/spa.jpg"
                   alt="Hotel spa"
                   fill
+                  sizes="(max-width: 768px) 100vw, 33vw"
                   className="object-cover"
                 />
               </div>
@@ -194,6 +198,7 @@ export default function AboutPage() {
                   src="/images/manager.jpg"
                   alt="Hotel Manager"
                   fill
+                  sizes="(max-width: 768px) 100vw, 150px"
                   className="object-cover"
                 />
               </div>
@@ -210,6 +215,7 @@ export default function AboutPage() {
                   src="/images/chef.jpg"
                   alt="Executive Chef"
                   fill
+                  sizes="(max-width: 768px) 100vw, 150px"
                   className="object-cover"
                 />
               </div>
@@ -226,6 +232,7 @@ export default function AboutPage() {
                   src="/images/concierge.jpg"
                   alt="Head Concierge"
                   fill
+                  sizes="(max-width: 768px) 100vw, 150px"
                   className="object-cover"
                 />
               </div>
@@ -251,7 +258,7 @@ export default function AboutPage() {
               </Button>
             </Link>
             <Link href="/contact">
-              <Button variant="outline" className="text-white border-white hover:bg-white/10 min-w-[160px]">
+              <Button variant="outline" className="border-white bg-white/20 text-white hover:bg-white hover:text-primary min-w-[160px]">
                 Contact Us
               </Button>
             </Link>

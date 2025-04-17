@@ -9,6 +9,7 @@ import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { AlertCircle } from 'lucide-react';
 import axios from 'axios';
+import { DatePicker } from '@/components/ui/date-picker';
 
 // Declare the handleRoomNavigation method on the Window interface
 declare global {
@@ -107,7 +108,7 @@ export default function RoomsPage() {
     
     // Navigate to room details with date and guest parameters
     router.push(`/rooms/${roomId}?checkIn=${checkInDate}&checkOut=${checkOutDate}&guests=${guests}`);
-  }, [checkInDate, checkOutDate, guests, router]);
+  }, [checkInDate, checkOutDate, guests, router, validateBookingCriteria]);
   
   // Expose the navigation handler to be used by child components
   useEffect(() => {
@@ -120,20 +121,8 @@ export default function RoomsPage() {
     };
   }, [handleRoomNavigation]);
 
-  // Fetch available rooms if dates are already provided
-  useEffect(() => {
-    if (initialCheckIn && initialCheckOut && initialGuests) {
-      const params = {
-        checkInDate: initialCheckIn,
-        checkOutDate: initialCheckOut,
-        maxGuests: parseInt(initialGuests, 10),
-      };
-      fetchAvailableRooms(params);
-    }
-  }, [initialCheckIn, initialCheckOut, initialGuests]);
-  
   // New function to fetch available rooms from API
-  const fetchAvailableRooms = async (params: {
+  const fetchAvailableRooms = useCallback(async (params: {
     checkInDate: string;
     checkOutDate: string;
     maxGuests?: number;
@@ -233,18 +222,42 @@ export default function RoomsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Fetch available rooms if dates are already provided
+  useEffect(() => {
+    if (initialCheckIn && initialCheckOut && initialGuests) {
+      const params = {
+        checkInDate: initialCheckIn,
+        checkOutDate: initialCheckOut,
+        maxGuests: parseInt(initialGuests, 10),
+      };
+      fetchAvailableRooms(params);
+    }
+  }, [initialCheckIn, initialCheckOut, initialGuests, fetchAvailableRooms]);
   
-  // Search and filter rooms
-  const searchRooms = () => {
-    // Validate dates and guest count
-    if (!validateBookingCriteria()) {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  // Handle search and fetch available rooms
+  const handleSearch = useCallback(() => {
+    // Validate all form fields
+    const validationResult = validateBookingCriteria();
+    
+    if (!validationResult) {
+      setError('Please fill in all required fields');
       return;
     }
     
-    // Clear any previous errors
+    // Clear any previous validation errors
     setError(null);
+    
+    // Update the search criteria
+    const searchCriteria = {
+      checkIn: checkInDate,
+      checkOut: checkOutDate,
+      guests
+    };
+    
+    // Store search parameters in local storage
+    localStorage.setItem('searchCriteria', JSON.stringify(searchCriteria));
     
     // Normalize dates to ensure consistency
     const checkIn = new Date(checkInDate);
@@ -278,7 +291,7 @@ export default function RoomsPage() {
     
     // Call API to fetch available rooms
     fetchAvailableRooms(searchParams);
-  };
+  }, [checkInDate, checkOutDate, guests, validateBookingCriteria, priceMin, priceMax, fetchAvailableRooms]);
 
   return (
     <div className="py-8 md:py-12">
@@ -301,12 +314,10 @@ export default function RoomsPage() {
           <h2 className="text-lg font-bold mb-4 text-gray-800">Booking Requirements</h2>
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             <div>
-              <label htmlFor="check-in" className="block text-sm font-medium text-gray-700 mb-1">
-                Check In Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="date"
+              <DatePicker
                 id="check-in"
+                label="Check In Date"
+                required
                 value={checkInDate}
                 onChange={(e) => {
                   setCheckInDate(e.target.value);
@@ -314,20 +325,15 @@ export default function RoomsPage() {
                   setFormErrors(prev => ({...prev, checkIn: ''}));
                 }}
                 min={new Date().toISOString().split('T')[0]}
-                required
-                className={formErrors.checkIn ? "border-red-300" : !checkInDate ? "border-amber-300" : ""}
+                error={formErrors.checkIn}
+                className={!checkInDate ? "border-amber-300" : ""}
               />
-              {formErrors.checkIn && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.checkIn}</p>
-              )}
             </div>
             <div>
-              <label htmlFor="check-out" className="block text-sm font-medium text-gray-700 mb-1">
-                Check Out Date <span className="text-red-500">*</span>
-              </label>
-              <Input
-                type="date"
+              <DatePicker
                 id="check-out"
+                label="Check Out Date"
+                required
                 value={checkOutDate}
                 onChange={(e) => {
                   setCheckOutDate(e.target.value);
@@ -335,12 +341,9 @@ export default function RoomsPage() {
                   setFormErrors(prev => ({...prev, checkOut: ''}));
                 }}
                 min={checkInDate ? new Date(new Date(checkInDate).getTime() + 86400000).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]}
-                required
-                className={formErrors.checkOut ? "border-red-300" : !checkOutDate ? "border-amber-300" : ""}
+                error={formErrors.checkOut}
+                className={!checkOutDate ? "border-amber-300" : ""}
               />
-              {formErrors.checkOut && (
-                <p className="mt-1 text-sm text-red-600">{formErrors.checkOut}</p>
-              )}
             </div>
             <div>
               <label htmlFor="guests" className="block text-sm font-medium text-gray-700 mb-1">
@@ -360,8 +363,6 @@ export default function RoomsPage() {
                 <option value="2">2 Guests</option>
                 <option value="3">3 Guests</option>
                 <option value="4">4 Guests</option>
-                <option value="5">5 Guests</option>
-                <option value="6">6 Guests</option>
               </select>
               {formErrors.guests && (
                 <p className="mt-1 text-sm text-red-600">{formErrors.guests}</p>
@@ -370,7 +371,7 @@ export default function RoomsPage() {
             <div className="flex items-end">
               {/* The "inline-flex" is crucial here to ensure proper icon alignment */}
               <button 
-                onClick={searchRooms}
+                onClick={handleSearch}
                 className="w-full h-10 px-4 py-2 inline-flex items-center justify-center gap-2 bg-black text-white rounded-md font-medium hover:bg-black/90 focus:outline-none"
                 disabled={loading}
               >

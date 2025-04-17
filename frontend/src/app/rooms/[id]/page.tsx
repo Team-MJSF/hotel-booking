@@ -479,6 +479,7 @@ export default function RoomDetailsPage() {
                 src={roomType?.name ? ROOM_TYPE_NAME_IMAGES[roomType.name] || ROOM_IMAGES[id as string] || '/images/room-placeholder.jpg' : '/images/room-placeholder.jpg'}
                 alt={roomType?.name || 'Room'}
                 fill
+                sizes="(max-width: 1024px) 100vw, 66vw"
                 className="object-cover"
               />
             </div>

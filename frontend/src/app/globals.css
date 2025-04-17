@@ -185,3 +185,106 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+/* More aggressive date picker fixes */
+/* Remove ALL outlines from date picker elements */
+::-webkit-datetime-edit,
+::-webkit-datetime-edit-fields-wrapper,
+::-webkit-datetime-edit-text,
+::-webkit-datetime-edit-month-field,
+::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-year-field,
+::-webkit-calendar-picker-indicator,
+::-webkit-inner-spin-button {
+  outline: none !important;
+}
+
+/* Target the date picker popup */
+input::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* Completely override browser's date picker styling */
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  background-color: transparent;
+}
+
+/* Additional Safari fix */
+@media not all and (min-resolution:.001dpcm) { 
+  @supports (-webkit-appearance:none) {
+    input[type="date"] {
+      position: relative;
+      display: inline-block;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      color: transparent;
+      background: transparent;
+    }
+  }
+}
+
+/* Chrome datepicker popup specific fixes */
+::-webkit-datetime-edit-day-field:focus,
+::-webkit-datetime-edit-month-field:focus,
+::-webkit-datetime-edit-year-field:focus {
+  background-color: transparent !important;
+  color: inherit !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Remove the outline for calendar day cells in popup */
+input[type="date"]::-webkit-calendar-picker {
+  outline: none !important;
+}
+
+/* Native date input fixes */
+/* This makes sure there's no outline on any browser's date picker popup */
+input[type="date"] {
+  position: relative;
+}
+
+/* Remove date input inner elements outline */
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-clear-button,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* Hide default date picker arrows/calendar icon so we can use our own */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+}
+
+/* Additional webkit-specific overrides for the date popup */
+input[type="date"]::-webkit-datetime-edit-fields-wrapper:focus,
+input[type="date"]::-webkit-datetime-edit-text:focus,
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus {
+  outline: none;
+  background: transparent;
+}
+
+/* This targets our specific custom date input with a more specific selector */
+.cus-date-input::-webkit-calendar-picker-indicator {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}
