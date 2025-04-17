@@ -84,7 +84,11 @@ describe('AuthController', () => {
       
       const result = await controller.register(registerDto);
       
-      expect(result).toEqual(registerResult);
+      expect(result).toEqual({
+        success: true,
+        data: registerResult,
+        message: 'Registration successful'
+      });
       expect(authService.register).toHaveBeenCalledWith(registerDto);
       
       // Scenario 2: Registration with mismatched passwords
