@@ -7,7 +7,7 @@ import {
   Param,
   Delete,
   UseGuards,
-  ForbiddenException,
+  ForbiddenException as NestForbiddenException,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
@@ -28,6 +28,12 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { User, UserRole } from '../users/entities/user.entity';
 import { AdminGuard } from '../auth/guards/admin.guard';
+import { 
+  BookingValidationException, 
+  DatabaseException,
+  ResourceNotFoundException,
+  ForbiddenException
+} from '../common/exceptions/hotel-booking.exception';
 
 /**
  * Controller for managing hotel bookings
@@ -254,7 +260,7 @@ export class BookingsController {
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
   async findUserBookings(@CurrentUser() user: User): Promise<Booking[]> {
     if (!user) {
-      throw new ForbiddenException('Authentication required');
+      throw new NestForbiddenException('Authentication required');
     }
 
     // Ensure we have a valid user ID
@@ -366,18 +372,18 @@ export class BookingsController {
       // Only allow users to access their own bookings or admins to access any booking
       if (user && user.role !== UserRole.ADMIN && booking.user?.id !== user.id) {
         console.error(`Access denied: User ${user.id} attempted to access booking belonging to user ${booking.user?.id}`);
-        throw new ForbiddenException('You can only access your own bookings');
+        throw new NestForbiddenException('You can only access your own bookings');
       }
   
       console.log(`Successfully retrieved booking ${numericId} for user ${user?.id || 'unknown'}`);
       return booking;
     } catch (error) {
       console.error(`Error retrieving booking ${id}:`, error);
-      if (error instanceof BadRequestException || error instanceof ForbiddenException) {
+      if (error instanceof BadRequestException || error instanceof NestForbiddenException) {
         throw error;
       }
       
-      throw new NotFoundException(`Booking with ID ${id} not found`);
+      throw new ResourceNotFoundException('Booking', id);
     }
   }
 
@@ -507,7 +513,7 @@ export class BookingsController {
         
         // Only allow users to update their own bookings or admins to update any booking
         if (user && user.role !== UserRole.ADMIN && booking.user && booking.user.id !== user.id) {
-          throw new ForbiddenException('You can only update your own bookings');
+          throw new NestForbiddenException('You can only update your own bookings');
         }
         
         // Convert status string to enum if present
@@ -735,7 +741,7 @@ export class BookingsController {
       
       // Only allow users to cancel their own bookings or admins to cancel any booking
       if (user && user.role !== UserRole.ADMIN && booking.user?.id !== user.id) {
-        throw new ForbiddenException('You can only cancel your own bookings');
+        throw new NestForbiddenException('You can only cancel your own bookings');
       }
       
       // Update the booking status to cancelled

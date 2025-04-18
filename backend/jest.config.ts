@@ -82,24 +82,21 @@ const baseConfig: JestConfigWithTsJest = {
   watchPathIgnorePatterns: ['node_modules', 'dist', '.jest-cache']
 } as const;
 
-// Determine which configuration to use based on TEST_TYPE environment variable
+// Determine which configuration to use based on test path pattern
 const config = (() => {
   // Integration test specific config
-  if (process.env.TEST_TYPE === 'integration') {
+  if (process.argv.includes('--testPathPattern=integration')) {
     return {
       ...baseConfig,
-      // Only run integration tests
       testMatch: ['**/src/**/integration/**/*.spec.ts'],
-      // Set longer timeout for integration tests
       testTimeout: 30000,
     };
   }
   
   // Unit test specific config
-  if (process.env.TEST_TYPE === 'unit') {
+  if (process.argv.includes('--testPathIgnorePatterns=integration')) {
     return {
       ...baseConfig,
-      // Exclude integration tests, only run unit tests
       testMatch: ['**/src/**/*.spec.ts'],
       testPathIgnorePatterns: [
         '/node_modules/',
@@ -108,7 +105,6 @@ const config = (() => {
         '**/src/**/integration/**/*.spec.ts',
         'src/main.spec.ts'
       ],
-      // Run unit tests in parallel
       maxWorkers: '50%',
     };
   }

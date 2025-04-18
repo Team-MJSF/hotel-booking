@@ -10,7 +10,8 @@ if (!fs.existsSync(dataDir)) {
 }
 
 // Database connection
-const dbPath = path.join(process.cwd(), 'data', 'hotel_booking_dev.sqlite');
+const dbName = process.env.NODE_ENV === 'test' ? 'hotel_booking_test.sqlite' : 'hotel_booking_dev.sqlite';
+const dbPath = path.join(process.cwd(), 'data', dbName);
 const db = new Database(dbPath);
 
 // Enable foreign keys

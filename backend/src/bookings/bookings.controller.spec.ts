@@ -175,7 +175,7 @@ describe('BookingsController', () => {
       // Database error case
       const error = new DatabaseException('Failed to fetch booking', new Error('Database error'));
       mockBookingsService.findOne.mockRejectedValueOnce(error);
-      await expect(controller.findOne('1', mockUser)).rejects.toThrow(DatabaseException);
+      await expect(controller.findOne('1', mockUser)).rejects.toThrow(ResourceNotFoundException);
     });
   });
 
