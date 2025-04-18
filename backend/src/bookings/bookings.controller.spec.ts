@@ -19,6 +19,7 @@ import {
 } from '../payments/entities/payment.entity';
 import { UserRole } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { ForbiddenException } from '@nestjs/common';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);
@@ -280,6 +281,41 @@ describe('BookingsController', () => {
       await expect(controller.update('1', validUpdateDto, mockUser)).rejects.toThrow(
         DatabaseException,
       );
+    });
+
+    // Test for localStorage IDs
+    it('should handle localStorage booking IDs', async () => {
+      const result = await controller.update('booking-123', { status: 'confirmed' }, mockUser);
+      expect(result).toHaveProperty('bookingId', 'booking-123');
+      expect(result).toHaveProperty('status', BookingStatus.CONFIRMED);
+      expect(mockBookingsService.update).not.toHaveBeenCalled();
+    });
+  });
+
+  // Test for updateStatus method
+  describe('updateStatus', () => {
+    it('should call update method with status', async () => {
+      // Using spyOn to check if update method is called with correct params
+      jest.spyOn(controller, 'update');
+      await controller.updateStatus('1', { status: 'confirmed' }, mockUser);
+      expect(controller.update).toHaveBeenCalledWith('1', { status: 'confirmed' }, mockUser);
+    });
+  });
+
+  // Test for cancelBooking method  
+  describe('cancelBooking', () => {
+    it('should handle booking cancellation', async () => {
+      // Test successful cancellation
+      mockBookingsService.findOne.mockResolvedValue(mockBooking);
+      mockBookingsService.update.mockResolvedValue({...mockBooking, status: BookingStatus.CANCELLED});
+      
+      const result = await controller.cancelBooking('1', mockUser);
+      expect(result.status).toBe(BookingStatus.CANCELLED);
+      
+      // Test localStorage IDs
+      const localResult = await controller.cancelBooking('booking-123', mockUser);
+      expect(localResult.bookingId).toBe('booking-123');
+      expect(localResult.status).toBe(BookingStatus.CANCELLED);
     });
   });
 

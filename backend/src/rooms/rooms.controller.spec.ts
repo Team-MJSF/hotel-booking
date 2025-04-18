@@ -47,6 +47,20 @@ describe('RoomsController', () => {
     updatedAt: new Date(),
   };
 
+  const mockRooms: Room[] = [
+    mockRoom,
+    {
+      ...mockRoom,
+      id: 2,
+      roomNumber: '102',
+    },
+    {
+      ...mockRoom,
+      id: 3,
+      roomNumber: '201',
+    },
+  ];
+
   beforeEach(async () => {
     mockRoomsService = {
       findAll: jest.fn(),
@@ -77,6 +91,116 @@ describe('RoomsController', () => {
 
   it('should be defined', () => {
     expect(controller).toBeDefined();
+  });
+
+  describe('getRoomMappings', () => {
+    it('should generate room number to ID mappings', async () => {
+      // Mock successful retrieval
+      mockRoomsService.findAll.mockResolvedValue(mockRooms);
+      
+      const result = await controller.getRoomMappings();
+      
+      expect(result).toEqual({
+        success: true,
+        data: {
+          '101': 1,
+          '102': 2,
+          '201': 3,
+        },
+        message: expect.stringContaining('Generated 3 room mappings'),
+      });
+      expect(mockRoomsService.findAll).toHaveBeenCalled();
+    });
+
+    it('should handle database error gracefully', async () => {
+      // Mock database error
+      mockRoomsService.findAll.mockRejectedValue(new Error('Database connection failed'));
+      
+      const result = await controller.getRoomMappings();
+      
+      expect(result).toEqual({
+        success: true,
+        data: {},
+        message: expect.stringContaining('Could not fetch rooms from database'),
+      });
+    });
+
+    it('should handle invalid room data gracefully', async () => {
+      // Mock invalid room data
+      const invalidRooms = [
+        { id: 'invalid-id', roomNumber: '301' },
+        { id: 4, roomNumber: null },
+        { id: 5, roomNumber: '501' },
+      ];
+      mockRoomsService.findAll.mockResolvedValue(invalidRooms as Room[]);
+      
+      const result = await controller.getRoomMappings();
+      
+      // Only valid room should be mapped
+      expect(result.data).toEqual({
+        '501': 5,
+      });
+      expect(result.success).toBe(true);
+    });
+  });
+
+  describe('checkAvailability', () => {
+    it('should return available rooms for valid dates', async () => {
+      const availableRooms = [mockRooms[0], mockRooms[1]];
+      mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms);
+      
+      const result = await controller.checkAvailability(
+        '2023-05-01',
+        '2023-05-05'
+      );
+      
+      expect(result).toEqual(availableRooms);
+      expect(mockRoomsService.searchAvailableRooms).toHaveBeenCalledWith({
+        checkInDate: expect.any(Date),
+        checkOutDate: expect.any(Date),
+      });
+    });
+
+    it('should filter rooms by roomTypeId when provided', async () => {
+      // Rooms from different floors
+      const availableRooms = [
+        { ...mockRoom, id: 1, roomNumber: '101' },
+        { ...mockRoom, id: 2, roomNumber: '201' },
+        { ...mockRoom, id: 3, roomNumber: '301' },
+      ];
+      mockRoomsService.searchAvailableRooms.mockResolvedValue(availableRooms as Room[]);
+      
+      const result = await controller.checkAvailability(
+        '2023-05-01',
+        '2023-05-05',
+        '1' // Filter for floor 1 rooms
+      );
+      
+      // Should only return rooms starting with '1'
+      expect(result).toEqual([availableRooms[0]]);
+    });
+
+    it('should throw error for missing dates', async () => {
+      await expect(controller.checkAvailability(null, '2023-05-05')).rejects.toThrow(
+        'Check-in and check-out dates are required'
+      );
+      
+      await expect(controller.checkAvailability('2023-05-01', null)).rejects.toThrow(
+        'Check-in and check-out dates are required'
+      );
+    });
+
+    it('should throw error for invalid date format', async () => {
+      await expect(controller.checkAvailability('invalid-date', '2023-05-05')).rejects.toThrow(
+        'Invalid date format'
+      );
+    });
+
+    it('should throw error when check-out date is before check-in date', async () => {
+      await expect(controller.checkAvailability('2023-05-05', '2023-05-01')).rejects.toThrow(
+        'Check-out date must be after check-in date'
+      );
+    });
   });
 
   describe('findAll', () => {
