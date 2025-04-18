@@ -39,7 +39,7 @@
     "db:setup-sqlite": "ts-node src/config/database-setup.ts",
     "setup": "npm install && tsc",
     "setup:dev": "cross-env NODE_ENV=development npm run build && npm run db:create && npm run db:migrate:dev && npm run db:seed:consolidated",
-    "setup:test": "cross-env NODE_ENV=test npm run build && npm run db:create:test && npm run db:migrate:test",
+    "setup:test": "cross-env NODE_ENV=test npm run build && npm run db:create:test && npm run build:migrations && npm run db:migrate:test",
     "dev:reset": "cross-env NODE_ENV=development npm run build || (echo 'Build failed' && exit 1) && cross-env NODE_ENV=development npm run db:revert || (echo 'Revert failed' && exit 1) && cross-env NODE_ENV=development npm run db:migrate || (echo 'Migration failed' && exit 1) && cross-env NODE_ENV=development npm run db:seed:consolidated || (echo 'Seeding failed' && exit 1)",
     "dev:clean": "cross-env NODE_ENV=development npm run build && npm run db:revert",
     "test:setup": "cross-env NODE_ENV=test npm run build && npm run db:create:test && npm run db:migrate:test",
