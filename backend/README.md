@@ -1,169 +1,280 @@
-# Hotel Booking System - Backend
+# Hotel Booking System Backend
 
-A NestJS-based backend for a hotel booking system with authentication, room management, and booking functionality. This project is part of a school assignment and uses mocked payment systems.
+A robust NestJS backend API powering the hotel booking application with comprehensive room management, booking, and payment functionality.
 
-## Prerequisites
+## 🏨 Overview
 
-- Node.js (v18 or higher)
+This backend provides a complete REST API for hotel booking operations, featuring:
+
+- **User Management**: Registration, authentication, and user profiles
+- **Room Management**: Room types, individual rooms, and availability
+- **Booking System**: Create, manage, and cancel bookings
+- **Payment Processing**: Mock payment system with multiple fallback strategies
+- **API Documentation**: Comprehensive Swagger documentation
+
+## 🔧 Technology Stack
+
+- **Framework**: [NestJS](https://nestjs.com/)
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Database**: [SQLite](https://www.sqlite.org/) with [TypeORM](https://typeorm.io/)
+- **Authentication**: JWT with refresh tokens
+- **Validation**: Class Validator & Transformer
+- **Documentation**: Swagger/OpenAPI
+- **Testing**: Jest with separate unit and integration tests
+
+## 📋 Prerequisites
+
+- Node.js v18+ 
 - npm
 
-## Features
+## 🚀 Getting Started
 
-- User authentication with JWT and refresh tokens
-- Role-based access control (Admin, User)
-- Room types and individual rooms management
-- Advanced room search with availability checking
-- Booking system with validation and conflict prevention
-- Mock payment processing
-- Rate limiting protection with retry mechanisms
-- Comprehensive test coverage with separated unit and integration tests
-- API documentation with Swagger
+### Installation
 
-## Technologies Used
+```bash
+# Clone the repository
+git clone <repository-url>
+cd hotel-booking/backend
 
-### Core
-- NestJS - Web framework
-- TypeScript - Programming language
-- TypeORM - Database ORM
-- SQLite - Database
-- JWT - Authentication
-- Passport - Authentication middleware
-- Bcrypt - Password hashing
+# Install dependencies
+npm install
+```
 
-### Development Tools
-- Jest - Testing framework
-- Swagger - API documentation
-- ESLint - Code linting
-- Prettier - Code formatting
-- Class Validator & Transformer - Input validation and transformation
+### Environment Setup
 
-## API Endpoints
+```bash
+# Create development and test environment files
+cp .env.example .env.development
+cp .env.example .env.test
+
+# Edit the environment variables as needed
+```
+
+### Database Initialization
+
+```bash
+# Initialize development database with seed data
+npm run init:dev
+
+# Initialize test database
+npm run init:test
+```
+
+### Running the Application
+
+```bash
+# Development mode with hot reload
+npm run dev
+
+# Production mode
+npm run build
+npm run start:prod
+```
+
+## 📁 Project Structure
+
+```
+src/
+├── auth/              # Authentication and authorization
+│   ├── dto/           # Data Transfer Objects
+│   ├── guards/        # JWT Auth Guards
+│   └── strategies/    # Passport strategies
+├── bookings/          # Booking management
+│   ├── dto/           # Booking DTOs
+│   ├── entities/      # Booking entity
+│   └── services/      # Booking business logic
+├── common/            # Shared utilities
+│   ├── decorators/    # Custom decorators
+│   ├── dto/           # Shared DTOs
+│   ├── entities/      # Base entities
+│   ├── exceptions/    # Custom exceptions
+│   ├── filters/       # Exception filters
+│   └── interfaces/    # Shared interfaces
+├── config/            # Application configuration
+├── database/          # Database configuration
+│   ├── migrations/    # TypeORM migrations
+│   └── seeds/         # Database seed data
+├── payments/          # Payment processing (mock)
+│   ├── dto/           # Payment DTOs
+│   ├── entities/      # Payment entity
+│   └── services/      # Payment business logic
+├── refresh-tokens/    # Refresh token management
+├── rooms/             # Room and room type management
+│   ├── dto/           # Room DTOs
+│   ├── entities/      # Room entities
+│   └── services/      # Room services
+├── users/             # User management
+│   ├── dto/           # User DTOs
+│   ├── entities/      # User entity
+│   └── services/      # User services
+├── app.module.ts      # Main application module
+└── main.ts            # Application entry point
+```
+
+## 🔄 Core Features
 
 ### Authentication
-- `POST /auth/register` - Register new user
-- `POST /auth/create-admin` - Create admin user (Admin only)
-- `POST /auth/login` - User login
-- `GET /auth/profile` - Get user profile
-- `POST /auth/refresh` - Refresh access token
-- `POST /auth/logout` - Logout (invalidate refresh token)
 
-### Users
-- `GET /users` - List all users (Admin only)
-- `GET /users/:id` - Get user details
-- `PATCH /users/:id` - Update user
-- `DELETE /users/:id` - Delete user (Admin only)
+The system uses JWT-based authentication with refresh tokens:
 
-### Room Types
-- `GET /room-types` - List all room types
-- `GET /room-types/:id` - Get room type details
-- `POST /room-types` - Create new room type (Admin only)
-- `PATCH /room-types/:id` - Update room type (Admin only)
-- `DELETE /room-types/:id` - Delete room type (Admin only)
+- **Access Token**: Short-lived token (1 hour) for API access
+- **Refresh Token**: Long-lived token (7 days) stored in database
+- **Token Revocation**: Ability to invalidate refresh tokens
 
-### Rooms
-- `GET /rooms` - List all rooms
-- `GET /rooms/:id` - Get room details
-- `POST /rooms` - Create new room (Admin only)
-- `PATCH /rooms/:id` - Update room (Admin only)
-- `DELETE /rooms/:id` - Delete room (Admin only)
-- `GET /rooms/search` - Search available rooms
+```typescript
+// Example login request
+POST /auth/login
+{
+  "email": "user@example.com",
+  "password": "password123"
+}
 
-### Room Availability
-- `GET /rooms/:roomId/availability` - Check room availability
-- `GET /room-types/:roomTypeId/availability` - Check room type availability for date range
+// Response
+{
+  "accessToken": "eyJhbG...",
+  "refreshToken": "eyJhbG...",
+  "user": {
+    "id": 1,
+    "email": "user@example.com",
+    "firstName": "John",
+    "lastName": "Doe",
+    "role": "user"
+  }
+}
+```
 
-### Bookings
-- `GET /bookings` - List user's bookings
-- `GET /bookings/:id` - Get booking details
-- `POST /bookings` - Create new booking
-- `PATCH /bookings/:id` - Update booking
-- `DELETE /bookings/:id` - Cancel booking
-- `GET /bookings/user/:userId` - Get user's bookings
+### Room Management
 
-### Payments
-- `GET /payments` - List all payments (Admin only)
-- `GET /payments/:id` - Get payment details
-- `GET /payments/booking/:bookingId` - Get payments for a booking
-- `POST /payments` - Create new payment
-- `PATCH /payments/:id` - Update payment status
-- `DELETE /payments/:id` - Delete payment (Admin only)
-- `POST /payments/:id/refund` - Process refund
+The system manages both room types and individual rooms:
 
-## Getting Started
+- **Room Types**: Categories of rooms with common attributes
+- **Rooms**: Individual room instances with room numbers
+- **Availability**: Advanced availability checking with date constraints
 
-1. Clone the repository
-2. Install dependencies:
+```typescript
+// Example room type
+{
+  "id": 1,
+  "name": "Deluxe King Room",
+  "description": "Spacious room with king-sized bed",
+  "basePrice": 150.00,
+  "capacity": 2,
+  "amenities": ["WiFi", "TV", "Mini-bar"]
+}
+
+// Example room
+{
+  "id": 101,
+  "roomNumber": "101",
+  "floor": 1,
+  "roomTypeId": 1,
+  "status": "available"
+}
+```
+
+### Booking System
+
+The booking system handles the entire booking lifecycle:
+
+- **Create Booking**: Reserve a room for specific dates
+- **Modify Booking**: Change dates or guest information
+- **Cancel Booking**: Allow users to cancel with business rules
+- **Availability Check**: Prevent double bookings
+
+```typescript
+// Example booking creation
+POST /bookings
+{
+  "roomId": 101,
+  "checkInDate": "2023-07-15T14:00:00.000Z",
+  "checkOutDate": "2023-07-20T11:00:00.000Z",
+  "numberOfGuests": 2,
+  "specialRequests": "Room away from elevator"
+}
+```
+
+### Payment Processing
+
+The payment system provides a realistic mock implementation:
+
+- **Process Payment**: Handle payment for bookings
+- **Multiple Methods**: Support for credit cards, PayPal, etc.
+- **Refunds**: Process refunds for cancelled bookings
+- **Fallback Strategies**: Ensure payment success with multiple approaches
+
+## 🧪 Testing Strategy
+
+The project implements a comprehensive testing strategy:
+
+### Unit Tests
+
+Isolated tests for individual components:
+
+```bash
+# Run unit tests
+npm run test:unit
+```
+
+### Integration Tests
+
+End-to-end tests that verify complete workflows:
+
    ```bash
-   npm install
-   ```
-3. Set up environment variables:
-   - Copy `.env.example` to `.env.development` for development
-   - Copy `.env.example` to `.env.test` for testing
-   - Update the variables with your configuration
+# Run integration tests
+npm run test:integration
+```
 
-4. Initialize the development database:
+### Coverage
+
    ```bash
-   npm run init:dev
+# Generate test coverage report
+npm run test:cov
    ```
 
-5. Initialize the test database:
+## 📚 API Documentation
+
+The API is documented using Swagger/OpenAPI:
+
    ```bash
-   npm run init:test
-   ```
+# Start the server
+npm run start:dev
 
-## Available Scripts
+# Access Swagger UI
+http://localhost:5000/api/docs
+```
+
+## 🛠️ Available Scripts
 
 ### Development
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build the application (both app and migrations)
-- `npm run build:app` - Build only the application
-- `npm run build:migrations` - Build only the migrations
-- `npm run start:dev` - Start development server
-- `npm run start:debug` - Start server in debug mode
+- `npm run dev` - Start server with hot reload
+- `npm run build` - Build application
 - `npm run start:prod` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run format` - Format code with Prettier
+- `npm run lint` - Run linter
 
 ### Testing
-- `npm run test` - Run all tests (unit and integration)
-- `npm run test:unit` - Run only unit tests (in parallel)
-- `npm run test:integration` - Run only integration tests (sequentially)
-- `npm run test:cov` - Run tests with coverage report
-- `npm run test:watch` - Run tests in watch mode
-- `npm run test:debug` - Debug tests with Node inspector
-- `npm run test:bootstrap` - Test the application bootstrap process
+- `npm run test` - Run all tests
+- `npm run test:unit` - Run unit tests
+- `npm run test:integration` - Run integration tests
+- `npm run test:cov` - Generate coverage report
 
-### Database Management
-- `npm run db:create` - Create the database if it doesn't exist
-- `npm run db:migrate` - Run database migrations
-- `npm run db:migrate:test` - Run migrations for the test database
+### Database
+- `npm run db:migrate` - Run migrations
+- `npm run db:seed` - Seed database
 - `npm run db:revert` - Revert last migration
-- `npm run db:revert:test` - Revert last test database migration
-- `npm run db:seed` - Seed the database with initial data
-- `npm run db:migrate:show` - Show pending migrations
-- `npm run db:migrate:show:test` - Show pending test migrations
 
-### Setup and Reset
-- `npm run setup` - Initialize both dev and test environments
-- `npm run setup:reset` - Reset both dev and test databases
-- `npm run dev:setup` - Set up development environment
-- `npm run dev:reset` - Reset development database
-- `npm run test:setup` - Set up test environment
-- `npm run test:reset` - Reset test database
+## 🔐 Environment Variables
 
-## Environment Variables
-
-Create `.env.development` and `.env.test` files:
+Key environment variables:
 
 ```env
-# Server Configuration
+# Server
 PORT=5000
 NODE_ENV=development
 
-# Database Configuration
+# Database
 DB_NAME=data/hotel_booking_dev.sqlite
 
-# JWT Settings
+# JWT
 JWT_SECRET=your_secret_key
 JWT_EXPIRATION=1h
 JWT_REFRESH_EXPIRATION=7d
@@ -173,112 +284,61 @@ THROTTLE_TTL=60
 THROTTLE_LIMIT=20
 ```
 
-## Project Structure
+## 🔍 Advanced Features
 
-```
-src/
-├── auth/           # Authentication related files
-├── bookings/       # Booking management
-├── common/         # Shared utilities and filters
-│   ├── decorators/ # Custom decorators
-│   ├── dto/        # Shared DTOs
-│   ├── filters/    # Exception filters
-│   ├── guards/     # Auth guards
-│   └── docs/       # API documentation guides
-├── config/         # Configuration files
-├── database/       # Migration and seed files
-├── payments/       # Payment processing (mocked)
-├── refresh-tokens/ # Refresh token management
-├── rooms/          # Room management
-│   ├── dto/        # Room DTOs
-│   ├── entities/   # Room entities
-│   └── services/   # Room services
-├── room-types/     # Room type management
-├── users/          # User management
-├── app.module.ts   # Main application module
-└── main.ts         # Application entry point
+### Rate Limiting
+
+The API implements rate limiting to prevent abuse:
+
+```typescript
+// Configure in .env
+THROTTLE_TTL=60  // Time window in seconds
+THROTTLE_LIMIT=20  // Maximum number of requests in time window
 ```
 
-## Testing
+### Error Handling
 
-The project uses Jest for testing with two separate configurations:
+Standardized error responses across the API:
 
-### Unit Tests
-- Located in `*.spec.ts` files outside of integration folders
-- Run in parallel for faster execution
-- Test individual components in isolation
-- Mock dependencies to isolate components
-- Command: `npm run test:unit`
+```json
+{
+  "statusCode": 400,
+  "message": "Invalid booking dates",
+  "error": "Bad Request",
+  "timestamp": "2023-06-15T10:30:45.123Z",
+  "path": "/bookings"
+}
+```
 
-### Integration Tests
-- Located in `src/**/integration/*.spec.ts` files
-- Run sequentially to avoid database conflicts
-- Test complete flows through the system
-- Use a real test database with proper cleanup between tests
-- Command: `npm run test:integration`
+### Data Validation
 
-### Test Configuration
-- Unit and integration tests use different configurations in `jest.config.ts`
-- Integration tests run with the `--runInBand` flag to prevent parallel execution
-- Authentication is handled differently in tests with mockJwtAuthGuard when needed
-- Each controller has comprehensive tests for all CRUD operations with various scenarios:
-  - Success cases
-  - Validation errors
-  - Permission errors (ForbiddenException)
-  - Not found cases (ResourceNotFoundException)
-  - Database errors (DatabaseException)
+Comprehensive input validation using class-validator:
 
-### Coverage
-Run `npm run test:cov` to generate a coverage report. Current coverage:
-- All controllers have 100% test coverage
-- Crucial services have 90%+ coverage
-- DTOs and entities have validation/transformation tests
-- Guards and decorators are properly tested
+```typescript
+export class CreateBookingDto {
+  @IsNumber()
+  @ApiProperty({ description: 'Room ID for the booking' })
+  roomId: number;
 
-## API Documentation
+  @IsDateString()
+  @ApiProperty({ description: 'Check-in date' })
+  checkInDate: string;
 
-### Swagger UI
+  @IsDateString()
+  @ApiProperty({ description: 'Check-out date' })
+  checkOutDate: string;
 
-The API documentation is available at the `/api/docs` endpoint when the server is running. This interactive documentation allows you to:
+  @IsNumber()
+  @Min(1)
+  @ApiProperty({ description: 'Number of guests' })
+  numberOfGuests: number;
+}
+```
 
-- View all available endpoints
-- See request/response schemas
-- Test API endpoints directly from the browser
-- Download the OpenAPI specification
+## 🚀 Deployment
 
-### API Documentation Guides
+For production deployment:
 
-Detailed API documentation guides are available for the following modules:
-
-- [Room API Guide](src/common/docs/room-api-guide.md) - Comprehensive guide for room management endpoints
-- [Booking API Guide](src/common/docs/booking-api-guide.md) - Detailed documentation for booking-related endpoints
-- [User API Guide](src/common/docs/user-api-guide.md) - Guide for user management and authentication endpoints
-- [Payment API Guide](src/common/docs/payment-api-guide.md) - Documentation for payment processing endpoints
-
-These guides provide in-depth information about each API endpoint, including request/response formats, validation rules, error responses, and usage examples.
-
-## Error Handling & Rate Limiting
-
-The API implements comprehensive error handling:
-
-1. **Input Validation** - All input data is validated using class-validator
-2. **Exception Filters** - Custom exception filters translate errors to consistent API responses
-3. **Global Error Handling** - Centralized error handling ensures consistent responses
-4. **Rate Limiting** - Built-in protection against excessive requests with configurable limits
-5. **Fallback Mechanisms** - Graceful fallbacks for dependencies that might fail
-
-## Database Configuration
-
-The project uses TypeORM with SQLite. Different configurations are available:
-
-- **Development**: Used for local development
-- **Test**: Used for running tests (automatically resets between test runs)
-- **Production**: Used for production deployment
-
-You can run with or without migrations:
-- Standard approach: Uses migrations for database versioning
-- No-migrations approach: Uses TypeORM's auto schema synchronization (development only)
-
-## Note for School Project
-
-This project is designed for educational purposes. The payment system is mocked, and certain optimizations are made to facilitate learning rather than production readiness.
+1. Set up environment variables for production
+2. Build the application: `npm run build`
+3. Start with process manager: `pm2 start dist/main.js`

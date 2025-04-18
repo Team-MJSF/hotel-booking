@@ -17,11 +17,11 @@ The application connects to a NestJS backend API for data persistence and user a
 
 ## 🔧 Technology Stack
 
-- **Framework**: [Next.js](https://nextjs.org/)
+- **Framework**: [Next.js](https://nextjs.org/) 14 with App Router
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (built on Radix UI)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **State Management**: React hooks
+- **State Management**: React Context API and hooks
 - **Date Handling**: [date-fns](https://date-fns.org/)
 - **HTTP Client**: [Axios](https://axios-http.com/)
 - **Testing**: [Jest](https://jestjs.io/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
@@ -53,6 +53,7 @@ Create a `.env.local` file in the root directory with the following content:
 
 ```
 NEXT_PUBLIC_API_URL=http://localhost:5000
+NEXT_PUBLIC_AUTH_STORAGE=sessionStorage
 ```
 
 Adjust the URL if your backend is running on a different port or host.
@@ -86,93 +87,168 @@ yarn start
 
 ```
 frontend/
-├── public/           # Static assets
-│   └── images/       # Room and hotel images
-├── src/              # Source code
-│   ├── app/          # Next.js App Router pages
-│   ├── components/   # Reusable components
-│   │   ├── ui/       # shadcn/ui components
-│   │   └── ...       # Application-specific components
-│   ├── lib/          # Utility functions
-│   ├── services/     # API services
-│   └── types/        # TypeScript type definitions
-├── .env.local        # Environment variables
-├── tailwind.config.js # Tailwind CSS configuration
-└── tsconfig.json     # TypeScript configuration
+├── public/               # Static assets
+│   └── images/           # Room and hotel images
+├── src/
+│   ├── app/              # Next.js App Router pages
+│   │   ├── about/        # About page
+│   │   ├── account/      # User account management
+│   │   ├── amenities/    # Hotel amenities page
+│   │   ├── booking/      # Booking creation flow
+│   │   ├── bookings/     # Booking management & details
+│   │   ├── contact/      # Contact page
+│   │   ├── login/        # User authentication
+│   │   ├── my-bookings/  # User booking overview
+│   │   ├── payment/      # Payment processing
+│   │   ├── register/     # User registration
+│   │   ├── rooms/        # Room listing and details
+│   │   └── page.tsx      # Homepage
+│   ├── components/       # Reusable components
+│   │   ├── layout/       # Layout components
+│   │   ├── ui/           # shadcn/ui components
+│   │   └── ...           # Application-specific components
+│   ├── context/          # React Context providers
+│   │   └── AuthContext.tsx # Authentication context
+│   ├── hooks/            # Custom React hooks
+│   ├── lib/              # Utility functions
+│   ├── services/         # API services
+│   │   └── api.ts        # API integration layer
+│   └── types/            # TypeScript type definitions
+├── .env.local            # Environment variables
+├── jest.config.ts        # Jest configuration
+├── tailwind.config.js    # Tailwind CSS configuration
+└── tsconfig.json         # TypeScript configuration
 ```
 
-## 🔄 Main Features
+## 🔄 Application Flow
 
-### Authentication
+1. **User Journey**:
+   - Users browse available rooms on the rooms page
+   - Select a room and view detailed information
+   - Choose dates and guest count
+   - Click "Book Now" to proceed to payment
+   - Complete mock payment process
+   - View booking in "My Bookings" section
 
-- User registration and login
-- JWT-based authentication
-- Protected routes for authenticated users
+2. **Authentication Flow**:
+   - JWT-based authentication stored in session/local storage
+   - Protected routes redirect unauthenticated users to login
+   - Auth state managed through React Context API
+   - Token refresh handling for extended sessions
 
-### Room Browsing and Booking
+3. **Data Flow**:
+   - API requests centralized in `services/api.ts`
+   - Responses follow consistent `ApiResponse<T>` format
+   - Error handling with graceful degradation
+   - Multiple fallback strategies for robustness
 
-- List all room types with filtering capabilities
-- Detailed room view with amenities and policies
-- Date-based availability checking
-- Room number selection
+## 🛡️ Authentication System
 
-### Booking Management
+The application uses a JWT-based authentication system:
 
-- View active and past bookings
-- Cancel existing bookings
-- Mock payment processing
+- **Storage**: Configurable via `NEXT_PUBLIC_AUTH_STORAGE` (sessionStorage/localStorage)
+- **Context Provider**: `AuthContext` provides authentication state to all components
+- **Protected Routes**: Redirect unauthenticated users
+- **User Management**: Registration, login, and profile management
 
-### Error Handling
+```tsx
+// Example usage of authentication
+const { user, login, logout, isAuthenticated } = useAuth();
+```
 
-- Comprehensive error states
-- Fallback strategies for API failures
-- Rate limiting protection with exponential backoff
+## 💳 Payment Processing
 
-## 🧪 Testing
+The payment system is mocked for demonstration purposes:
+
+- Credit card validation with proper formatting
+- Multiple payment method options (Credit Card, Debit Card, PayPal)
+- Robust error handling and validation
+- Success/failure state management
+- Integration with booking status updates
+
+The payment workflow:
+1. User enters payment details
+2. Frontend validates card information
+3. Payment request sent to backend
+4. Backend processes mock payment
+5. Booking status updated to "CONFIRMED"
+6. User redirected to booking confirmation
+
+## 📊 Data Models
+
+Key TypeScript interfaces include:
+
+- **User**: Authentication and profile information
+- **Room/RoomType**: Room details, amenities, and pricing
+- **Booking**: Reservation details with dates and status
+- **Payment**: Transaction details for booking payments
+
+## 🧪 Testing Strategy
+
+The application uses Jest and React Testing Library for comprehensive testing:
 
 ```bash
 # Run all tests
 npm test
-# or
-yarn test
 
 # Run tests with coverage
 npm test -- --coverage
-# or
-yarn test --coverage
+
+# Run specific test files
+npm test -- payment
 ```
 
-## 🛡️ Error Handling Strategy
+Testing principles:
+- Component isolation with proper mocking
+- User interaction simulation
+- API service mocking
+- Authentication state testing
+- Form validation testing
+- Error state verification
 
-The application implements a robust error handling strategy:
+## 🚀 Deployment
 
-1. API request errors are caught and displayed to the user
-2. Unavailable API endpoints trigger fallback UI states
-3. Rate limiting issues are handled with exponential backoff
-4. Form validation provides immediate feedback
+The application can be deployed using:
 
-## 🔌 API Integration
+```bash
+# Build for production
+npm run build
 
-The frontend connects to a NestJS backend with the following main endpoints:
+# Start production server
+npm start
+```
 
-- `/auth/*` - Authentication endpoints
-- `/room-types/*` - Room type information
-- `/rooms/*` - Room availability and details
-- `/bookings/*` - Booking management
+For cloud deployment, consider:
+- Vercel (optimized for Next.js)
+- Netlify
+- AWS Amplify
 
-## 📝 Notes
+## 🔍 Troubleshooting
 
-- Payment processing is mocked for demonstration purposes
-- For school project use only, not meant for production without additional security measures
+Common issues and solutions:
 
-## 📋 Future Improvements
+1. **API Connection Issues**:
+   - Verify backend is running
+   - Check `.env.local` configuration
+   - Examine browser console for CORS errors
 
-- Add comprehensive test coverage
-- Implement real payment gateway integration
-- Add internationalization (i18n) support
-- Implement advanced caching strategies
-- Add accessibility improvements
+2. **Authentication Failures**:
+   - Clear browser storage
+   - Verify token format
+   - Check for expired tokens
 
-## 📜 License
+3. **Test Failures**:
+   - Run with `--detectOpenHandles` to find unresolved promises
+   - Check mock implementations
+   - Verify test environment setup
 
-This project is part of a school assignment and is not licensed for commercial use.
+## 📝 Development Guidelines
+
+- Follow TypeScript best practices with proper typing
+- Use functional components with hooks
+- Implement proper error handling
+- Write tests for new components
+- Follow the established component structure
+- Use the shadcn/ui component library for consistency
+
+
