@@ -1,15 +1,16 @@
-import { TransformInterceptor } from './transform.interceptor';
+import { TransformInterceptor, Response } from './transform.interceptor';
 import { of } from 'rxjs';
 import { firstValueFrom } from 'rxjs';
+import { ExecutionContext, CallHandler } from '@nestjs/common';
 
 describe('TransformInterceptor', () => {
-  let interceptor: TransformInterceptor<any>;
-  let mockExecutionContext: any;
-  let mockCallHandler: any;
+  let interceptor: TransformInterceptor<unknown>;
+  let mockExecutionContext: ExecutionContext;
+  let mockCallHandler: CallHandler<unknown>;
 
   beforeEach(() => {
     interceptor = new TransformInterceptor();
-    mockExecutionContext = {} as any;
+    mockExecutionContext = {} as ExecutionContext;
   });
 
   it('should format regular response data', async () => {
@@ -17,7 +18,7 @@ describe('TransformInterceptor', () => {
     const responseData = { id: 1, name: 'Test' };
     mockCallHandler = {
       handle: jest.fn(() => of(responseData)),
-    };
+    } as unknown as CallHandler<unknown>;
 
     // Act
     const result$ = interceptor.intercept(mockExecutionContext, mockCallHandler);
@@ -34,14 +35,14 @@ describe('TransformInterceptor', () => {
 
   it('should keep already formatted responses intact', async () => {
     // Arrange
-    const preformattedResponse = {
+    const preformattedResponse: Response<unknown> = {
       success: false,
       error: 'Some error',
       message: 'Custom message'
     };
     mockCallHandler = {
       handle: jest.fn(() => of(preformattedResponse)),
-    };
+    } as unknown as CallHandler<unknown>;
 
     // Act
     const result$ = interceptor.intercept(mockExecutionContext, mockCallHandler);

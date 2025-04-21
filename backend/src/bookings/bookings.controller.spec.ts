@@ -19,7 +19,6 @@ import {
 } from '../payments/entities/payment.entity';
 import { UserRole } from '../users/entities/user.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { ForbiddenException } from '@nestjs/common';
 
 // Increase timeout for all tests
 jest.setTimeout(10000);

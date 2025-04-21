@@ -10,6 +10,7 @@ import {
   ForbiddenException as NestForbiddenException,
   BadRequestException,
   NotFoundException,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -19,6 +20,7 @@ import {
   ApiBearerAuth,
   ApiBody,
   ApiExtraModels,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { BookingsService } from './bookings.service';
 import { CreateBookingDto } from './dto/create-booking.dto';
@@ -34,6 +36,31 @@ import {
   ResourceNotFoundException,
   ForbiddenException
 } from '../common/exceptions/hotel-booking.exception';
+import type { Room, RoomType } from '../rooms/entities/room.entity';
+import {
+  Payment,
+  PaymentStatus,
+  PaymentMethod,
+  Currency,
+} from '../payments/entities/payment.entity';
+
+// Add interface for temporary bookings
+interface LocalStorageBooking {
+  bookingId: string;
+  status: BookingStatus;
+  checkInDate: Date;
+  checkOutDate: Date;
+  numberOfGuests: number;
+  specialRequests?: string;
+  user: Partial<User>;
+  room: {
+    id: number | string;
+    roomNumber: string;
+    type: RoomType | string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
 
 /**
  * Controller for managing hotel bookings
@@ -46,6 +73,22 @@ import {
 @Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
+
+  /**
+   * Helper method to convert status string to BookingStatus enum
+   */
+  private getBookingStatusFromString(statusValue: string): BookingStatus {
+    switch(statusValue.toLowerCase()) {
+      case 'confirmed':
+        return BookingStatus.CONFIRMED;
+      case 'cancelled':
+        return BookingStatus.CANCELLED;
+      case 'completed':
+        return BookingStatus.COMPLETED;
+      default:
+        return BookingStatus.PENDING;
+    }
+  }
 
   /**
    * Creates a new booking
@@ -108,7 +151,7 @@ export class BookingsController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data or dates' })
   @ApiResponse({ status: 404, description: 'Not Found - User or room not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  async create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: User): Promise<Booking | any> {
+  async create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: User): Promise<Booking | LocalStorageBooking> {
     try {
       console.log('Creating new booking with data:', createBookingDto);
       
@@ -142,7 +185,7 @@ export class BookingsController {
   /**
    * Creates a mock booking for frontend compatibility when database storage fails
    */
-  private createLocalStorageBooking(bookingData: any, user?: User): any {
+  private createLocalStorageBooking(bookingData: CreateBookingDto, user?: User): LocalStorageBooking {
     const bookingId = `booking-${Date.now()}`;
     
     return {
@@ -161,7 +204,7 @@ export class BookingsController {
       room: {
         id: bookingData.roomId,
         roomNumber: String(bookingData.roomId),
-        roomType: 'standard'
+        type: 'standard'
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -201,7 +244,7 @@ export class BookingsController {
             room: {
               id: 2,
               roomNumber: '101',
-              roomType: 'deluxe',
+              type: 'deluxe',
             },
             createdAt: '2023-04-05T12:00:00Z',
             updatedAt: '2023-04-05T12:00:00Z',
@@ -221,7 +264,7 @@ export class BookingsController {
             room: {
               id: 3,
               roomNumber: '202',
-              roomType: 'standard',
+              type: 'standard',
             },
             createdAt: '2023-04-05T14:30:00Z',
             updatedAt: '2023-04-05T14:30:00Z',
@@ -333,8 +376,7 @@ export class BookingsController {
           room: {
             id: 2,
             roomNumber: '101',
-            roomType: 'deluxe',
-            pricePerNight: 150.0,
+            type: 'deluxe',
           },
           payment: {
             id: 1,
@@ -462,9 +504,9 @@ export class BookingsController {
   })
   async update(
     @Param('id') id: string,
-    @Body() updateData: any,
+    @Body() updateData: UpdateBookingDto,
     @CurrentUser() user?: User,
-  ): Promise<any> {
+  ): Promise<Booking | LocalStorageBooking> {
     console.log(`Handling update for booking ID: ${id} with data:`, updateData);
     
     // Check if id is a number or a string with prefix 'booking-'
@@ -483,17 +525,19 @@ export class BookingsController {
           
           switch(statusValue) {
             case 'confirmed':
-              updateData.status = BookingStatus.CONFIRMED;
+              bookingStatus = BookingStatus.CONFIRMED;
               break;
             case 'cancelled':
-              updateData.status = BookingStatus.CANCELLED;
+              bookingStatus = BookingStatus.CANCELLED;
               break;
             case 'completed':
-              updateData.status = BookingStatus.COMPLETED;
+              bookingStatus = BookingStatus.COMPLETED;
               break;
             default:
-              updateData.status = BookingStatus.PENDING;
+              bookingStatus = BookingStatus.PENDING;
           }
+          
+          updateData.status = bookingStatus;
         }
       }
       
@@ -525,20 +569,23 @@ export class BookingsController {
           // Otherwise, if it's a string, convert it
           else if (typeof updateData.status === 'string') {
             const statusValue = updateData.status.toLowerCase();
+            let bookingStatus: BookingStatus;
             
             switch(statusValue) {
               case 'confirmed':
-                updateData.status = BookingStatus.CONFIRMED;
+                bookingStatus = BookingStatus.CONFIRMED;
                 break;
               case 'cancelled':
-                updateData.status = BookingStatus.CANCELLED;
+                bookingStatus = BookingStatus.CANCELLED;
                 break;
               case 'completed':
-                updateData.status = BookingStatus.COMPLETED;
+                bookingStatus = BookingStatus.COMPLETED;
                 break;
               default:
-                updateData.status = BookingStatus.PENDING;
+                bookingStatus = BookingStatus.PENDING;
             }
+            
+            updateData.status = bookingStatus;
           }
         }
         
@@ -563,9 +610,9 @@ export class BookingsController {
    */
   private handleLocalStorageBooking(
     id: string, 
-    updateData: any, 
+    updateData: Partial<Booking>, 
     user?: User
-  ): any {
+  ): LocalStorageBooking {
     // Convert string status to enum if present
     let bookingStatus: BookingStatus = BookingStatus.PENDING;
     if (updateData.status) {
@@ -614,7 +661,7 @@ export class BookingsController {
       room: {
         id: 1,
         roomNumber: id.replace('booking-', ''),
-        roomType: 'standard'
+        type: 'standard'
       },
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
@@ -656,11 +703,13 @@ export class BookingsController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid status' })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
+  @ApiResponse({ status: 403, description: 'Forbidden - User not allowed to update this booking' })
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: { status: string },
     @CurrentUser() user?: User,
-  ): Promise<any> {
+  ): Promise<Booking | LocalStorageBooking> {
     console.log(`Handling status update for booking ID: ${id} with status: ${updateStatusDto.status}`);
     
     // Just delegate to the main update handler
@@ -717,11 +766,8 @@ export class BookingsController {
   })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Can only cancel own bookings unless admin',
-  })
-  async cancelBooking(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking | any> {
+  @ApiResponse({ status: 403, description: 'Forbidden - User not allowed to cancel this booking' })
+  async cancelBooking(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking | LocalStorageBooking> {
     // Check if id is a localStorage format ID
     if (/^booking-\d+$/.test(id)) {
       // Mock response for localStorage IDs

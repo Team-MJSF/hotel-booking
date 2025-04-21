@@ -2,20 +2,22 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { RoomTypesController } from './room-types.controller';
 import { RoomTypesService } from './room-types.service';
 import { CreateRoomTypeDto, UpdateRoomTypeDto } from './dto/room-type.dto';
+import { RoomType } from './entities/room-type.entity';
 
 describe('RoomTypesController', () => {
   let controller: RoomTypesController;
   let service: RoomTypesService;
 
   // Simple mock data
-  const mockRoomType = {
+  const mockRoomType: Partial<RoomType> = {
     id: 1,
     name: 'Standard Room',
     code: 'standard',
     description: 'A simple standard room',
     pricePerNight: 100,
     maxGuests: 2,
-    amenities: ['wifi', 'tv']
+    displayOrder: 1,
+    imageUrl: 'https://example.com/image.jpg'
   };
 
   beforeEach(async () => {

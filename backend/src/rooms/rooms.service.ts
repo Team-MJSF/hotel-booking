@@ -6,7 +6,6 @@ import { CreateRoomDto } from './dto/create-room.dto';
 import { UpdateRoomDto } from './dto/update-room.dto';
 import {
   ResourceNotFoundException,
-  ConflictException,
   DatabaseException,
 } from '../common/exceptions/hotel-booking.exception';
 import { SearchRoomsDto, SortField, SortOrder } from './dto/search-rooms.dto';

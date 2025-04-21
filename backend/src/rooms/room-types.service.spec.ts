@@ -6,11 +6,11 @@ import { RoomType } from './entities/room-type.entity';
 import { CreateRoomTypeDto, UpdateRoomTypeDto } from './dto/room-type.dto';
 import {
   ResourceNotFoundException,
-  ConflictException,
   DatabaseException,
+  ConflictException
 } from '../common/exceptions/hotel-booking.exception';
 
-type MockRepository<T = any> = Partial<Record<keyof Repository<T>, jest.Mock>>;
+type MockRepository<T = RoomType> = Partial<Record<keyof Repository<T>, jest.Mock>>;
 
 describe('RoomTypesService', () => {
   let service: RoomTypesService;

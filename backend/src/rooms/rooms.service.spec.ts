@@ -8,7 +8,6 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { SortField, SortOrder } from './dto/search-rooms.dto';
 import {
   ResourceNotFoundException,
-  ConflictException,
   DatabaseException,
 } from '../common/exceptions/hotel-booking.exception';
 import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
