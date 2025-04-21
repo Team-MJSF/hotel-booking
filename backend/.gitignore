@@ -5,6 +5,7 @@ dist-migrations/
 *.d.ts
 /dist
 
+
 # Environment variables
 .env
 .env.*
