@@ -95,4 +95,12 @@ export class Booking extends BaseEntity {
     required: false
   })
   payment: Payment;
+
+  @Column({ name: 'is_temporary', default: false })
+  @ApiProperty({
+    description: 'Flag indicating if this is a temporary booking that needs confirmation',
+    required: false,
+    default: false,
+  })
+  isTemporary: boolean;
 }

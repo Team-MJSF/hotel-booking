@@ -45,24 +45,6 @@ import {
   Currency,
 } from '../payments/entities/payment.entity';
 
-// Add interface for temporary bookings
-interface LocalStorageBooking {
-  bookingId: string;
-  status: BookingStatus;
-  checkInDate: Date;
-  checkOutDate: Date;
-  numberOfGuests: number;
-  specialRequests?: string;
-  user: Partial<User>;
-  room: {
-    id: number | string;
-    roomNumber: string;
-    type: RoomType | string;
-  };
-  createdAt: string;
-  updatedAt: string;
-}
-
 /**
  * Controller for managing hotel bookings
  * Provides endpoints for CRUD operations on bookings
@@ -145,6 +127,7 @@ export class BookingsController {
           status: 'pending',
           createdAt: '2023-04-05T12:00:00Z',
           updatedAt: '2023-04-05T12:00:00Z',
+          isTemporary: false,
         },
       },
     },
@@ -152,7 +135,7 @@ export class BookingsController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data or dates' })
   @ApiResponse({ status: 404, description: 'Not Found - User or room not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  async create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: User): Promise<Booking | LocalStorageBooking> {
+  async create(@Body() createBookingDto: CreateBookingDto, @CurrentUser() user?: User): Promise<Booking> {
     try {
       console.log('Creating new booking with data:', createBookingDto);
       
@@ -162,20 +145,14 @@ export class BookingsController {
         createBookingDto.userId = user.id;
       }
       
-      // Validate room ID - check if it's a numeric ID or a string ID (for frontend compatibility)
-      if (typeof createBookingDto.roomId === 'string' && isNaN(Number(createBookingDto.roomId))) {
-        // For string room IDs that are not numeric, create a mock response
-        console.log(`Handling non-standard room ID format: ${createBookingDto.roomId}`);
-        return this.createLocalStorageBooking(createBookingDto, user);
-      }
-      
       try {
+        // Create a proper booking in the database
         return await this.bookingsService.create(createBookingDto);
       } catch (dbError) {
         console.error('Database booking creation failed:', dbError);
         
-        // For any error in booking creation, provide a mock response to maintain frontend compatibility
-        return this.createLocalStorageBooking(createBookingDto, user);
+        // For any error in booking creation, create a temporary booking
+        return await this.createTemporaryBooking(createBookingDto, user);
       }
     } catch (error) {
       console.error('Error in create booking handler:', error);
@@ -184,32 +161,24 @@ export class BookingsController {
   }
   
   /**
-   * Creates a mock booking for frontend compatibility when database storage fails
+   * Creates a temporary booking in the database
+   * This is used when regular booking creation fails but we want to preserve the booking intent
    */
-  private createLocalStorageBooking(bookingData: CreateBookingDto, user?: User): LocalStorageBooking {
-    const bookingId = `booking-${Date.now()}`;
-    
-    return {
-      bookingId: bookingId,
-      status: BookingStatus.PENDING,
-      checkInDate: bookingData.checkInDate,
-      checkOutDate: bookingData.checkOutDate,
-      numberOfGuests: bookingData.numberOfGuests,
-      specialRequests: bookingData.specialRequests || '',
-      user: user ? {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email
-      } : { id: bookingData.userId },
-      room: {
-        id: bookingData.roomId,
-        roomNumber: String(bookingData.roomId),
-        type: 'standard'
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
+  private async createTemporaryBooking(bookingData: CreateBookingDto, user?: User): Promise<Booking> {
+    try {
+      // Create a modified booking DTO with the temporary flag
+      const temporaryBookingDto = {
+        ...bookingData,
+        isTemporary: true
+      };
+      
+      // Try to create the booking with a more lenient approach
+      // This might bypass some validations but ensures the booking is recorded
+      return await this.bookingsService.createTemporary(temporaryBookingDto, user);
+    } catch (error) {
+      console.error('Failed to create even a temporary booking:', error);
+      throw new DatabaseException('Failed to create booking, please try again later', error as Error);
+    }
   }
 
   /**
@@ -439,251 +408,93 @@ export class BookingsController {
   @Patch(':id')
   @ApiOperation({
     summary: 'Update a booking',
-    description:
-      'Updates an existing booking with the provided details. Can be used to modify dates, room, number of guests, or cancel a booking. Users can only update their own bookings, while admins can update any booking.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Booking ID (can be numeric or string)',
-    example: 1,
+    description: 'Updates an existing booking with new details',
   })
   @ApiBody({
-    schema: {
-      type: 'object',
-      properties: {
-        status: {
-          type: 'string',
-          enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-          example: 'confirmed',
-        },
-        checkInDate: {
-          type: 'string',
-          format: 'date-time',
-          example: '2023-05-16T14:00:00Z',
-        },
-        checkOutDate: {
-          type: 'string',
-          format: 'date-time',
-          example: '2023-05-21T11:00:00Z',
-        },
-        numberOfGuests: {
-          type: 'number',
-          example: 2,
-        },
-        specialRequests: {
-          type: 'string',
-          example: 'Non-smoking room',
-        },
-      },
-    },
+    type: UpdateBookingDto,
+    description: 'Booking update data',
   })
   @ApiResponse({
     status: 200,
     description: 'The booking has been successfully updated',
     type: Booking,
-    content: {
-      'application/json': {
-        example: {
-          bookingId: 1,
-          checkInDate: '2023-05-16T14:00:00Z',
-          checkOutDate: '2023-05-21T11:00:00Z',
-          numberOfGuests: 2,
-          specialRequests: 'Non-smoking room',
-          status: 'confirmed',
-          createdAt: '2023-04-05T12:00:00Z',
-          updatedAt: '2023-04-05T15:30:00Z',
-        },
-      },
-    },
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid input data or dates' })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
   @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  @ApiResponse({
-    status: 403,
-    description: 'Forbidden - Can only update own bookings unless admin',
-  })
   async update(
     @Param('id') id: string,
     @Body() updateData: UpdateBookingDto,
     @CurrentUser() user?: User,
-  ): Promise<Booking | LocalStorageBooking> {
-    console.log(`Handling update for booking ID: ${id} with data:`, updateData);
-    
-    // Check if id is a number or a string with prefix 'booking-'
-    if (/^booking-\d+$/.test(id)) {
-      // For localStorage IDs, we need to provide a mock response
-      // Convert status string to enum if present
-      if (updateData.status) {
-        // If updateData.status is already a valid BookingStatus enum value, keep it
-        if (Object.values(BookingStatus).includes(updateData.status)) {
-          // It's already a valid enum value
-        } 
-        // Otherwise, if it's a string, convert it
-        else if (typeof updateData.status === 'string') {
-          const statusValue = updateData.status.toLowerCase();
-          let bookingStatus: BookingStatus;
-          
-          switch(statusValue) {
-            case 'confirmed':
-              bookingStatus = BookingStatus.CONFIRMED;
-              break;
-            case 'cancelled':
-              bookingStatus = BookingStatus.CANCELLED;
-              break;
-            case 'completed':
-              bookingStatus = BookingStatus.COMPLETED;
-              break;
-            default:
-              bookingStatus = BookingStatus.PENDING;
-          }
-          
-          updateData.status = bookingStatus;
-        }
-      }
+  ): Promise<Booking> {
+    try {
+      // Parse the ID - if it's not a valid number, it will throw an error
+      const bookingId = parseInt(id, 10);
       
-      return this.handleLocalStorageBooking(id, updateData, user);
-    } else {
-      // This is a numeric ID from the database
+      // First check if booking exists and if user has permission
       try {
-        const bookingId = parseInt(id, 10);
-        
-        // Validate bookingId is a valid number
-        if (isNaN(bookingId) || bookingId <= 0) {
-          console.log(`Invalid booking ID format: ${id}, providing mock response`);
-          return this.handleLocalStorageBooking(id, updateData, user);
-        }
-        
         const booking = await this.bookingsService.findOne(bookingId);
         
-        // Only allow users to update their own bookings or admins to update any booking
-        if (user && user.role !== UserRole.ADMIN && booking.user && booking.user.id !== user.id) {
-          throw new NestForbiddenException('You can only update your own bookings');
+        // Only allow users to update their own bookings unless they're an admin
+        if (user && booking.user.id !== user.id && user.role !== UserRole.ADMIN) {
+          throw new ForbiddenException('You do not have permission to update this booking');
         }
         
-        // Convert status string to enum if present
-        if (updateData.status) {
-          // If updateData.status is already a valid BookingStatus enum value, keep it
-          if (Object.values(BookingStatus).includes(updateData.status)) {
-            // It's already a valid enum value
-          } 
-          // Otherwise, if it's a string, convert it
-          else if (typeof updateData.status === 'string') {
-            const statusValue = updateData.status.toLowerCase();
-            let bookingStatus: BookingStatus;
-            
-            switch(statusValue) {
-              case 'confirmed':
-                bookingStatus = BookingStatus.CONFIRMED;
-                break;
-              case 'cancelled':
-                bookingStatus = BookingStatus.CANCELLED;
-                break;
-              case 'completed':
-                bookingStatus = BookingStatus.COMPLETED;
-                break;
-              default:
-                bookingStatus = BookingStatus.PENDING;
-            }
-            
-            updateData.status = bookingStatus;
-          }
+        // Convert status string to enum if needed
+        if (updateData.status && typeof updateData.status === 'string') {
+          updateData.status = this.getBookingStatusFromString(updateData.status);
         }
         
-        return await this.bookingsService.update(bookingId, updateData);
+        // If this is a temporary booking being confirmed, update the flag
+        if (booking.isTemporary && updateData.status === BookingStatus.CONFIRMED) {
+          updateData.isTemporary = false;
+        }
+        
+        // Create a properly typed update DTO
+        const typedUpdateData: UpdateBookingDto & { status?: BookingStatus } = {
+          ...updateData,
+          status: updateData.status as BookingStatus
+        };
+        
+        return await this.bookingsService.update(bookingId, typedUpdateData);
       } catch (error) {
-        // If the booking ID doesn't exist in the database but follows a valid format
-        // Provide a fallback response for frontend compatibility
-        if (error.message && error.message.includes('not found')) {
-          console.log(`Booking ${id} not found, providing mock response`);
-          return this.handleLocalStorageBooking(id, updateData, user);
+        if (error instanceof ResourceNotFoundException) {
+          // If booking not found, create a new temporary booking instead
+          console.warn(`Booking ${id} not found for update, will create new temporary booking`);
+          const createDto: CreateBookingDto = {
+            userId: updateData.userId || (user ? user.id : 0),
+            roomId: updateData.roomId || 0,
+            checkInDate: updateData.checkInDate || new Date(),
+            checkOutDate: updateData.checkOutDate || new Date(Date.now() + 86400000), // tomorrow
+            numberOfGuests: updateData.numberOfGuests || 1,
+            specialRequests: updateData.specialRequests
+          };
+          return await this.createTemporaryBooking(createDto, user);
         }
-        
-        console.error(`Error updating booking ${id}:`, error);
         throw error;
       }
-    }
-  }
-  
-  /**
-   * Handle booking updates for localStorage IDs
-   * This method provides API compatibility with frontend localStorage fallback
-   */
-  private handleLocalStorageBooking(
-    id: string, 
-    updateData: Partial<Booking>, 
-    user?: User
-  ): LocalStorageBooking {
-    // Convert string status to enum if present
-    let bookingStatus: BookingStatus = BookingStatus.PENDING;
-    if (updateData.status) {
-      // If updateData.status is already a BookingStatus enum, use it directly
-      if (Object.values(BookingStatus).includes(updateData.status)) {
-        // No conversion needed
+    } catch (error) {
+      console.error('Error in update booking handler:', error);
+      if (error instanceof ForbiddenException || 
+          error instanceof BookingValidationException ||
+          error instanceof ResourceNotFoundException ||
+          error instanceof DatabaseException) {
+        throw error;
       }
-      // Otherwise, check if it's a string we need to convert
-      else if (typeof updateData.status === 'string') {
-        const statusValue = updateData.status.toLowerCase();
-        let bookingStatus: BookingStatus;
-        
-        switch(statusValue) {
-          case 'confirmed':
-            bookingStatus = BookingStatus.CONFIRMED;
-            break;
-          case 'cancelled':
-            bookingStatus = BookingStatus.CANCELLED;
-            break;
-          case 'completed':
-            bookingStatus = BookingStatus.COMPLETED;
-            break;
-          default:
-            bookingStatus = BookingStatus.PENDING;
-        }
-        
-        updateData.status = bookingStatus;
-      }
+      throw new DatabaseException('Failed to update booking', error as Error);
     }
-    
-    // Create a mock booking response for localStorage IDs
-    // This allows the frontend to work even when the booking wasn't created in the database
-    return {
-      bookingId: id,
-      status: bookingStatus,
-      checkInDate: updateData.checkInDate || new Date(),
-      checkOutDate: updateData.checkOutDate || new Date(Date.now() + 86400000), // tomorrow
-      numberOfGuests: updateData.numberOfGuests || 2,
-      specialRequests: updateData.specialRequests || '',
-      user: user ? {
-        id: user.id,
-        firstName: user.firstName,
-        lastName: user.lastName,
-        email: user.email
-      } : null,
-      room: {
-        id: 1,
-        roomNumber: id.replace('booking-', ''),
-        type: 'standard'
-      },
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
   }
 
   /**
-   * Updates a booking's status
+   * Updates the status of a booking
    * @param id - The ID of the booking to update
-   * @param updateStatusDto - The new status data
+   * @param updateStatusDto - The new status for the booking
    * @returns Promise<Booking> The updated booking
    */
   @Patch(':id/status')
   @ApiOperation({
-    summary: 'Update a booking status',
-    description: 'Updates a booking\'s status (confirmed, cancelled, etc)',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Booking ID (can be numeric or string)',
-    example: 1,
+    summary: 'Update booking status',
+    description: 'Updates the status of an existing booking',
   })
   @ApiBody({
     schema: {
@@ -692,7 +503,7 @@ export class BookingsController {
         status: {
           type: 'string',
           enum: ['pending', 'confirmed', 'cancelled', 'completed'],
-          example: 'confirmed',
+          description: 'The new status for the booking',
         },
       },
     },
@@ -704,17 +515,35 @@ export class BookingsController {
   })
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid status' })
   @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  @ApiResponse({ status: 403, description: 'Forbidden - User not allowed to update this booking' })
   async updateStatus(
     @Param('id') id: string,
     @Body() updateStatusDto: { status: string },
     @CurrentUser() user?: User,
-  ): Promise<Booking | LocalStorageBooking> {
-    console.log(`Handling status update for booking ID: ${id} with status: ${updateStatusDto.status}`);
-    
-    // Just delegate to the main update handler
-    return this.update(id, { status: updateStatusDto.status }, user);
+  ): Promise<Booking> {
+    // Simply call the update method with the status
+    return this.update(id, updateStatusDto, user);
+  }
+  
+  /**
+   * Cancels a booking
+   * @param id - The ID of the booking to cancel
+   * @returns Promise<Booking> The cancelled booking
+   */
+  @Patch(':id/cancel')
+  @ApiOperation({
+    summary: 'Cancel a booking',
+    description: 'Cancels an existing booking',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'The booking has been successfully cancelled',
+    type: Booking,
+  })
+  @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
+  async cancelBooking(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking> {
+    // Set the status to cancelled and call the update method
+    return this.update(id, { status: BookingStatus.CANCELLED }, user);
   }
 
   /**
@@ -743,66 +572,5 @@ export class BookingsController {
   @ApiResponse({ status: 403, description: 'Forbidden - User is not an admin' })
   remove(@Param('id') id: string): Promise<void> {
     return this.bookingsService.remove(+id);
-  }
-
-  /**
-   * Cancels a booking
-   * @param id - The ID of the booking to cancel
-   * @returns Promise<Booking> The updated booking
-   */
-  @Post(':id/cancel')
-  @ApiOperation({
-    summary: 'Cancel a booking',
-    description: 'Cancels an existing booking. Users can only cancel their own bookings, while admins can cancel any booking.',
-  })
-  @ApiParam({
-    name: 'id',
-    description: 'Booking ID',
-    example: 1,
-  })
-  @ApiResponse({
-    status: 200,
-    description: 'The booking has been successfully cancelled',
-    type: Booking,
-  })
-  @ApiResponse({ status: 404, description: 'Not Found - Booking not found' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - User not authenticated' })
-  @ApiResponse({ status: 403, description: 'Forbidden - User not allowed to cancel this booking' })
-  async cancelBooking(@Param('id') id: string, @CurrentUser() user?: User): Promise<Booking | LocalStorageBooking> {
-    // Check if id is a localStorage format ID
-    if (/^booking-\d+$/.test(id)) {
-      // Mock response for localStorage IDs
-      return this.handleLocalStorageBooking(id, { status: BookingStatus.CANCELLED }, user);
-    }
-    
-    try {
-      const bookingId = parseInt(id, 10);
-      
-      // Validate bookingId is a valid number
-      if (isNaN(bookingId) || bookingId <= 0) {
-        console.log(`Invalid booking ID format: ${id}, providing mock response`);
-        return this.handleLocalStorageBooking(id, { status: BookingStatus.CANCELLED }, user);
-      }
-      
-      const booking = await this.bookingsService.findOne(bookingId);
-      
-      // Only allow users to cancel their own bookings or admins to cancel any booking
-      if (user && user.role !== UserRole.ADMIN && booking.user?.id !== user.id) {
-        throw new NestForbiddenException('You can only cancel your own bookings');
-      }
-      
-      // Update the booking status to cancelled
-      return await this.bookingsService.update(bookingId, { status: BookingStatus.CANCELLED });
-    } catch (error) {
-      // If the booking ID doesn't exist in the database but follows a valid format
-      // Provide a fallback response for frontend compatibility
-      if (error.message && error.message.includes('not found')) {
-        console.log(`Booking ${id} not found, providing mock response`);
-        return this.handleLocalStorageBooking(id, { status: BookingStatus.CANCELLED }, user);
-      }
-      
-      console.error(`Error cancelling booking ${id}:`, error);
-      throw error;
-    }
   }
 }

@@ -1,7 +1,7 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateBookingDto } from './create-booking.dto';
 import { BookingStatus } from '../entities/booking.entity';
-import { IsEnum, IsOptional } from 'class-validator';
+import { IsEnum, IsOptional, IsBoolean } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
 /**
@@ -21,4 +21,15 @@ export class UpdateBookingDto extends PartialType(CreateBookingDto) {
   @IsOptional()
   @IsEnum(BookingStatus)
   status?: BookingStatus | string;
+
+  /**
+   * Optional flag to indicate if this is a temporary booking
+   */
+  @ApiPropertyOptional({
+    description: 'Flag indicating if this is a temporary booking',
+    example: false
+  })
+  @IsOptional()
+  @IsBoolean()
+  isTemporary?: boolean;
 }
