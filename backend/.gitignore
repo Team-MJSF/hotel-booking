@@ -11,6 +11,10 @@ dist-migrations/
 .env.*
 !.env.example
 
+# Database files
+data/
+data/*.sqlite
+
 # Logs
 logs
 *.log
