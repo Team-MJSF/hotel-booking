@@ -1,254 +1,186 @@
-# Hotel Booking Frontend
+# Hotel Booking Frontend Application
 
-A modern, responsive hotel booking application built with Next.js, TypeScript, and shadcn/ui components.
+## Overview
+This Next.js frontend application provides a complete hotel booking experience. Users can browse available room types, make and manage bookings, process mock payments, and view their booking history.
 
-## 🏨 Overview
+## Features
+- Room browsing with detailed information and images
+- Date-based availability checking
+- Secure booking process
+- Mock payment processing
+- User authentication and account management
+- Booking history and management
+- Responsive design for desktop and mobile devices
 
-This frontend application provides a complete hotel booking experience, allowing users to:
+## Technology Stack
+- **Framework**: Next.js 14 with App Router
+- **Language**: TypeScript
+- **UI Components**: shadcn/ui (built on Radix UI)
+- **Styling**: Tailwind CSS
+- **State Management**: React Context API
+- **Form Handling**: React Hook Form with Zod validation
+- **Testing**: Jest and React Testing Library
+- **Date Handling**: date-fns
+- **HTTP Client**: Axios
 
-- Browse available room types
-- Search and filter rooms based on date, occupancy, and price
-- View detailed room information
-- Make and manage bookings
-- Process mock payments
-- View booking history
-
-The application connects to a NestJS backend API for data persistence and user authentication.
-
-## 🔧 Technology Stack
-
-- **Framework**: [Next.js](https://nextjs.org/) 14 with App Router
-- **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/) (built on Radix UI)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **State Management**: React Context API and hooks
-- **Date Handling**: [date-fns](https://date-fns.org/)
-- **HTTP Client**: [Axios](https://axios-http.com/)
-- **Testing**: [Jest](https://jestjs.io/) and [React Testing Library](https://testing-library.com/docs/react-testing-library/intro/)
-
-## 📋 Prerequisites
-
-- Node.js (v18 or later)
+## Prerequisites
+- Node.js (v18.0.0 or higher)
 - npm or yarn
-- Backend API running on http://localhost:5000 (or configured via environment variables)
+- Backend API service running (see backend README)
 
-## 🚀 Getting Started
-
-### Installation
+## Installation
 
 ```bash
 # Clone the repository
 git clone <repository-url>
+
+# Navigate to project folder
 cd hotel-booking/frontend
 
 # Install dependencies
 npm install
 # or
 yarn install
-```
 
-### Environment Setup
+# Set up environment variables
+cp .env.example .env.local
+# Edit .env.local with your configuration
 
-Create a `.env.local` file in the root directory with the following content:
-
-```
-NEXT_PUBLIC_API_URL=http://localhost:5000
-NEXT_PUBLIC_AUTH_STORAGE=sessionStorage
-```
-
-Adjust the URL if your backend is running on a different port or host.
-
-### Development
-
-```bash
-# Start the development server
+# Start development server
 npm run dev
 # or
 yarn dev
 ```
 
-The application will be available at http://localhost:3000.
-
-### Build for Production
-
-```bash
-# Create an optimized production build
-npm run build
-# or
-yarn build
-
-# Start the production server
-npm start
-# or
-yarn start
-```
-
-## 📁 Project Structure
-
+## Project Structure
 ```
 frontend/
-├── public/               # Static assets
-│   └── images/           # Room and hotel images
-├── src/
-│   ├── app/              # Next.js App Router pages
-│   │   ├── about/        # About page
-│   │   ├── account/      # User account management
-│   │   ├── amenities/    # Hotel amenities page
-│   │   ├── booking/      # Booking creation flow
-│   │   ├── bookings/     # Booking management & details
-│   │   ├── contact/      # Contact page
-│   │   ├── login/        # User authentication
-│   │   ├── my-bookings/  # User booking overview
-│   │   ├── payment/      # Payment processing
-│   │   ├── register/     # User registration
-│   │   ├── rooms/        # Room listing and details
-│   │   └── page.tsx      # Homepage
-│   ├── components/       # Reusable components
-│   │   ├── layout/       # Layout components
-│   │   ├── ui/           # shadcn/ui components
-│   │   └── ...           # Application-specific components
-│   ├── context/          # React Context providers
-│   │   └── AuthContext.tsx # Authentication context
-│   ├── hooks/            # Custom React hooks
-│   ├── lib/              # Utility functions
-│   ├── services/         # API services
-│   │   └── api.ts        # API integration layer
-│   └── types/            # TypeScript type definitions
-├── .env.local            # Environment variables
-├── jest.config.ts        # Jest configuration
-├── tailwind.config.js    # Tailwind CSS configuration
-└── tsconfig.json         # TypeScript configuration
+├── app/                # Next.js App Router (pages)
+├── components/         # UI components
+├── context/            # React Context providers
+├── hooks/              # Custom React hooks
+├── lib/                # Utility functions
+├── services/           # API services
+├── types/              # TypeScript definitions
+├── public/             # Static assets
+└── __tests__/          # Test files
 ```
 
-## 🔄 Application Flow
+## Application Flow
+1. **Homepage** - Browse featured rooms and promotions
+2. **Room Listing** - View all available room types with filtering options
+3. **Room Details** - See detailed information about a specific room
+4. **Booking** - Select dates and guest information
+5. **Payment** - Enter payment details (mock process)
+6. **Confirmation** - View booking confirmation
+7. **My Bookings** - Manage existing bookings
 
-1. **User Journey**:
-   - Users browse available rooms on the rooms page
-   - Select a room and view detailed information
-   - Choose dates and guest count
-   - Click "Book Now" to proceed to payment
-   - Complete mock payment process
-   - View booking in "My Bookings" section
+## Authentication
+The application uses JWT-based authentication with these user flows:
+- Registration
+- Login
+- Password reset
+- Profile management
 
-2. **Authentication Flow**:
-   - JWT-based authentication stored in session/local storage
-   - Protected routes redirect unauthenticated users to login
-   - Auth state managed through React Context API
-   - Token refresh handling for extended sessions
+## Payment Processing
+Payment processing is mocked in this application:
+1. User enters card details
+2. Frontend validates format
+3. Mock payment is processed
+4. Booking is marked as confirmed
 
-3. **Data Flow**:
-   - API requests centralized in `services/api.ts`
-   - Responses follow consistent `ApiResponse<T>` format
-   - Error handling with graceful degradation
-   - Multiple fallback strategies for robustness
+## Data Models
 
-## 🛡️ Authentication System
-
-The application uses a JWT-based authentication system:
-
-- **Storage**: Configurable via `NEXT_PUBLIC_AUTH_STORAGE` (sessionStorage/localStorage)
-- **Context Provider**: `AuthContext` provides authentication state to all components
-- **Protected Routes**: Redirect unauthenticated users
-- **User Management**: Registration, login, and profile management
-
-```tsx
-// Example usage of authentication
-const { user, login, logout, isAuthenticated } = useAuth();
+### Room
+```typescript
+interface Room {
+  id: string;
+  name: string;
+  description: string;
+  pricePerNight: number;
+  maxGuests: number;
+  imageUrl: string;
+  amenities: string[];
+}
 ```
 
-## 💳 Payment Processing
+### Booking
+```typescript
+interface Booking {
+  id: string;
+  userId: string;
+  roomId: string;
+  checkInDate: string;
+  checkOutDate: string;
+  guestCount: number;
+  totalPrice: number;
+  status: 'PENDING' | 'CONFIRMED' | 'CANCELLED' | 'COMPLETED';
+}
+```
 
-The payment system is mocked for demonstration purposes:
+### User
+```typescript
+interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+}
+```
 
-- Credit card validation with proper formatting
-- Multiple payment method options (Credit Card, Debit Card, PayPal)
-- Robust error handling and validation
-- Success/failure state management
-- Integration with booking status updates
+## Testing
+The application includes:
+- Unit tests for components and utilities
+- Integration tests for key user flows
+- Mock service workers for API testing
 
-The payment workflow:
-1. User enters payment details
-2. Frontend validates card information
-3. Payment request sent to backend
-4. Backend processes mock payment
-5. Booking status updated to "CONFIRMED"
-6. User redirected to booking confirmation
-
-## 📊 Data Models
-
-Key TypeScript interfaces include:
-
-- **User**: Authentication and profile information
-- **Room/RoomType**: Room details, amenities, and pricing
-- **Booking**: Reservation details with dates and status
-- **Payment**: Transaction details for booking payments
-
-## 🧪 Testing Strategy
-
-The application uses Jest and React Testing Library for comprehensive testing:
-
+Run tests with:
 ```bash
 # Run all tests
 npm test
 
-# Run tests with coverage
+# Run with coverage
 npm test -- --coverage
 
-# Run specific test files
-npm test -- payment
+# Run in watch mode
+npm test -- --watch
 ```
 
-Testing principles:
-- Component isolation with proper mocking
-- User interaction simulation
-- API service mocking
-- Authentication state testing
-- Form validation testing
-- Error state verification
+## Deployment
+The application can be deployed to various platforms:
 
-## 🚀 Deployment
-
-The application can be deployed using:
-
+### Vercel (Recommended)
 ```bash
-# Build for production
-npm run build
-
-# Start production server
-npm start
+npm install -g vercel
+vercel login
+vercel
 ```
 
-For cloud deployment, consider:
-- Vercel (optimized for Next.js)
-- Netlify
-- AWS Amplify
+### Static Export
+```bash
+npm run build
+npm run export
+# Deploy the 'out' directory to your hosting provider
+```
 
-## 🔍 Troubleshooting
+## Troubleshooting
 
-Common issues and solutions:
+### Common Issues
+- **API Connection Errors**: Ensure backend is running and NEXT_PUBLIC_API_URL is correct
+- **Authentication Issues**: Clear browser storage and login again
+- **Build Failures**: Check Node.js version compatibility
 
-1. **API Connection Issues**:
-   - Verify backend is running
-   - Check `.env.local` configuration
-   - Examine browser console for CORS errors
+## Development Guidelines
+- Follow the existing component structure
+- Use TypeScript for all new code
+- Write tests for new features
+- Follow the established design patterns
 
-2. **Authentication Failures**:
-   - Clear browser storage
-   - Verify token format
-   - Check for expired tokens
+## Additional Resources
+- For detailed technical documentation, see [DEVELOPERS.md](./DEVELOPERS.md)
+- Backend API documentation is available at [API_URL]/api/docs when running the backend
 
-3. **Test Failures**:
-   - Run with `--detectOpenHandles` to find unresolved promises
-   - Check mock implementations
-   - Verify test environment setup
-
-## 📝 Development Guidelines
-
-- Follow TypeScript best practices with proper typing
-- Use functional components with hooks
-- Implement proper error handling
-- Write tests for new components
-- Follow the established component structure
-- Use the shadcn/ui component library for consistency
+## License
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 

@@ -11,16 +11,14 @@ This application provides a complete hotel booking solution with room browsing, 
 ```
 hotel-booking/
 ├── backend/                # NestJS backend application
-│   ├── src/               # Source code
-│   │   ├── auth/          # Authentication module
-│   │   ├── users/         # User management module
-│   │   ├── rooms/         # Room management module
-│   │   ├── bookings/      # Booking management module
-│   │   ├── payments/      # Payment processing module (mocked)
-│   │   ├── common/        # Shared utilities, pipes and filters
-│   │   └── database/      # Database configuration and migrations
-│   ├── test/              # Test suite
-│   └── docs/              # Documentation
+│   └── src/               # Source code
+│       ├── auth/          # Authentication module
+│       ├── users/         # User management module
+│       ├── rooms/         # Room management module
+│       ├── bookings/      # Booking management module
+│       ├── payments/      # Payment processing module (mocked)
+│       ├── common/        # Shared utilities, pipes and filters
+│       └── database/      # Database configuration and migrations
 └── frontend/              # Next.js frontend application
     ├── src/               # Source code
     │   ├── app/           # Next.js App Router pages
