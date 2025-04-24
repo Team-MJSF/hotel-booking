@@ -45,10 +45,14 @@ describe('User Flow Integration Tests', () => {
       .expect(201);
     
     expect(registerResponse.body).toMatchObject({
-      email: testUser.email,
-      firstName: testUser.firstName,
-      lastName: testUser.lastName,
-      role: UserRole.USER,
+      success: true,
+      message: 'Registration successful',
+      data: {
+        email: testUser.email,
+        firstName: testUser.firstName,
+        lastName: testUser.lastName,
+        role: UserRole.USER,
+      }
     });
     
     // Step 2: Login with registered user

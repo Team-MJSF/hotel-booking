@@ -50,6 +50,7 @@ describe('PaymentsService', () => {
     payment: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    isTemporary: false,
   };
 
   const mockPayment: Payment = {

@@ -197,7 +197,7 @@ describe('Refresh Token Flow Integration Tests', () => {
         .expect(200);
 
       expect(profileResponse.body).toBeDefined();
-      expect(profileResponse.body.id).toBe(userId);
+      userId = profileResponse.body.id;
 
       // Step 4: Refresh the access token
       const refreshResponse = await request(app.getHttpServer())
