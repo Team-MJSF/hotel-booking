@@ -429,8 +429,8 @@ export class BookingsController {
   ): Promise<Booking> {
     try {
       // Parse the ID - if it's not a valid number, it will throw an error
-      const bookingId = parseInt(id, 10);
-      
+        const bookingId = parseInt(id, 10);
+        
       // First check if booking exists and if user has permission
       try {
         const booking = await this.bookingsService.findOne(bookingId);
@@ -484,7 +484,7 @@ export class BookingsController {
       throw new DatabaseException('Failed to update booking', error as Error);
     }
   }
-
+  
   /**
    * Updates the status of a booking
    * @param id - The ID of the booking to update

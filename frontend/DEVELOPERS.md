@@ -303,3 +303,271 @@ Environment variables are managed through `.env.local`:
 
 - `NEXT_PUBLIC_API_URL`: Backend API URL
 - `NEXT_PUBLIC_AUTH_STORAGE`: Authentication storage (sessionStorage/localStorage)
+
+# Booking System - Technical Documentation
+
+This document provides detailed technical specifications for the booking system implementation within the hotel booking application. It documents the implementation details, data flow, and integration points for developers working on the system.
+
+## Booking Data Model
+
+### Core Booking Interface
+```typescript
+interface Booking {
+  id: number;
+  user: {
+    id: number;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+  };
+  room: {
+    id: number;
+    roomNumber: string;
+    type: string;
+  };
+  checkInDate: string; // ISO date string
+  checkOutDate: string; // ISO date string
+  numberOfGuests: number;
+  status: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  specialRequests?: string;
+  payment?: {
+    paymentId: number;
+    amount: number;
+    status: string;
+  };
+  isTemporary: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+### Create Booking Request
+```typescript
+interface CreateBookingRequest {
+  roomId: number;
+  checkInDate: string; // ISO date string
+  checkOutDate: string; // ISO date string
+  numberOfGuests: number;
+  specialRequests?: string;
+}
+```
+
+### Update Booking Request
+```typescript
+interface UpdateBookingRequest {
+  checkInDate?: string;
+  checkOutDate?: string;
+  numberOfGuests?: number;
+  status?: 'pending' | 'confirmed' | 'cancelled' | 'completed';
+  specialRequests?: string;
+}
+```
+
+## API Integration
+
+### BookingService
+
+The `BookingService` class handles all booking-related API calls:
+
+```typescript
+class BookingService {
+  // Get all bookings for the current user
+  async getUserBookings(): Promise<Booking[]> 
+  
+  // Get a specific booking by ID
+  async getBooking(id: number): Promise<Booking>
+  
+  // Create a new booking
+  async createBooking(data: CreateBookingRequest): Promise<Booking>
+  
+  // Update an existing booking
+  async updateBooking(id: number, data: UpdateBookingRequest): Promise<Booking>
+  
+  // Cancel a booking
+  async cancelBooking(id: number): Promise<Booking>
+}
+```
+
+### API Endpoints
+
+| Method | Endpoint                | Description                    | Auth Required |
+|--------|-------------------------|--------------------------------|---------------|
+| GET    | `/bookings`             | Get all bookings               | Yes           |
+| GET    | `/bookings/user`        | Get current user bookings      | Yes           |
+| GET    | `/bookings/:id`         | Get a specific booking         | Yes           |
+| POST   | `/bookings`             | Create a new booking           | Yes           |
+| PATCH  | `/bookings/:id`         | Update a booking               | Yes           |
+| PATCH  | `/bookings/:id/status`  | Update booking status          | Yes           |
+| PATCH  | `/bookings/:id/cancel`  | Cancel a booking               | Yes           |
+| DELETE | `/bookings/:id`         | Delete a booking (Admin only)  | Yes           |
+
+## Component Architecture
+
+### Booking Flow Components
+
+```
+app/
+├── rooms/
+│   ├── [id]/
+│   │   └── page.tsx         # Room details & booking initiation
+├── booking/
+│   ├── page.tsx             # Booking form
+│   ├── confirmation.tsx     # Booking confirmation
+│   └── hooks/
+│       └── useBookingForm.ts # Form state management
+├── payment/
+│   └── page.tsx             # Payment processing
+└── my-bookings/
+    ├── page.tsx             # List user bookings
+    └── [id]/
+        └── page.tsx         # Booking details
+```
+
+### Key Components
+
+1. **RoomBookingForm**: Handles date selection, guest count, and initial booking creation
+2. **BookingConfirmation**: Displays booking details before payment
+3. **PaymentForm**: Processes payment for the booking
+4. **BookingsList**: Displays user bookings with filtering and sorting options
+5. **BookingDetail**: Shows detailed information about a specific booking
+
+## State Management
+
+### Booking Context
+
+```typescript
+interface BookingContextType {
+  currentBooking: Booking | null;
+  setCurrentBooking: (booking: Booking | null) => void;
+  isCreatingBooking: boolean;
+  bookingError: Error | null;
+  createBooking: (data: CreateBookingRequest) => Promise<Booking>;
+  updateBookingStatus: (id: number, status: string) => Promise<Booking>;
+  cancelBooking: (id: number) => Promise<Booking>;
+}
+```
+
+## Error Handling
+
+### Booking-specific Error Types
+
+```typescript
+class BookingValidationError extends Error {
+  public validationErrors: { field: string; message: string }[];
+  
+  constructor(message: string, validationErrors: { field: string; message: string }[]) {
+    super(message);
+    this.validationErrors = validationErrors;
+    this.name = 'BookingValidationError';
+  }
+}
+
+class BookingNotFoundError extends Error {
+  constructor(bookingId: number) {
+    super(`Booking with ID ${bookingId} not found`);
+    this.name = 'BookingNotFoundError';
+  }
+}
+```
+
+## Frontend Business Logic
+
+### Date Validation
+
+```typescript
+const validateBookingDates = (checkIn: Date, checkOut: Date): boolean => {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  
+  // Check-in must be today or in the future
+  if (checkIn < today) {
+    return false;
+  }
+  
+  // Check-out must be after check-in
+  if (checkOut <= checkIn) {
+    return false;
+  }
+  
+  return true;
+};
+```
+
+### Price Calculation
+
+```typescript
+const calculateTotalPrice = (
+  checkIn: Date, 
+  checkOut: Date, 
+  pricePerNight: number
+): number => {
+  const diffTime = Math.abs(checkOut.getTime() - checkIn.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays * pricePerNight;
+};
+```
+
+## Testing Strategy
+
+### Unit Tests
+
+1. **Service Tests**: Verify API calls, error handling, and response parsing
+2. **Hook Tests**: Test custom hooks for form validation and state management
+3. **Utility Tests**: Validate date functions, price calculations, etc.
+
+### Integration Tests
+
+1. **Booking Flow**: Test complete booking process from room selection to confirmation
+2. **Date Picker**: Ensure proper date selection and validation
+3. **Availability Checking**: Verify room availability logic
+
+### Mock Approaches
+
+```typescript
+// Mock booking service for testing components
+const mockBookingService = {
+  getUserBookings: jest.fn().mockResolvedValue([...mockBookings]),
+  getBooking: jest.fn().mockImplementation((id) => {
+    const booking = mockBookings.find(b => b.id === id);
+    return booking ? Promise.resolve(booking) : Promise.reject(new Error('Not found'));
+  }),
+  createBooking: jest.fn().mockImplementation((data) => {
+    return Promise.resolve({
+      id: Math.floor(Math.random() * 1000),
+      ...data,
+      status: 'pending',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    });
+  }),
+  updateBooking: jest.fn().mockImplementation((id, data) => {
+    return Promise.resolve({
+      id,
+      ...data,
+      updatedAt: new Date().toISOString(),
+    });
+  }),
+  cancelBooking: jest.fn().mockResolvedValue({ status: 'cancelled' }),
+};
+```
+
+## Performance Considerations
+
+1. **Optimistic Updates**: Update UI immediately before API response for better UX
+2. **Memoization**: Cache booking calculations and form state
+3. **Pagination**: Implement pagination for booking history to improve load times
+4. **Lazy Loading**: Load booking details only when needed
+
+## Security Considerations
+
+1. **Input Validation**: Validate all booking inputs on the client and server
+2. **Authorization**: Ensure users can only access their own bookings
+3. **Payment Security**: Implement secure payment flow with proper validation
+4. **Data Sanitization**: Sanitize all user inputs to prevent XSS attacks
+
+## Integration with Other Modules
+
+1. **User Module**: Retrieve current user information for booking
+2. **Room Module**: Get room details and availability
+3. **Payment Module**: Process payments for bookings
+4. **Notification Module**: Send booking confirmations and reminders

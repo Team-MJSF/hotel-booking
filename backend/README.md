@@ -1,241 +1,115 @@
-# Hotel Booking System Backend
-
-A robust NestJS backend API powering the hotel booking application with comprehensive room management, booking, and payment functionality.
+# Hotel Booking System - Backend
 
 ## 🏨 Overview
 
-This backend provides a complete REST API for hotel booking operations, featuring:
+A robust and scalable backend API for a modern hotel booking system. Built with NestJS, TypeORM, and TypeScript, this system provides a complete solution for managing hotel rooms, bookings, and payments.
 
-- **User Management**: Registration, authentication, and user profiles
-- **Room Management**: Room types, individual rooms, and availability
-- **Booking System**: Create, manage, and cancel bookings
-- **Payment Processing**: Mock payment system with multiple fallback strategies
-- **API Documentation**: Comprehensive Swagger documentation
-
-## 🔧 Technology Stack
+## 🛠️ Technology Stack
 
 - **Framework**: [NestJS](https://nestjs.com/)
 - **Language**: [TypeScript](https://www.typescriptlang.org/)
-- **Database**: [SQLite](https://www.sqlite.org/) with [TypeORM](https://typeorm.io/)
+- **ORM**: [TypeORM](https://typeorm.io/)
+- **Database**: SQLite (with easy migration path to PostgreSQL or MySQL)
 - **Authentication**: JWT with refresh tokens
-- **Validation**: Class Validator & Transformer
-- **Documentation**: Swagger/OpenAPI
-- **Testing**: Jest with separate unit and integration tests
+- **API Documentation**: OpenAPI/Swagger
+- **Testing**: Jest
+- **Validation**: class-validator
+- **Error Handling**: Custom exception filters
 
 ## 📋 Prerequisites
 
-- Node.js v18+ 
-- npm
+- Node.js (v16+)
+- npm or yarn
 
-## 🚀 Getting Started
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <repository-url>
-cd hotel-booking/backend
-
-# Install dependencies
-npm install
-```
-
-### Environment Setup
-
-```bash
-# Create development and test environment files
-cp .env.example .env.development
-cp .env.example .env.test
-
-# Edit the environment variables as needed
-```
-
-### Database Initialization
-
-```bash
-# Initialize development database with seed data
-npm run init:dev
-
-# Initialize test database
-npm run init:test
-```
-
-### Running the Application
-
-```bash
-# Development mode with hot reload
-npm run dev
-
-# Production mode
-npm run build
-npm run start:prod
-```
-
-## 📁 Project Structure
+## 🔧 Project Structure
 
 ```
 src/
-├── auth/              # Authentication and authorization
-│   ├── dto/           # Data Transfer Objects
-│   ├── guards/        # JWT Auth Guards
-│   └── strategies/    # Passport strategies
-├── bookings/          # Booking management
-│   ├── dto/           # Booking DTOs
-│   ├── entities/      # Booking entity
-│   └── services/      # Booking business logic
-├── common/            # Shared utilities
-│   ├── decorators/    # Custom decorators
-│   ├── dto/           # Shared DTOs
-│   ├── entities/      # Base entities
-│   ├── exceptions/    # Custom exceptions
-│   ├── filters/       # Exception filters
-│   └── interfaces/    # Shared interfaces
-├── config/            # Application configuration
-├── database/          # Database configuration
-│   ├── migrations/    # TypeORM migrations
-│   └── seeds/         # Database seed data
-├── payments/          # Payment processing (mock)
-│   ├── dto/           # Payment DTOs
-│   ├── entities/      # Payment entity
-│   └── services/      # Payment business logic
-├── refresh-tokens/    # Refresh token management
-├── rooms/             # Room and room type management
-│   ├── dto/           # Room DTOs
-│   ├── entities/      # Room entities
-│   └── services/      # Room services
-├── users/             # User management
-│   ├── dto/           # User DTOs
-│   ├── entities/      # User entity
-│   └── services/      # User services
-├── app.module.ts      # Main application module
-└── main.ts            # Application entry point
+├── auth/                  # Authentication module
+├── bookings/              # Booking management
+├── common/                # Shared resources
+├── config/                # App configuration
+├── database/              # Database setup and seeds
+├── payments/              # Payment processing
+├── refresh-tokens/        # Token management
+├── rooms/                 # Room management
+├── users/                 # User management
+├── app.controller.ts      # Main app controller
+├── app.module.ts          # Main app module
+└── main.ts                # Application entry point
 ```
 
-## 🔄 Core Features
+## 🚀 Core Features
 
-### Authentication
+### 👤 User Management
 
-The system uses JWT-based authentication with refresh tokens:
+- User registration and authentication
+- Role-based access control (Admin, User)
+- JWT-based authorization with refresh tokens
+- Profile management
 
-- **Access Token**: Short-lived token (1 hour) for API access
-- **Refresh Token**: Long-lived token (7 days) stored in database
-- **Token Revocation**: Ability to invalidate refresh tokens
+### 🛏️ Room Management
 
-```typescript
-// Example login request
-POST /auth/login
-{
-  "email": "user@example.com",
-  "password": "password123"
-}
+- Room categories and types
+- Room availability checking
+- Room search with filters
+- Room details and amenities
 
-// Response
-{
-  "accessToken": "eyJhbG...",
-  "refreshToken": "eyJhbG...",
-  "user": {
-    "id": 1,
-    "email": "user@example.com",
-    "firstName": "John",
-    "lastName": "Doe",
-    "role": "user"
-  }
-}
-```
+### 📅 Booking System
 
-### Room Management
+- Room reservation
+- Booking lifecycle management
+- Booking confirmation and cancellation
+- Date range availability checking
 
-The system manages both room types and individual rooms:
+### 💳 Payment Processing
 
-- **Room Types**: Categories of rooms with common attributes
-- **Rooms**: Individual room instances with room numbers
-- **Availability**: Advanced availability checking with date constraints
+- Multiple payment methods
+- Payment status tracking
+- Secure payment processing
+- Receipt generation
 
-```typescript
-// Example room type
-{
-  "id": 1,
-  "name": "Deluxe King Room",
-  "description": "Spacious room with king-sized bed",
-  "basePrice": 150.00,
-  "capacity": 2,
-  "amenities": ["WiFi", "TV", "Mini-bar"]
-}
+## 🔒 Authentication Flow
 
-// Example room
-{
-  "id": 101,
-  "roomNumber": "101",
-  "floor": 1,
-  "roomTypeId": 1,
-  "status": "available"
-}
-```
-
-### Booking System
-
-The booking system handles the entire booking lifecycle:
-
-- **Create Booking**: Reserve a room for specific dates
-- **Modify Booking**: Change dates or guest information
-- **Cancel Booking**: Allow users to cancel with business rules
-- **Availability Check**: Prevent double bookings
-
-```typescript
-// Example booking creation
-POST /bookings
-{
-  "roomId": 101,
-  "checkInDate": "2023-07-15T14:00:00.000Z",
-  "checkOutDate": "2023-07-20T11:00:00.000Z",
-  "numberOfGuests": 2,
-  "specialRequests": "Room away from elevator"
-}
-```
-
-### Payment Processing
-
-The payment system provides a realistic mock implementation:
-
-- **Process Payment**: Handle payment for bookings
-- **Multiple Methods**: Support for credit cards, PayPal, etc.
-- **Refunds**: Process refunds for cancelled bookings
-- **Fallback Strategies**: Ensure payment success with multiple approaches
+1. **Registration**: Create a new user account
+2. **Login**: Authenticate and receive JWT tokens
+3. **Token Refresh**: Use refresh token to obtain a new JWT
+4. **Protected Routes**: Access restricted endpoints with valid JWT
 
 ## 🧪 Testing Strategy
 
-The project implements a comprehensive testing strategy:
-
 ### Unit Tests
-
-Isolated tests for individual components:
 
 ```bash
 # Run unit tests
 npm run test:unit
 ```
 
+Unit tests focus on:
+- Service methods
+- Controller endpoints
+- Validation logic
+- Authentication guards
+
 ### Integration Tests
 
-End-to-end tests that verify complete workflows:
-
-   ```bash
+```bash
 # Run integration tests
 npm run test:integration
 ```
 
 ### Coverage
 
-   ```bash
+```bash
 # Generate test coverage report
 npm run test:cov
-   ```
+```
 
 ## 📚 API Documentation
 
 The API is documented using Swagger/OpenAPI:
 
-   ```bash
+```bash
 # Start the server
 npm run start:dev
 
@@ -259,8 +133,11 @@ http://localhost:5000/api/docs
 
 ### Database
 - `npm run db:migrate` - Run migrations
-- `npm run db:seed` - Seed database
+- `npm run db:seed:consolidated` - Seed database with consolidated data
+- `npm run db:seed:quick` - Seed database with minimal data
 - `npm run db:revert` - Revert last migration
+- `npm run setup:dev` - Set up development environment
+- `npm run dev:reset` - Reset development database
 
 ## 🔐 Environment Variables
 
@@ -281,7 +158,7 @@ JWT_REFRESH_EXPIRATION=7d
 
 # Rate Limiting
 THROTTLE_TTL=60
-THROTTLE_LIMIT=20
+THROTTLE_LIMIT=100
 ```
 
 ## 🔍 Advanced Features
@@ -291,9 +168,13 @@ THROTTLE_LIMIT=20
 The API implements rate limiting to prevent abuse:
 
 ```typescript
-// Configure in .env
-THROTTLE_TTL=60  // Time window in seconds
-THROTTLE_LIMIT=20  // Maximum number of requests in time window
+// Configured in app.module.ts
+ThrottlerModule.forRoot([
+  {
+    ttl: 60000, // 1 minute
+    limit: 100, // 100 requests per minute
+  },
+]),
 ```
 
 ### Error Handling
@@ -316,29 +197,30 @@ Comprehensive input validation using class-validator:
 
 ```typescript
 export class CreateBookingDto {
-  @IsNumber()
-  @ApiProperty({ description: 'Room ID for the booking' })
-  roomId: number;
-
+  @IsNotEmpty()
   @IsDateString()
-  @ApiProperty({ description: 'Check-in date' })
   checkInDate: string;
 
+  @IsNotEmpty()
   @IsDateString()
-  @ApiProperty({ description: 'Check-out date' })
   checkOutDate: string;
 
+  @IsNotEmpty()
   @IsNumber()
   @Min(1)
-  @ApiProperty({ description: 'Number of guests' })
+  @Max(10)
   numberOfGuests: number;
 }
 ```
 
-## 🚀 Deployment
+## 📦 Deployment
 
-For production deployment:
+The application can be deployed to various environments:
 
-1. Set up environment variables for production
-2. Build the application: `npm run build`
-3. Start with process manager: `pm2 start dist/main.js`
+```bash
+# Build for production
+npm run build
+
+# Start production server
+npm run start:prod
+```
