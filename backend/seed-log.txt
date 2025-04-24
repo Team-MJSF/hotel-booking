@@ -1,10 +1,12 @@
-Consolidated seed started at 2025-04-17T15:17:37.128Z
+Consolidated seed started at 2025-04-17T19:23:59.579Z
 Connected to database
 rooms table exists
 room_types table exists
 bookings table exists
 payments table exists
 Seeding room types...
+Found 5 existing room types - clearing them
+Existing room types cleared.
 Added room type: Standard Room (standard)
 Added room type: Executive Room (executive)
 Added room type: Family Suite (family)

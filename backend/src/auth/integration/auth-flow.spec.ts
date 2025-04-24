@@ -161,12 +161,16 @@ describe('Auth Flow Integration Tests', () => {
         .expect(201);
 
       expect(registerResponse.body).toMatchObject({
-        email: registerTestUser.email,
-        firstName: registerTestUser.firstName,
-        lastName: registerTestUser.lastName,
-        role: UserRole.USER,
+        success: true,
+        message: 'Registration successful',
+        data: {
+          email: registerTestUser.email,
+          firstName: registerTestUser.firstName,
+          lastName: registerTestUser.lastName,
+          role: UserRole.USER,
+        }
       });
-      expect(registerResponse.body).not.toHaveProperty('password');
+      expect(registerResponse.body.data).not.toHaveProperty('password');
 
       // Test registration with mismatched passwords
       await request(app.getHttpServer())

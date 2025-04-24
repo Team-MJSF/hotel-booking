@@ -80,6 +80,7 @@ describe('BookingsService', () => {
     payment: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    isTemporary: false,
   };
 
   beforeEach(async () => {
@@ -223,24 +224,24 @@ describe('BookingsService', () => {
 
   describe('update', () => {
     it('should handle all update scenarios', async () => {
-      const validUpdateDto: UpdateBookingDto = {
+      const validUpdateDto: UpdateBookingDto & { status?: BookingStatus } = {
         checkInDate: new Date('2024-04-02'),
         checkOutDate: new Date('2024-04-06'),
         numberOfGuests: 3,
       };
 
-      const invalidUpdateDto: UpdateBookingDto = {
+      const invalidUpdateDto: UpdateBookingDto & { status?: BookingStatus } = {
         checkInDate: new Date('2024-04-06'),
         checkOutDate: new Date('2024-04-02'),
         numberOfGuests: 3,
       };
 
-      const dtoWithNewUser: UpdateBookingDto = {
+      const dtoWithNewUser: UpdateBookingDto & { status?: BookingStatus } = {
         ...validUpdateDto,
         userId: 2,
       };
 
-      const dtoWithNewRoom: UpdateBookingDto = {
+      const dtoWithNewRoom: UpdateBookingDto & { status?: BookingStatus } = {
         ...validUpdateDto,
         roomId: 2,
       };

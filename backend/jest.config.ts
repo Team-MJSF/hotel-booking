@@ -39,7 +39,7 @@ const baseConfig: JestConfigWithTsJest = {
     '!src/main.ts',
     '!src/database/migrations/**',
     '!src/database/consolidated-seed.ts',
-    '!src/database/quick-seed.ts',
+    '!src/config/**',
     '!src/database/test-utils.ts',
     '!src/database/*seed*.ts',
     '!src/config/**',

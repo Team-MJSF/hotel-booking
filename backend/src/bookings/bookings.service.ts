@@ -136,6 +136,66 @@ export class BookingsService {
   }
 
   /**
+   * Creates a temporary booking with relaxed validation
+   * This is used when regular booking creation fails
+   * @param createBookingDto - The data for creating a temporary booking
+   * @param user - The user making the booking (optional)
+   * @returns Promise<Booking> The newly created temporary booking
+   */
+  async createTemporary(createBookingDto: CreateBookingDto & { isTemporary?: boolean }, user?: User): Promise<Booking> {
+    try {
+      // Fix the dates if they're invalid
+      const now = new Date();
+      const tomorrow = new Date(now);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      
+      // Ensure there's at least a day between check-in and check-out
+      if (!createBookingDto.checkInDate || !createBookingDto.checkOutDate || 
+          createBookingDto.checkInDate >= createBookingDto.checkOutDate) {
+        createBookingDto.checkInDate = now;
+        createBookingDto.checkOutDate = tomorrow;
+      }
+
+      // Try to find user, or create a placeholder
+      let bookingUser = user;
+      if (!bookingUser && createBookingDto.userId) {
+        try {
+          bookingUser = await this.usersRepository.findOne({ where: { id: createBookingDto.userId } });
+        } catch (e) {
+          // If user not found, we'll use a partial entity below
+          console.warn(`User ${createBookingDto.userId} not found for temporary booking`);
+        }
+      }
+
+      // Try to find room, or create a placeholder
+      let room;
+      try {
+        room = await this.roomsRepository.findOne({ where: { id: createBookingDto.roomId } });
+      } catch (e) {
+        // We'll use a partial entity for room if not found
+        console.warn(`Room ${createBookingDto.roomId} not found for temporary booking`);
+      }
+
+      // Create a booking entity with minimal validation
+      const booking = this.bookingsRepository.create({
+        checkInDate: createBookingDto.checkInDate,
+        checkOutDate: createBookingDto.checkOutDate,
+        numberOfGuests: createBookingDto.numberOfGuests || 1,
+        specialRequests: createBookingDto.specialRequests,
+        status: BookingStatus.PENDING,
+        isTemporary: true, // Mark as temporary
+        user: bookingUser || { id: createBookingDto.userId || 0 } as User,
+        room: room || { id: createBookingDto.roomId || 1 } as Room,
+      });
+
+      return await this.bookingsRepository.save(booking);
+    } catch (error) {
+      console.error('Error creating temporary booking:', error);
+      throw new DatabaseException('Failed to create temporary booking', error as Error);
+    }
+  }
+
+  /**
    * Updates an existing booking
    * @param id - The ID of the booking to update
    * @param updateBookingDto - The data to update the booking with
@@ -192,6 +252,11 @@ export class BookingsService {
       if (updateBookingDto.status) {
         if (updateBookingDto.status === BookingStatus.CONFIRMED) {
           room.availabilityStatus = AvailabilityStatus.OCCUPIED;
+          
+          // If a temporary booking is being confirmed, mark it as permanent
+          if (booking.isTemporary) {
+            updatedBooking.isTemporary = false;
+          }
         } else if (
           updateBookingDto.status === BookingStatus.CANCELLED ||
           updateBookingDto.status === BookingStatus.COMPLETED
