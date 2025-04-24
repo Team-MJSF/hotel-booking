@@ -33,12 +33,35 @@ const baseConfig: JestConfigWithTsJest = {
     'src/**/*.ts',
     '!src/**/*.d.ts',
     '!src/**/*.spec.ts',
-    '!src/**/*.test.ts'
+    '!src/**/*.test.ts',
+    // Exclude infrastructure files
+    '!src/**/*.module.ts',
+    '!src/main.ts',
+    '!src/database/migrations/**',
+    '!src/database/consolidated-seed.ts',
+    '!src/config/**',
+    '!src/database/test-utils.ts',
+    '!src/database/*seed*.ts',
+    '!src/config/**',
+    '!src/common/filters/**',
+    '!**/decorators/**',
+    '!**/node_modules/**',
+    // Exclude entity files from coverage
+    '!src/**/*.entity.ts'
   ],
   // Coverage directory
   coverageDirectory: 'coverage',
   // Coverage reporters
   coverageReporters: ['text', 'lcov'],
+  // Coverage thresholds
+  coverageThreshold: {
+    global: {
+      statements: 80,
+      branches: 70,
+      functions: 80,
+      lines: 80,
+    }
+  },
   // Test environment setup
   testEnvironmentOptions: {
     url: 'http://localhost',
@@ -61,24 +84,21 @@ const baseConfig: JestConfigWithTsJest = {
   watchPathIgnorePatterns: ['node_modules', 'dist', '.jest-cache']
 } as const;
 
-// Determine which configuration to use based on TEST_TYPE environment variable
+// Determine which configuration to use based on test path pattern
 const config = (() => {
   // Integration test specific config
-  if (process.env.TEST_TYPE === 'integration') {
+  if (process.argv.includes('--testPathPattern=integration')) {
     return {
       ...baseConfig,
-      // Only run integration tests
       testMatch: ['**/src/**/integration/**/*.spec.ts'],
-      // Set longer timeout for integration tests
       testTimeout: 30000,
     };
   }
   
   // Unit test specific config
-  if (process.env.TEST_TYPE === 'unit') {
+  if (process.argv.includes('--testPathIgnorePatterns=integration')) {
     return {
       ...baseConfig,
-      // Exclude integration tests, only run unit tests
       testMatch: ['**/src/**/*.spec.ts'],
       testPathIgnorePatterns: [
         '/node_modules/',
@@ -87,7 +107,6 @@ const config = (() => {
         '**/src/**/integration/**/*.spec.ts',
         'src/main.spec.ts'
       ],
-      // Run unit tests in parallel
       maxWorkers: '50%',
     };
   }

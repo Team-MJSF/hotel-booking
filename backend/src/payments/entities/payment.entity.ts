@@ -8,6 +8,13 @@ export enum Currency {
   EUR = 'EUR',
 }
 
+export enum PaymentMethod {
+  CREDIT_CARD = 'credit_card',
+  DEBIT_CARD = 'debit_card',
+  PAYPAL = 'paypal',
+  BANK_TRANSFER = 'bank_transfer',
+}
+
 export enum PaymentStatus {
   PENDING = 'pending',
   COMPLETED = 'completed',
@@ -15,24 +22,23 @@ export enum PaymentStatus {
   REFUNDED = 'refunded',
 }
 
-export enum PaymentMethod {
-  CREDIT_CARD = 'credit_card',
-  DEBIT_CARD = 'debit_card',
-  BANK_TRANSFER = 'bank_transfer',
-  CASH = 'cash',
-}
-
 @Entity('payments')
 @Index('IDX_PAYMENTS_BOOKING', ['booking'])
 @Index('IDX_PAYMENTS_STATUS', ['status'])
 export class Payment extends BaseEntity {
   @PrimaryGeneratedColumn({ name: 'payment_id' })
-  @ApiProperty({ description: 'The unique identifier of the payment' })
+  @ApiProperty({ description: 'Unique identifier for the payment' })
   paymentId: number;
 
   @OneToOne(() => Booking, booking => booking.payment)
   @JoinColumn({ name: 'booking_id' })
-  @ApiProperty({ description: 'The booking associated with this payment' })
+  @ApiProperty({ 
+    description: 'The booking associated with this payment',
+    type: 'object',
+    properties: {
+      bookingId: { type: 'number' }
+    }
+  })
   booking: Booking;
 
   @Column({ name: 'amount', type: 'decimal', precision: 10, scale: 2 })
@@ -41,9 +47,8 @@ export class Payment extends BaseEntity {
 
   @Column({
     name: 'currency',
-    type: 'enum',
-    enum: Currency,
-    default: Currency.USD,
+    type: 'varchar',
+    length: 3,
   })
   @ApiProperty({
     description: 'The currency code for the payment',
@@ -53,9 +58,8 @@ export class Payment extends BaseEntity {
 
   @Column({
     name: 'payment_method',
-    type: 'enum',
-    enum: PaymentMethod,
-    default: PaymentMethod.CREDIT_CARD,
+    type: 'varchar',
+    length: 20,
   })
   @ApiProperty({ description: 'The method used for payment', enum: PaymentMethod })
   paymentMethod: PaymentMethod;
@@ -66,9 +70,8 @@ export class Payment extends BaseEntity {
 
   @Column({
     name: 'status',
-    type: 'enum',
-    enum: PaymentStatus,
-    default: PaymentStatus.PENDING,
+    type: 'varchar',
+    length: 20,
   })
   @ApiProperty({ description: 'The current status of the payment', enum: PaymentStatus })
   status: PaymentStatus;

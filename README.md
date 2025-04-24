@@ -1,58 +1,81 @@
 # Hotel Booking System
 
-A full-stack hotel booking application built with NestJS (backend) and React (frontend).
+A full-stack hotel booking application built with NestJS (backend) and Next.js (frontend).
+
+## Project Overview
+
+This application provides a complete hotel booking solution with room browsing, booking management, and payment processing. The system follows a modern, scalable architecture with a clear separation between backend services and frontend presentation.
 
 ## Project Structure
 
 ```
 hotel-booking/
-├── backend/                 # NestJS backend application
-│   ├── src/                # Source code
-│   │   ├── config/        # Configuration files
+├── backend/                # NestJS backend application
+│   ├── src/               # Source code
+│   │   ├── auth/          # Authentication module
 │   │   ├── users/         # User management module
 │   │   ├── rooms/         # Room management module
 │   │   ├── bookings/      # Booking management module
-│   │   ├── payments/      # Payment processing module
-│   │   └── migrations/    # Database migrations
-│   └── package.json       # Backend dependencies
-└── frontend/              # React frontend application
-    ├── src/              # Source code
-    ├── public/           # Static files
-    └── package.json      # Frontend dependencies
+│   │   ├── payments/      # Payment processing module (mocked)
+│   │   ├── common/        # Shared utilities, pipes and filters
+│   │   └── database/      # Database configuration and migrations
+│   ├── test/              # Test suite
+│   └── docs/              # Documentation
+└── frontend/              # Next.js frontend application
+    ├── src/               # Source code
+    │   ├── app/           # Next.js App Router pages
+    │   ├── components/    # UI components
+    │   ├── services/      # API services
+    │   ├── types/         # TypeScript interfaces
+    │   └── lib/           # Utility functions
+    ├── public/            # Static files
+    └── test/              # Test suite
 ```
 
-## Features
+## Key Features
 
-- User authentication and authorization
-- Room management and availability tracking
-- Booking system with real-time availability
-- Payment processing integration
-- Admin dashboard for hotel management
-- Responsive design for all devices
+- **User Management**: Registration, authentication, and profile management
+- **Room Management**: Browse, search, and filter available rooms
+- **Booking System**: Create, view, modify, and cancel bookings
+- **Payment Processing**: Secure payment handling (mocked for demonstration)
+- **Admin Dashboard**: Manage rooms, bookings, and user accounts
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **API Documentation**: Auto-generated Swagger documentation
 
 ## Tech Stack
 
 ### Backend
-- NestJS (Node.js framework)
-- TypeORM (ORM)
-- MySQL (Database)
-- JWT (Authentication)
-- Swagger (API Documentation)
+- **Framework**: NestJS with TypeScript
+- **Database**: TypeORM with SQLite
+- **Authentication**: JWT, Passport.js
+- **API Documentation**: Swagger/OpenAPI
+- **Testing**: Jest, Supertest
 
 ### Frontend
-- React
-- TypeScript
-- Material-UI
-- Redux Toolkit
-- React Router
+- **Framework**: Next.js 14 with React and TypeScript
+- **Styling**: Tailwind CSS, shadcn/ui components
+- **State Management**: React Context API
+- **HTTP Client**: Axios with interceptors
+- **Form Handling**: React Hook Form
+- **Date Handling**: date-fns
+- **Testing**: Jest, React Testing Library
 
-## Prerequisites
+## User Flow
 
-- Node.js (v16 or higher)
-- MySQL (v8 or higher)
-- npm or yarn
+1. Search and filter available rooms
+2. Select a room and check availability for desired dates
+3. Complete booking form with guest information
+4. Enter payment information (mock payment)
+5. Receive booking confirmation
+6. View and manage bookings in user dashboard
 
 ## Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or higher)
+- npm or yarn
+- Git
 
 ### Backend Setup
 
@@ -66,30 +89,23 @@ hotel-booking/
    npm install
    ```
 
-3. Create a `.env` file in the backend directory with the following variables:
-   ```
-   DB_HOST=localhost
-   DB_PORT=3306
-   DB_USER=root
-   DB_PASSWORD=your_password
-   DB_NAME=hotel_booking
-   JWT_SECRET=your_jwt_secret
-   NODE_ENV=development
-   PORT=3000
+3. Set up environment variables:
+   ```bash
+   cp .env.example .env.development
    ```
 
-4. Run database migrations:
+4. Initialize the database:
    ```bash
-   npm run migration:run
+   npm run init:dev
    ```
 
 5. Start the development server:
    ```bash
-   npm run start:dev
+   npm run dev
    ```
 
-The backend API will be available at `http://localhost:3000`
-API documentation will be available at `http://localhost:3000/api`
+The backend API will be available at `http://localhost:5000`  
+API documentation: `http://localhost:5000/api/docs`
 
 ### Frontend Setup
 
@@ -103,93 +119,94 @@ API documentation will be available at `http://localhost:3000/api`
    npm install
    ```
 
-3. Start the development server:
-   ```bash
-   npm start
+3. Create a `.env.local` file:
+   ```
+   NEXT_PUBLIC_API_URL=http://localhost:5000
    ```
 
-The frontend application will be available at `http://localhost:3001`
+4. Start the development server:
+   ```bash
+   npm run dev
+   ```
+
+The frontend will be available at `http://localhost:3000`
+
+### Running Both Services
+
+From the root directory:
+
+```bash
+npm install
+npm run dev
+```
 
 ## Testing
 
 ### Backend Tests
 ```bash
 cd backend
-npm test
+npm test                # Run all tests
+npm run test:unit       # Run unit tests
+npm run test:integration # Run integration tests
+npm run test:cov        # Generate coverage report
 ```
 
 ### Frontend Tests
 ```bash
 cd frontend
-npm test
+npm test                # Run all tests
+npm run test:watch      # Run tests in watch mode
+npm run test:coverage   # Generate coverage report
 ```
 
-## API Documentation
-
-The API documentation is automatically generated using Swagger and is available at:
-- Development: `http://localhost:3000/api`
-- Production: `https://your-domain.com/api`
-
-## Database Schema
-
-The application uses the following main entities:
+## Core Entities
 
 ### Users
-- id (Primary Key)
-- firstName
-- lastName
-- email (Unique)
-- password (Hashed)
-- role (Enum: ADMIN, USER)
-- createdAt
-- updatedAt
+- Authentication credentials and profile information
+- Role-based access control (Admin/User)
+
+### Room Types
+- Categories of rooms with pricing and amenities
+- Image galleries and detailed descriptions
 
 ### Rooms
-- id (Primary Key)
-- roomNumber (Unique)
-- type (Enum: SINGLE, DOUBLE, SUITE, DELUXE)
-- pricePerNight
-- maxGuests
-- description
-- amenities (JSON)
-- availabilityStatus (Enum: AVAILABLE, OCCUPIED, MAINTENANCE)
-- isActive
-- createdAt
-- updatedAt
+- Individual rooms with unique identifiers
+- Status tracking and availability management
 
 ### Bookings
-- id (Primary Key)
-- userId (Foreign Key)
-- roomId (Foreign Key)
-- checkInDate
-- checkOutDate
-- numberOfGuests
-- specialRequests
-- status (Enum: PENDING, CONFIRMED, CANCELLED)
-- createdAt
-- updatedAt
+- Reservation details with date ranges
+- Status tracking throughout the booking lifecycle
 
 ### Payments
-- id (Primary Key)
-- bookingId (Foreign Key)
-- amount
-- currency
-- paymentMethod (Enum: CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER)
-- transactionId
-- status (Enum: PENDING, COMPLETED, FAILED, REFUNDED)
-- description
-- createdAt
-- updatedAt
+- Transaction records for bookings
+- Support for multiple payment methods (mocked)
 
-## Contributing
+## API Architecture
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+The backend follows RESTful API design principles:
+
+- **Authentication**: `/auth` - Login, registration, token refresh
+- **Users**: `/users` - User management
+- **Rooms**: `/rooms` - Room and room type operations
+- **Bookings**: `/bookings` - Booking creation and management
+- **Payments**: `/payments` - Payment processing operations
+
+## Development Notes
+
+- Authentication tokens are stored in memory and local storage
+- The payment system is mocked but structured to support real gateway integration
+- Development data is automatically seeded on initialization
+- Frontend uses optimistic UI updates for better user experience
+
+## Best Practices
+
+- Comprehensive unit and integration testing
+- TypeScript for type safety
+- Error handling with appropriate status codes
+- Form validation on both client and server
+- Defensive programming with graceful fallbacks
 
 ## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is part of a school assignment and is not licensed for commercial use.
 

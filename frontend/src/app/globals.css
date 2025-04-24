@@ -1,0 +1,290 @@
+@tailwind base; @tailwind components; @tailwind utilities;
+
+/* Basic styles */
+body {
+  @apply text-gray-900 bg-gray-50;
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
+
+/* Add animations for the enhanced homepage */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.8s ease forwards;
+}
+
+.animation-delay-150 {
+  animation-delay: 150ms;
+}
+
+.animation-delay-300 {
+  animation-delay: 300ms;
+}
+
+.animation-delay-450 {
+  animation-delay: 450ms;
+}
+
+@layer components {
+  /* Hotel layout components */
+  .hotel-container {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+  
+  .hotel-section {
+    @apply py-16;
+  }
+  
+  /* Typography components */
+  .hotel-heading {
+    @apply text-3xl font-serif font-bold text-gray-900;
+  }
+  
+  .hotel-subheading {
+    @apply text-xl font-serif text-gray-700;
+  }
+  
+  /* UI components */
+  .hotel-card {
+    @apply bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-lg;
+  }
+  
+  .hotel-button {
+    @apply bg-yellow-500 text-white px-6 py-3 rounded font-medium transition-colors duration-300 hover:bg-yellow-600;
+  }
+  
+  .hotel-button-primary {
+    @apply bg-blue-700 text-white px-6 py-3 rounded font-medium transition-colors duration-300 hover:bg-blue-800;
+  }
+  
+  .hotel-input {
+    @apply px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
+  }
+  
+  /* Visual effects */
+  .hotel-hero {
+    @apply relative bg-cover bg-center py-32 text-white;
+  }
+  
+  .hotel-hero::before {
+    content: '';
+    @apply absolute inset-0 bg-black bg-opacity-40 z-0;
+  }
+  
+  .hotel-gradient-bg {
+    background: linear-gradient(135deg, #1d4ed8 0%, #eab308 100%);
+  }
+  
+  .luxury-text-shadow {
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  /* New styles for enhanced design */
+  .aspect-w-4 {
+    position: relative;
+    padding-bottom: calc(var(--tw-aspect-h) / var(--tw-aspect-w) * 100%);
+    --tw-aspect-w: 4;
+  }
+  
+  .aspect-h-3 {
+    --tw-aspect-h: 3;
+  }
+  
+  .aspect-w-4 > * {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+  }
+  
+  .line-clamp-2 {
+    overflow: hidden;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+}
+
+
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+    --radius: 0.5rem;
+  }
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* More aggressive date picker fixes */
+/* Remove ALL outlines from date picker elements */
+::-webkit-datetime-edit,
+::-webkit-datetime-edit-fields-wrapper,
+::-webkit-datetime-edit-text,
+::-webkit-datetime-edit-month-field,
+::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-year-field,
+::-webkit-calendar-picker-indicator,
+::-webkit-inner-spin-button {
+  outline: none !important;
+}
+
+/* Target the date picker popup */
+input::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* Completely override browser's date picker styling */
+input[type="date"] {
+  appearance: none;
+  -webkit-appearance: none;
+  display: block;
+  background-color: transparent;
+}
+
+/* Additional Safari fix */
+@media not all and (min-resolution:.001dpcm) { 
+  @supports (-webkit-appearance:none) {
+    input[type="date"] {
+      position: relative;
+      display: inline-block;
+    }
+    input[type="date"]::-webkit-calendar-picker-indicator {
+      width: 100%;
+      height: 100%;
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      color: transparent;
+      background: transparent;
+    }
+  }
+}
+
+/* Chrome datepicker popup specific fixes */
+::-webkit-datetime-edit-day-field:focus,
+::-webkit-datetime-edit-month-field:focus,
+::-webkit-datetime-edit-year-field:focus {
+  background-color: transparent !important;
+  color: inherit !important;
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* Remove the outline for calendar day cells in popup */
+input[type="date"]::-webkit-calendar-picker {
+  outline: none !important;
+}
+
+/* Native date input fixes */
+/* This makes sure there's no outline on any browser's date picker popup */
+input[type="date"] {
+  position: relative;
+}
+
+/* Remove date input inner elements outline */
+input[type="date"]::-webkit-datetime-edit,
+input[type="date"]::-webkit-inner-spin-button,
+input[type="date"]::-webkit-clear-button,
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 1;
+}
+
+/* Hide default date picker arrows/calendar icon so we can use our own */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  background: transparent;
+}
+
+/* Additional webkit-specific overrides for the date popup */
+input[type="date"]::-webkit-datetime-edit-fields-wrapper:focus,
+input[type="date"]::-webkit-datetime-edit-text:focus,
+input[type="date"]::-webkit-datetime-edit-month-field:focus,
+input[type="date"]::-webkit-datetime-edit-day-field:focus,
+input[type="date"]::-webkit-datetime-edit-year-field:focus {
+  outline: none;
+  background: transparent;
+}
+
+/* This targets our specific custom date input with a more specific selector */
+.cus-date-input::-webkit-calendar-picker-indicator {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  cursor: pointer;
+}

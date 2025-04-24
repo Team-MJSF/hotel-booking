@@ -3,8 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { config } from 'dotenv';
 import { join } from 'path';
 import { Logger } from '@nestjs/common';
-import { MysqlConnectionOptions } from 'typeorm/driver/mysql/MysqlConnectionOptions';
-import * as mysql from 'mysql2/promise';
+import * as fs from 'fs';
 
 // Initialize logger
 const logger = new Logger('TypeOrmMigrationsConfig');
@@ -27,39 +26,26 @@ const migrationsDir = isMigrationMode
  * Create database if it doesn't exist
  * This function is called from CLI when --create-db flag is used
  */
-async function createDatabaseIfNotExists(options: MysqlConnectionOptions): Promise<void> {
-  const { host, port, username, password, database } = options;
-
-  logger.log(`Checking if database ${database} exists`);
-
-  // Create connection without database name
-  const connection = await mysql.createConnection({
-    host,
-    port,
-    user: username,
-    password,
-  });
-
-  try {
-    // Check if database exists
-    const [rows] = await connection.execute(
-      `SELECT SCHEMA_NAME FROM INFORMATION_SCHEMA.SCHEMATA WHERE SCHEMA_NAME = '${database}'`,
-    );
-
-    const databaseExists = Array.isArray(rows) && rows.length > 0;
-
-    if (!databaseExists) {
-      logger.log(`Creating database ${database}`);
-      await connection.execute(`CREATE DATABASE IF NOT EXISTS \`${database}\``);
-      logger.log(`Database ${database} created successfully`);
-    } else {
-      logger.log(`Database ${database} already exists`);
-    }
-  } catch (error) {
-    logger.error(`Failed to create database ${database}: ${error.message}`);
-    throw error;
-  } finally {
-    await connection.end();
+async function createDatabaseIfNotExists(): Promise<void> {
+  const dbName = process.env.DB_NAME || join(process.cwd(), 'data', 'hotel_db.sqlite');
+  
+  logger.log(`Checking if database ${dbName} exists`);
+  
+  const dbDir = join(process.cwd(), 'data');
+  
+  // Ensure data directory exists
+  if (!fs.existsSync(dbDir)) {
+    logger.log(`Creating directory ${dbDir}`);
+    fs.mkdirSync(dbDir, { recursive: true });
+  }
+  
+  // Touch the file if it doesn't exist
+  if (!fs.existsSync(dbName)) {
+    logger.log(`Creating database file ${dbName}`);
+    fs.writeFileSync(dbName, '');
+    logger.log(`Database file ${dbName} created successfully`);
+  } else {
+    logger.log(`Database file ${dbName} already exists`);
   }
 }
 
@@ -71,13 +57,9 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Da
   const isDevelopment = process.env.NODE_ENV === 'development';
 
   // Create database options
-  const options: MysqlConnectionOptions = {
-    type: 'mysql',
-    host: configService.get<string>('DB_HOST') || process.env.DB_HOST,
-    port: configService.get<number>('DB_PORT') || +process.env.DB_PORT,
-    username: configService.get<string>('DB_USERNAME') || process.env.DB_USERNAME,
-    password: configService.get<string>('DB_PASSWORD') || process.env.DB_PASSWORD,
-    database: configService.get<string>('DB_NAME') || process.env.DB_NAME,
+  const options: DataSourceOptions = {
+    type: 'sqlite',
+    database: configService.get<string>('DB_NAME') || join(process.cwd(), 'data', 'hotel_db.sqlite'),
     entities: [entitiesDir],
     migrations: [migrationsDir],
     synchronize: false,
@@ -95,21 +77,15 @@ export async function getTypeOrmConfig(configService: ConfigService): Promise<Da
 const args = process.argv.slice(2);
 if (args.includes('--create-db')) {
   (async () => {
-    const configService = new ConfigService();
-    const config = await getTypeOrmConfig(configService);
-    await createDatabaseIfNotExists(config as MysqlConnectionOptions);
+    await createDatabaseIfNotExists();
     process.exit(0);
   })();
 }
 
 // For CLI migrations
 export default new DataSource({
-  type: 'mysql',
-  host: process.env.DB_HOST,
-  port: +process.env.DB_PORT,
-  username: process.env.DB_USERNAME,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
+  type: 'sqlite',
+  database: process.env.DB_NAME || join(process.cwd(), 'data', 'hotel_db.sqlite'),
   entities: [entitiesDir],
   migrations: [migrationsDir],
   synchronize: false,

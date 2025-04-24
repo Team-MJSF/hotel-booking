@@ -20,7 +20,7 @@
     "@typescript-eslint/no-unused-vars": ["warn", {
       "argsIgnorePattern": "^_"
     }],
-    "no-console": ["warn"],
+    "no-console": "off",
     "no-undef": "off"
   },
   "overrides": [
@@ -37,6 +37,7 @@
           "varsIgnorePattern": "^description$",
           "argsIgnorePattern": "^(_|description)$"
         }],
+        "@typescript-eslint/no-namespace": "off",
         "no-console": "off"
       }
     }

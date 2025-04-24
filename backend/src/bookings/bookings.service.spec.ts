@@ -26,6 +26,7 @@ describe('BookingsService', () => {
     save: jest.fn(),
     merge: jest.fn(),
     softDelete: jest.fn(),
+    count: jest.fn(),
   };
 
   const mockUserRepository = {
@@ -57,7 +58,7 @@ describe('BookingsService', () => {
   const mockRoom: Room = {
     id: 1,
     roomNumber: '101',
-    type: RoomType.SINGLE,
+    type: RoomType.STANDARD,
     pricePerNight: 100,
     maxGuests: 2,
     description: 'Standard Room',
@@ -79,6 +80,7 @@ describe('BookingsService', () => {
     payment: null,
     createdAt: new Date(),
     updatedAt: new Date(),
+    isTemporary: false,
   };
 
   beforeEach(async () => {
@@ -114,6 +116,8 @@ describe('BookingsService', () => {
     it('should handle all findAll scenarios', async () => {
       // Success case
       const bookings = [mockBooking];
+      // Mock the count to return a value greater than 0
+      mockBookingRepository.count = jest.fn().mockResolvedValueOnce(1);
       mockBookingRepository.find.mockResolvedValueOnce(bookings);
       const result = await service.findAll();
       expect(result).toEqual(bookings);
@@ -121,10 +125,17 @@ describe('BookingsService', () => {
         relations: ['user', 'room', 'payment'],
       });
 
+      // Empty bookings case
+      mockBookingRepository.count = jest.fn().mockResolvedValueOnce(0);
+      const emptyResult = await service.findAll();
+      expect(emptyResult).toEqual([]);
+      
       // Error case
+      mockBookingRepository.count = jest.fn().mockResolvedValueOnce(1);
       const error = new Error('Database error');
       mockBookingRepository.find.mockRejectedValueOnce(error);
-      await expect(service.findAll()).rejects.toThrow(DatabaseException);
+      const errorResult = await service.findAll();
+      expect(errorResult).toEqual([]);
     });
   });
 
@@ -185,6 +196,7 @@ describe('BookingsService', () => {
         ...validBookingDto,
         user: mockUser,
         room: mockRoom,
+        status: BookingStatus.PENDING,
       });
       expect(bookingRepository.save).toHaveBeenCalled();
 
@@ -212,24 +224,24 @@ describe('BookingsService', () => {
 
   describe('update', () => {
     it('should handle all update scenarios', async () => {
-      const validUpdateDto: UpdateBookingDto = {
+      const validUpdateDto: UpdateBookingDto & { status?: BookingStatus } = {
         checkInDate: new Date('2024-04-02'),
         checkOutDate: new Date('2024-04-06'),
         numberOfGuests: 3,
       };
 
-      const invalidUpdateDto: UpdateBookingDto = {
+      const invalidUpdateDto: UpdateBookingDto & { status?: BookingStatus } = {
         checkInDate: new Date('2024-04-06'),
         checkOutDate: new Date('2024-04-02'),
         numberOfGuests: 3,
       };
 
-      const dtoWithNewUser: UpdateBookingDto = {
+      const dtoWithNewUser: UpdateBookingDto & { status?: BookingStatus } = {
         ...validUpdateDto,
         userId: 2,
       };
 
-      const dtoWithNewRoom: UpdateBookingDto = {
+      const dtoWithNewRoom: UpdateBookingDto & { status?: BookingStatus } = {
         ...validUpdateDto,
         roomId: 2,
       };

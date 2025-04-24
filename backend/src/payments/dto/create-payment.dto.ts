@@ -67,8 +67,8 @@ export class CreatePaymentDto {
    * The status of the payment
    * @default PaymentStatus.PENDING
    */
-  @ApiProperty({ description: 'The status of the payment', enum: PaymentStatus })
-  @IsNotEmpty()
+  @ApiProperty({ description: 'The status of the payment', enum: PaymentStatus, default: PaymentStatus.PENDING })
+  @IsOptional()
   @IsEnum(PaymentStatus)
   @Transform(({ value }) => {
     if (typeof value === 'string') {
@@ -76,7 +76,7 @@ export class CreatePaymentDto {
     }
     return value;
   })
-  status: PaymentStatus;
+  status?: PaymentStatus;
 
   /**
    * Optional description or notes about the payment

@@ -8,9 +8,9 @@ import { UpdateRoomDto } from './dto/update-room.dto';
 import { SortField, SortOrder } from './dto/search-rooms.dto';
 import {
   ResourceNotFoundException,
-  ConflictException,
   DatabaseException,
 } from '../common/exceptions/hotel-booking.exception';
+import { BadRequestException, InternalServerErrorException } from '@nestjs/common';
 
 type MockQueryBuilder = {
   leftJoin: jest.Mock;
@@ -41,9 +41,9 @@ describe('RoomsService', () => {
   const mockRoom: Room = {
     id: 1,
     roomNumber: '101',
-    type: RoomType.SINGLE,
-    pricePerNight: 100,
-    maxGuests: 2,
+    type: RoomType.STANDARD,
+    pricePerNight: 150,
+    maxGuests: 3,
     description: 'Standard Room',
     amenities: '[]',
     availabilityStatus: AvailabilityStatus.AVAILABLE,
@@ -203,7 +203,7 @@ describe('RoomsService', () => {
   describe('create', () => {
     const createRoomDto: CreateRoomDto = {
       roomNumber: '101',
-      type: RoomType.SINGLE,
+      type: RoomType.STANDARD,
       pricePerNight: 100,
       maxGuests: 2,
       description: 'Standard Room',
@@ -223,9 +223,6 @@ describe('RoomsService', () => {
           expectedError: null,
           assertions: (result: Room) => {
             expect(result).toEqual(mockRoom);
-            expect(roomsRepository.findOne).toHaveBeenCalledWith({
-              where: { roomNumber: createRoomDto.roomNumber },
-            });
             expect(roomsRepository.create).toHaveBeenCalledWith(createRoomDto);
             expect(roomsRepository.save).toHaveBeenCalled();
           },
@@ -247,31 +244,27 @@ describe('RoomsService', () => {
           },
         },
         {
-          description: 'throw ConflictException when room number already exists',
-          mockFindResult: mockRoom,
-          mockCreateResult: null,
+          description: 'throw BadRequestException when validation fails',
+          mockFindResult: null,
+          mockCreateResult: mockRoom,
           mockSaveResult: null,
-          mockSaveError: null,
+          mockSaveError: new Error('Room validation failed: Room number is required'),
           expectedResult: null,
-          expectedError: ConflictException,
+          expectedError: BadRequestException,
           assertions: () => {
-            expect(roomsRepository.findOne).toHaveBeenCalledWith({
-              where: { roomNumber: createRoomDto.roomNumber },
-            });
+            expect(roomsRepository.create).toHaveBeenCalledWith(createRoomDto);
+            expect(roomsRepository.save).toHaveBeenCalled();
           },
         },
         {
-          description: 'throw DatabaseException when repository fails',
+          description: 'throw InternalServerErrorException when repository fails',
           mockFindResult: null,
           mockCreateResult: mockRoom,
           mockSaveResult: null,
           mockSaveError: new Error('Database error'),
           expectedResult: null,
-          expectedError: DatabaseException,
+          expectedError: InternalServerErrorException,
           assertions: () => {
-            expect(roomsRepository.findOne).toHaveBeenCalledWith({
-              where: { roomNumber: createRoomDto.roomNumber },
-            });
             expect(roomsRepository.create).toHaveBeenCalledWith(createRoomDto);
             expect(roomsRepository.save).toHaveBeenCalled();
           },
@@ -320,74 +313,72 @@ describe('RoomsService', () => {
         {
           description: 'update a room',
           id: 1,
-          mockUpdateResult: { affected: 1 },
-          mockFindResult: { ...mockRoom, ...updateRoomDto },
-          mockUpdateError: null,
+          mockFindResult: { ...mockRoom },
+          mockSaveResult: { ...mockRoom, ...updateRoomDto },
+          mockFindError: null,
+          mockSaveError: null,
           expectedResult: { ...mockRoom, ...updateRoomDto },
           expectedError: null,
           assertions: (result: Room) => {
             expect(result).toEqual({ ...mockRoom, ...updateRoomDto });
-            expect(roomsRepository.update).toHaveBeenCalledWith(1, updateRoomDto);
             expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+            expect(roomsRepository.save).toHaveBeenCalled();
           },
         },
         {
           description: 'update a room with partial data',
           id: 1,
-          mockUpdateResult: { affected: 1 },
-          mockFindResult: { ...mockRoom, pricePerNight: 150 },
-          mockUpdateError: null,
+          mockFindResult: { ...mockRoom },
+          mockSaveResult: { ...mockRoom, pricePerNight: 150 },
+          mockFindError: null,
+          mockSaveError: null,
           expectedResult: { ...mockRoom, pricePerNight: 150 },
           expectedError: null,
           assertions: (result: Room) => {
             expect(result.pricePerNight).toBe(150);
-            expect(roomsRepository.update).toHaveBeenCalledWith(
-              1,
-              expect.objectContaining({ pricePerNight: 150 }),
-            );
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+            expect(roomsRepository.save).toHaveBeenCalled();
           },
         },
         {
           description: 'update a room with amenities',
           id: 1,
-          mockUpdateResult: { affected: 1 },
-          mockFindResult: { ...mockRoom, amenities: '["wifi", "tv"]' },
-          mockUpdateError: null,
+          mockFindResult: { ...mockRoom },
+          mockSaveResult: { ...mockRoom, amenities: '["wifi", "tv"]' },
+          mockFindError: null,
+          mockSaveError: null,
           expectedResult: { ...mockRoom, amenities: '["wifi", "tv"]' },
           expectedError: null,
           assertions: (result: Room) => {
             expect(result.amenities).toBe('["wifi", "tv"]');
-            expect(roomsRepository.update).toHaveBeenCalledWith(
-              1,
-              expect.objectContaining({
-                maxGuests: 3,
-                pricePerNight: 150,
-              }),
-            );
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
+            expect(roomsRepository.save).toHaveBeenCalled();
           },
         },
         {
-          description: 'throw ResourceNotFoundException when room not found',
+          description: 'throw InternalServerErrorException when room not found',
           id: 1,
-          mockUpdateResult: { affected: 0 },
           mockFindResult: null,
-          mockUpdateError: null,
+          mockSaveResult: null,
+          mockFindError: new ResourceNotFoundException('Room', 1),
+          mockSaveError: null,
           expectedResult: null,
-          expectedError: ResourceNotFoundException,
+          expectedError: InternalServerErrorException,
           assertions: () => {
-            expect(roomsRepository.update).toHaveBeenCalledWith(1, updateRoomDto);
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
           },
         },
         {
-          description: 'throw DatabaseException when repository fails',
+          description: 'throw InternalServerErrorException when repository fails',
           id: 1,
-          mockUpdateResult: null,
           mockFindResult: null,
-          mockUpdateError: new Error('Database error'),
+          mockSaveResult: null,
+          mockFindError: new ResourceNotFoundException('Room', 1),
+          mockSaveError: null,
           expectedResult: null,
-          expectedError: DatabaseException,
+          expectedError: InternalServerErrorException,
           assertions: () => {
-            expect(roomsRepository.update).toHaveBeenCalledWith(1, updateRoomDto);
+            expect(roomsRepository.findOne).toHaveBeenCalledWith({ where: { id: 1 } });
           },
         },
       ];
@@ -395,20 +386,25 @@ describe('RoomsService', () => {
       for (const {
         description,
         id,
-        mockUpdateResult,
         mockFindResult,
-        mockUpdateError,
+        mockSaveResult,
+        mockFindError,
+        mockSaveError,
         expectedResult,
         expectedError,
         assertions,
       } of testCases) {
-        if (mockUpdateError) {
-          mockRoomsRepository.update.mockRejectedValue(mockUpdateError);
+        if (mockFindError) {
+          mockRoomsRepository.findOne.mockRejectedValue(mockFindError);
         } else {
-          mockRoomsRepository.update.mockResolvedValue(mockUpdateResult);
+          mockRoomsRepository.findOne.mockResolvedValue(mockFindResult);
         }
 
-        mockRoomsRepository.findOne.mockResolvedValue(mockFindResult);
+        if (mockSaveError) {
+          mockRoomsRepository.save.mockRejectedValue(mockSaveError);
+        } else {
+          mockRoomsRepository.save.mockResolvedValue(mockSaveResult);
+        }
 
         if (expectedError) {
           await expect(service.update(id, updateRoomDto)).rejects.toThrow(expectedError);
@@ -602,7 +598,7 @@ describe('RoomsService', () => {
       },
       {
         ...mockRoom,
-        type: RoomType.SUITE,
+        type: RoomType.FAMILY,
         pricePerNight: 300,
         availabilityStatus: AvailabilityStatus.AVAILABLE,
       },

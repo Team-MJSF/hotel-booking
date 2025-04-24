@@ -4,10 +4,22 @@ import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
+import { TransformInterceptor } from './common/interceptors/transform.interceptor';
 import helmet from 'helmet';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as cookieParser from 'cookie-parser';
 
 export async function bootstrap() {
   const logger = new Logger('Bootstrap');
+  
+  // Ensure the SQLite data directory exists before starting
+  const dataDir = path.join(process.cwd(), 'data');
+  if (!fs.existsSync(dataDir)) {
+    fs.mkdirSync(dataDir, { recursive: true });
+    logger.log(`Created data directory: ${dataDir}`);
+  }
+  
   const app = await NestFactory.create(AppModule);
 
   // Enable Helmet for security headers
@@ -18,8 +30,27 @@ export async function bootstrap() {
     }),
   );
 
+  // Enable cookie parser
+  app.use(cookieParser());
+
+  // Request logging middleware
+  app.use((req, res, next) => {
+    logger.log(`Incoming request: ${req.method} ${req.url}`);
+    logger.log(`Request body: ${JSON.stringify(req.body)}`);
+    logger.log(`Request headers: ${JSON.stringify(req.headers)}`);
+    next();
+  });
+
   // Enable CORS
-  app.enableCors();
+  app.enableCors({
+    origin: process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : '*',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+    exposedHeaders: ['Authorization', 'Content-Type'],
+    preflightContinue: false,
+    optionsSuccessStatus: 204,
+  });
 
   // Enable validation pipes globally
   app.useGlobalPipes(
@@ -32,6 +63,9 @@ export async function bootstrap() {
 
   // Global exception filter
   app.useGlobalFilters(new HttpExceptionFilter());
+  
+  // Global response transformation
+  app.useGlobalInterceptors(new TransformInterceptor());
 
   // Swagger setup
   if (process.env.NODE_ENV !== 'production') {
